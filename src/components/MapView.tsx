@@ -69,18 +69,24 @@ export default function MapView({ data, onInteract }: Props) {
       zoom: data.zoom,
       zoomControl: false,
     })
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // CartoDB Voyager 瓦片 —— CDN 分发，比 OSM 直连稳定
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution: "",
       maxZoom: 19,
+      subdomains: "abcd",
     }).addTo(map)
     L.control.zoom({ position: "bottomright" }).addTo(map)
     mapInstance.current = map
     markersLayer.current = L.layerGroup().addTo(map)
 
-    // 延迟 invalidateSize 确保瓦片加载完整
-    setTimeout(() => map.invalidateSize(), 200)
+    // 每次拖拽/缩放结束后强制刷新瓦片
+    map.on("moveend", () => map.invalidateSize())
+    map.on("zoomend", () => map.invalidateSize())
 
-    // 监听容器尺寸变化，自动刷新瓦片
+    // 初始刷新
+    setTimeout(() => map.invalidateSize(), 300)
+
+    // 监听容器尺寸变化
     const observer = new ResizeObserver(() => {
       map.invalidateSize()
     })
@@ -141,7 +147,8 @@ export default function MapView({ data, onInteract }: Props) {
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-96 shrink-0"
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 w-96 shrink-0"
+      style={{ isolation: "isolate" }}
       onDragStart={stopDragPropagation}
       draggable={false}
     >
@@ -155,7 +162,8 @@ export default function MapView({ data, onInteract }: Props) {
       </div>
       <div
         ref={mapRef}
-        className="h-80"
+        className="h-80 rounded-b-2xl"
+        style={{ clipPath: "inset(0 0 0 0 round 0 0 1rem 1rem)" }}
         onDragStart={stopDragPropagation}
         draggable={false}
       />
