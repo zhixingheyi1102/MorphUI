@@ -146,13 +146,32 @@ export function useChat(scenario?: Step[]) {
               console.warn("[MorphUI] 模型回复了信息但没调用工具，可能需要重试", aiText)
             }
           }
-          if (aiText) {
-            historyRef.current.push({ role: "assistant", content: aiText })
+
+          // 把 assistant 回复（文字 + 工具调用）完整记录到历史
+          // 这样后续轮次模型能看到自己之前做了什么
+          const assistantEntry: Record<string, unknown> = {
+            role: "assistant",
+            content: aiText || null,
           }
-          if (collectedToolCalls.length > 0 && !aiText) {
+          if (collectedToolCalls.length > 0) {
+            assistantEntry.tool_calls = collectedToolCalls.map((tc, i) => ({
+              id: `call_${Date.now()}_${i}`,
+              type: "function",
+              function: { name: tc.name, arguments: tc.arguments },
+            }))
+          }
+          historyRef.current.push(assistantEntry as { role: string; content: string })
+
+          // 给每个 tool call 补一条 tool result（模型需要看到工具执行结果）
+          for (const tc of collectedToolCalls) {
             historyRef.current.push({
-              role: "assistant",
-              content: `[已执行组件操作: ${collectedToolCalls.map((t) => t.name).join(", ")}]`,
+              role: "tool",
+              content: JSON.stringify({ success: true, action: tc.name }),
+              // @ts-expect-error OpenAI format needs tool_call_id
+              tool_call_id: assistantEntry.tool_calls?.find(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (t: any) => t.function.name === tc.name
+              )?.id,
             })
           }
         }
