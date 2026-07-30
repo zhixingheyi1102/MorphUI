@@ -1,0 +1,318 @@
+import type { Step } from "../engine/types"
+
+const scenario: Step[] = [
+  // ──────────────────────────────────────────────
+  // Step 1: 用户发起请求 → 出现 ClarifyForm
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "帮我规划一个上海周末两日游的方案",
+    aiMessage: "好的！在开始之前，先了解一下你的需求，我好给你量身定制方案～ 请在右边填一下 👉",
+    workspaceActions: [
+      {
+        action: "create",
+        componentId: "clarify",
+        componentType: "clarify_form",
+        data: {
+          title: "了解你的需求",
+          questions: [
+            {
+              id: "companion",
+              label: "和谁一起？",
+              options: ["独自出行", "和朋友", "情侣出行", "家庭出游"],
+            },
+            {
+              id: "budget",
+              label: "两天预算大概多少？",
+              options: ["500 以内", "500 - 1500", "1500 - 3000", "不限"],
+            },
+            {
+              id: "preference",
+              label: "偏好什么类型？",
+              options: ["文艺小众", "网红打卡", "历史人文", "美食探店"],
+            },
+          ],
+          // 动态追问：当用户选了某个选项后，追加一个新问题
+          followUps: {
+            companion: {
+              "和朋友": { id: "group_size", label: "几个人一起？", options: ["2人", "3-5人", "5人以上"] },
+              "家庭出游": { id: "has_kids", label: "有小朋友吗？", options: ["有，6岁以下", "有，6-12岁", "没有小朋友"] },
+            },
+          },
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 2: 动态追问（ClarifyForm 内部处理，填完一项自动追问）
+  // 这一步由 ClarifyForm 内部动画完成，不需要单独的剧本步骤
+  // ──────────────────────────────────────────────
+
+  // ──────────────────────────────────────────────
+  // Step 3 (剧本 Step 2): 用户提交 ClarifyForm → 出方案
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "component_interact", componentId: "clarify" },
+    aiMessage:
+      "明白了！和朋友的文艺两日游，给你安排好了 ✨ 两天行程在右边，你看看节奏合不合适～",
+    workspaceActions: [
+      { action: "remove", componentId: "clarify" },
+      {
+        action: "create",
+        componentId: "budget",
+        componentType: "budget_tracker",
+        data: {
+          total: 1500,
+          items: [
+            { label: "交通", amount: 120 },
+            { label: "餐饮", amount: 400 },
+            { label: "门票", amount: 180 },
+            { label: "住宿", amount: 500 },
+          ],
+        },
+      },
+      {
+        action: "create",
+        componentId: "itinerary",
+        componentType: "itinerary",
+        data: {
+          activeTab: "day1",
+          days: {
+            day1: {
+              label: "Day 1 · 法租界漫步",
+              spots: [
+                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑" },
+                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
+                { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
+                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
+                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+              ],
+            },
+            day2: {
+              label: "Day 2 · 滨江文化线",
+              spots: [
+                { id: "power", name: "上海当代艺术博物馆", time: "09:30", duration: "2h", desc: "PSA，免费开放的当代艺术殿堂", tag: "艺术展览" },
+                { id: "cool_docks", name: "老码头", time: "11:30", duration: "1h", desc: "外滩背后的创意园区", tag: "文创园区", transport: { method: "步行", duration: "12min", distance: "1km" } },
+                { id: "lunch2", name: "豫园午餐", time: "12:30", duration: "1h", desc: "南翔小笼和城隍庙小吃", tag: "美食", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
+                { id: "bund", name: "外滩", time: "14:00", duration: "1.5h", desc: "经典外滩建筑群和江景", tag: "地标", transport: { method: "地铁", duration: "10min", distance: "2km" } },
+                { id: "nanjing", name: "南京路步行街", time: "16:00", duration: "2h", desc: "逛街购物，晚餐收尾", tag: "购物", transport: { method: "步行", duration: "5min", distance: "0.5km" } },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 4: 用户要地图 → MapView 出现在 Itinerary 左侧
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "加个地图看看路线吧",
+    aiMessage: "路线地图给你安排上了！点击标记可以查看景点详情～",
+    workspaceActions: [
+      {
+        action: "create",
+        componentId: "map",
+        componentType: "map_view",
+        data: {
+          center: [31.215, 121.44] as unknown as Record<string, unknown>,
+          zoom: 13,
+          activeDay: "day1",
+          markers: [
+            { id: "wukang", name: "武康路", lat: 31.2152, lng: 121.4368, type: "spot" },
+            { id: "anfu", name: "安福路", lat: 31.2173, lng: 121.4405, type: "spot" },
+            { id: "lunch1", name: "衡山路午餐", lat: 31.2091, lng: 121.4456, type: "spot" },
+            { id: "fuxing", name: "复兴西路", lat: 31.2108, lng: 121.4352, type: "spot" },
+            { id: "tianzifang", name: "田子坊", lat: 31.2104, lng: 121.4737, type: "spot" },
+          ],
+          routeColor: "#6366f1",
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 5: 用户点了地图上的武康路 → 出现玩法卡片
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "component_interact", componentId: "map", value: "wukang" },
+    aiMessage: "武康路有好几种玩法，看看哪个更合你意～ 选一个可以直接加到行程里。",
+    workspaceActions: [
+      {
+        action: "create",
+        componentId: "activities",
+        componentType: "activity_cards",
+        data: {
+          spotName: "武康路",
+          activities: [
+            { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
+            { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
+            { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
+          ],
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 6: 用户选了一个玩法 → 更新行程 + 预算
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "component_interact", componentId: "activities" },
+    aiMessage: "「老洋房漫步」已加入 Day 1 行程！免费的，预算没变化 👍",
+    workspaceActions: [
+      { action: "remove", componentId: "activities" },
+      {
+        action: "update",
+        componentId: "itinerary",
+        data: {
+          // 给武康路的 spot 加上选中的玩法标记
+          selectedActivity: { spotId: "wukang", activity: "老洋房漫步" },
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 7: 用户问餐厅 → 地图加餐厅 Marker
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "附近有什么好吃的餐厅吗？",
+    aiMessage: "在地图上标了几家评价不错的餐厅 🍜 点击标记可以看详细评价～",
+    workspaceActions: [
+      {
+        action: "update",
+        componentId: "map",
+        data: {
+          highlightSpot: "wukang",
+          extraMarkers: [
+            { id: "rest1", name: "衡山小馆", lat: 31.2135, lng: 121.4390, type: "restaurant", rating: 4.7 },
+            { id: "rest2", name: "Alimentari", lat: 31.2128, lng: 121.4415, type: "restaurant", rating: 4.5 },
+            { id: "rest3", name: "RAC Bar", lat: 31.2160, lng: 121.4380, type: "restaurant", rating: 4.6 },
+          ],
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 8: 用户点了餐厅 Marker → 弹 POI 卡片
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "component_interact", componentId: "map", value: "rest1" },
+    aiMessage: "衡山小馆是地道的上海本帮菜，性价比很高！人均大概 80-120 元。",
+    workspaceActions: [
+      {
+        action: "create",
+        componentId: "poi",
+        componentType: "poi_card",
+        data: {
+          type: "restaurant",
+          name: "衡山小馆",
+          rating: 4.7,
+          priceRange: "人均 ¥80-120",
+          tags: ["本帮菜", "老字号", "性价比高"],
+          reviews: [
+            { user: "小红薯er", text: "红烧肉入口即化，葱油拌面也好吃！", score: 5 },
+            { user: "食在上海", text: "排队人多但翻台快，推荐午市来", score: 4 },
+          ],
+          distance: "距武康路步行 5 分钟",
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 9: 用户问酒店 → 地图加酒店 Marker + POI 卡片
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "晚上住哪里比较好？",
+    aiMessage: "给你推荐了几家离景点近的酒店，点击查看详情。优先按距离排的～",
+    workspaceActions: [
+      { action: "remove", componentId: "poi" },
+      {
+        action: "update",
+        componentId: "map",
+        data: {
+          extraMarkers: [
+            { id: "hotel1", name: "花间堂·愉园", lat: 31.2140, lng: 121.4425, type: "hotel", stars: 4 },
+            { id: "hotel2", name: "衡山路十二号", lat: 31.2100, lng: 121.4460, type: "hotel", stars: 4 },
+            { id: "hotel3", name: "上海国际饭店", lat: 31.2330, lng: 121.4710, type: "hotel", stars: 4 },
+          ],
+        },
+      },
+      {
+        action: "create",
+        componentId: "poi",
+        componentType: "poi_card",
+        data: {
+          type: "hotel",
+          name: "花间堂·愉园",
+          rating: 4.6,
+          priceRange: "¥580/晚",
+          tags: ["精品酒店", "法租界", "步行可达"],
+          distance: "距武康路步行 8 分钟",
+          walkTime: "8 min",
+          highlights: ["老洋房改造", "花园庭院", "含早餐"],
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 10: 用户切偏好 → 换酒店 + 更新 POI + 更新预算
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "我更看重舒适度",
+    aiMessage: "换了一批更舒适的酒店推荐！五星级为主，预算也同步更新了～",
+    workspaceActions: [
+      {
+        action: "update",
+        componentId: "map",
+        data: {
+          extraMarkers: [
+            { id: "hotel1", name: "上海柏悦酒店", lat: 31.2345, lng: 121.5060, type: "hotel", stars: 5 },
+            { id: "hotel2", name: "上海半岛酒店", lat: 31.2390, lng: 121.4900, type: "hotel", stars: 5 },
+            { id: "hotel3", name: "上海华尔道夫", lat: 31.2380, lng: 121.4880, type: "hotel", stars: 5 },
+          ],
+        },
+      },
+      {
+        action: "update",
+        componentId: "poi",
+        data: {
+          type: "hotel",
+          name: "上海柏悦酒店",
+          rating: 4.9,
+          priceRange: "¥2200/晚",
+          tags: ["五星级", "外滩江景", "顶级服务"],
+          distance: "距外滩步行 3 分钟",
+          walkTime: "3 min",
+          highlights: ["87 层无边际泳池", "外滩全景", "米其林餐厅", "管家服务"],
+          images: ["lobby", "room", "pool", "view"],
+        },
+      },
+      {
+        action: "update",
+        componentId: "budget",
+        data: {
+          total: 3500,
+          items: [
+            { label: "交通", amount: 120 },
+            { label: "餐饮", amount: 400 },
+            { label: "门票", amount: 180 },
+            { label: "住宿", amount: 2200 },
+          ],
+        },
+      },
+    ],
+  },
+]
+
+export default scenario
