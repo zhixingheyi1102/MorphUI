@@ -139,6 +139,13 @@ export function useChat(scenario?: Step[]) {
         },
         () => {
           setIsTyping(false)
+          // 调试：模型没调工具但似乎应该调
+          if (collectedToolCalls.length === 0 && aiText) {
+            const shouldHaveCalled = /餐厅|酒店|景点|行程|路线|地图|推荐/.test(aiText)
+            if (shouldHaveCalled) {
+              console.warn("[MorphUI] 模型回复了信息但没调用工具，可能需要重试", aiText)
+            }
+          }
           if (aiText) {
             historyRef.current.push({ role: "assistant", content: aiText })
           }
