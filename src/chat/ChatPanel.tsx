@@ -1,21 +1,33 @@
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import type { ChatMessage } from "../engine/types"
 
 type Props = {
   messages: ChatMessage[]
   isTyping: boolean
-  pendingUserMessage: string | null
-  onSend: () => void
+  onSend: (text: string) => void
 }
 
-export default function ChatPanel({ messages, isTyping, pendingUserMessage, onSend }: Props) {
+export default function ChatPanel({ messages, isTyping, onSend }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [input, setInput] = useState("")
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isTyping])
 
-  const canSend = pendingUserMessage !== null && !isTyping
+  const handleSubmit = () => {
+    const text = input.trim()
+    if (!text || isTyping) return
+    setInput("")
+    onSend(text)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -34,6 +46,12 @@ export default function ChatPanel({ messages, isTyping, pendingUserMessage, onSe
 
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center text-gray-400 mt-20">
+            <p className="text-lg mb-1">👋 你好！</p>
+            <p className="text-sm">告诉我你想去哪里旅行，我来帮你规划</p>
+          </div>
+        )}
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -58,21 +76,24 @@ export default function ChatPanel({ messages, isTyping, pendingUserMessage, onSe
 
       {/* 输入区 */}
       <div className="px-4 py-3 border-t border-gray-100 bg-white">
-        {canSend ? (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isTyping ? "AI 正在回复..." : "输入你的想法..."}
+            disabled={isTyping}
+            className="flex-1 px-4 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50"
+          />
           <button
-            onClick={onSend}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all group"
+            onClick={handleSubmit}
+            disabled={isTyping || !input.trim()}
+            className="px-4 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            <span className="text-sm text-gray-600">{pendingUserMessage}</span>
-            <span className="text-xs text-gray-400 group-hover:text-indigo-500 transition-colors">
-              点击发送 →
-            </span>
+            发送
           </button>
-        ) : (
-          <div className="px-4 py-3 bg-gray-50 rounded-xl text-sm text-gray-400">
-            {isTyping ? "AI 正在回复..." : "在右边组件上操作以继续..."}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

@@ -1,22 +1,24 @@
 import { useCallback } from "react"
-import { useScenario } from "./engine/useScenario"
-import scenario from "./scenario/cityWalk"
+import { useChat } from "./engine/useChat"
 import ChatPanel from "./chat/ChatPanel"
 import Workspace from "./workspace/Workspace"
 
 export default function App() {
-  const { chatMessages, components, isTyping, pendingUserMessage, advance } =
-    useScenario(scenario)
+  const { chatMessages, components, isTyping, sendMessage, handleComponentInteract } =
+    useChat()
 
-  const handleSend = useCallback(() => {
-    advance({ type: "user_send" })
-  }, [advance])
-
-  const handleComponentInteract = useCallback(
-    (componentId: string, value?: string) => {
-      advance({ type: "component_interact", componentId, value })
+  const handleSend = useCallback(
+    (text: string) => {
+      sendMessage(text)
     },
-    [advance]
+    [sendMessage]
+  )
+
+  const handleInteract = useCallback(
+    (componentId: string, value?: string) => {
+      handleComponentInteract(componentId, value)
+    },
+    [handleComponentInteract]
   )
 
   return (
@@ -26,13 +28,12 @@ export default function App() {
         <ChatPanel
           messages={chatMessages}
           isTyping={isTyping}
-          pendingUserMessage={pendingUserMessage}
           onSend={handleSend}
         />
       </div>
 
       {/* 右侧工作区 */}
-      <Workspace components={components} onInteract={handleComponentInteract} />
+      <Workspace components={components} onInteract={handleInteract} />
     </div>
   )
 }
