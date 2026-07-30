@@ -1,6 +1,6 @@
-export const API_URL = "https://maas.devops.xiaohongshu.com/openai/openai/moonshot/v1/chat/completions"
+export const API_URL = "https://maas.devops.xiaohongshu.com/openai/openai/chat/completions?api-version=2024-12-01-preview"
 export const API_KEY = "QST794f3e52de111dfdfaf6fda137cad293"
-export const MODEL = "kimi-k3"
+export const MODEL = "gpt-5.5"
 
 export const TOOLS = [
   {
