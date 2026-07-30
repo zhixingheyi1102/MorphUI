@@ -51,8 +51,6 @@ export function useChat(scenario?: Step[]) {
         applyActions([{ action: "create", componentId: args.component_id, componentType: args.component_type, data: args.data }])
       } else if (tc.name === "update_component") {
         applyActions([{ action: "update", componentId: args.component_id, data: args.data }])
-      } else if (tc.name === "remove_component") {
-        applyActions([{ action: "remove", componentId: args.component_id }])
       }
     } catch (e) {
       console.error("Tool call parse error:", e, tc)

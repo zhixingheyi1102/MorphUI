@@ -38,20 +38,6 @@ export const TOOLS = [
       },
     },
   },
-  {
-    type: "function" as const,
-    function: {
-      name: "remove_component",
-      description: "从工作区移除一个组件",
-      parameters: {
-        type: "object",
-        properties: {
-          component_id: { type: "string", description: "要移除的组件实例 ID" },
-        },
-        required: ["component_id"],
-      },
-    },
-  },
 ]
 
 export const SYSTEM_PROMPT = `你是 MorphUI 旅行规划助手。
@@ -69,14 +55,15 @@ export const SYSTEM_PROMPT = `你是 MorphUI 旅行规划助手。
 
 ### 规则 2：回复 = 极简文字 + 工具调用
 1. **对话文字**：简短的一两句话即可
-2. **工具调用**：必须调用 create_component / update_component / remove_component 来展示信息
+2. **工具调用**：必须调用 create_component / update_component 来展示信息
 
 ⚠️ 绝对不要只回复文字而不调用工具。用户看不到纯文字里的列表，只有工作区的组件才能展示结构化信息。
 
 ### 规则 3：增量操作，不要重建
-- 已有的组件如果还有用，不要 remove 再 create，用 update
+- 已有的组件不要删除，用 update 更新内容
 - 新需求用新的 component_id 创建新组件，不要覆盖已有组件
 - 例如：已有 itinerary，用户问机票 → create flight_list，不要动 itinerary
+- 组件的关闭由用户自己操作，你不需要也无法移除组件
 
 ## 操作决策表
 

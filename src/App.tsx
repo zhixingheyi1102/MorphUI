@@ -7,7 +7,7 @@ import Workspace from "./workspace/Workspace"
 export default function App() {
   const {
     chatMessages, components, isTyping, suggestions,
-    sendMessage, handleComponentInteract, closeComponent, reorderComponents,
+    sendMessage, handleComponentInteract, closeComponent,
   } = useChat(scenario)
 
   const handleSend = useCallback(
@@ -34,7 +34,6 @@ export default function App() {
         components={components}
         onInteract={handleInteract}
         onClose={closeComponent}
-        onReorder={reorderComponents}
       />
     </div>
   )

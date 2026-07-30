@@ -47,3 +47,24 @@
   background: none !important;
   border: none !important;
 }
+
+/* 画布点阵背景 */
+.canvas-grid {
+  background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* 吸附指示器呼吸动画 */
+@keyframes snapPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.snap-indicator {
+  animation: snapPulse 1s ease-in-out infinite;
+}
+
+/* 拖拽时禁止选中文字 */
+.dragging * {
+  user-select: none;
+}
