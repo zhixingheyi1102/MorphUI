@@ -4,6 +4,7 @@ import MapView from "./MapView"
 import ActivityCards from "./ActivityCards"
 import POICard from "./POICard"
 import BudgetTracker from "./BudgetTracker"
+import FlightList from "./FlightList"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ComponentEntry = React.ComponentType<{ data: any; onInteract: (...args: any[]) => void }>
@@ -15,6 +16,7 @@ const registry: Record<string, ComponentEntry> = {
   activity_cards: ActivityCards,
   poi_card: POICard,
   budget_tracker: BudgetTracker,
+  flight_list: FlightList,
 }
 
 export default registry
