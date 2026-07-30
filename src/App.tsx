@@ -1,15 +1,16 @@
 import { useCallback } from "react"
 import { useChat } from "./engine/useChat"
+import scenario from "./scenario/cityWalk"
 import ChatPanel from "./chat/ChatPanel"
 import Workspace from "./workspace/Workspace"
 
 export default function App() {
-  const { chatMessages, components, isTyping, sendMessage, handleComponentInteract } =
-    useChat()
+  const { chatMessages, components, isTyping, suggestions, sendMessage, handleComponentInteract } =
+    useChat(scenario)
 
   const handleSend = useCallback(
-    (text: string) => {
-      sendMessage(text)
+    (text: string, scripted = false) => {
+      sendMessage(text, scripted)
     },
     [sendMessage]
   )
@@ -23,16 +24,14 @@ export default function App() {
 
   return (
     <div className="h-screen flex bg-gray-100">
-      {/* 左侧聊天面板 */}
       <div className="w-96 shrink-0 border-r border-gray-200">
         <ChatPanel
           messages={chatMessages}
           isTyping={isTyping}
+          suggestions={suggestions}
           onSend={handleSend}
         />
       </div>
-
-      {/* 右侧工作区 */}
       <Workspace components={components} onInteract={handleInteract} />
     </div>
   )

@@ -4,10 +4,11 @@ import type { ChatMessage } from "../engine/types"
 type Props = {
   messages: ChatMessage[]
   isTyping: boolean
-  onSend: (text: string) => void
+  suggestions: string[]
+  onSend: (text: string, scripted?: boolean) => void
 }
 
-export default function ChatPanel({ messages, isTyping, onSend }: Props) {
+export default function ChatPanel({ messages, isTyping, suggestions, onSend }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState("")
 
@@ -19,7 +20,7 @@ export default function ChatPanel({ messages, isTyping, onSend }: Props) {
     const text = input.trim()
     if (!text || isTyping) return
     setInput("")
-    onSend(text)
+    onSend(text, false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -74,15 +75,31 @@ export default function ChatPanel({ messages, isTyping, onSend }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* 输入区 */}
-      <div className="px-4 py-3 border-t border-gray-100 bg-white">
-        <div className="flex gap-2">
+      {/* 建议 + 输入区 */}
+      <div className="border-t border-gray-100 bg-white">
+        {/* Suggestions */}
+        {suggestions.length > 0 && !isTyping && (
+          <div className="px-4 pt-3 flex flex-wrap gap-2">
+            {suggestions.map((sug) => (
+              <button
+                key={sug}
+                onClick={() => onSend(sug, true)}
+                className="px-3 py-1.5 text-xs rounded-full border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+              >
+                💡 {sug}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 输入框 */}
+        <div className="px-4 py-3 flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isTyping ? "AI 正在回复..." : "输入你的想法..."}
+            placeholder={isTyping ? "AI 正在回复..." : "输入你的想法，或点击上方建议"}
             disabled={isTyping}
             className="flex-1 px-4 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50"
           />
