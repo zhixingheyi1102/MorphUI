@@ -5,20 +5,18 @@ import ChatPanel from "./chat/ChatPanel"
 import Workspace from "./workspace/Workspace"
 
 export default function App() {
-  const { chatMessages, components, isTyping, suggestions, sendMessage, handleComponentInteract } =
-    useChat(scenario)
+  const {
+    chatMessages, components, isTyping, suggestions,
+    sendMessage, handleComponentInteract, closeComponent, reorderComponents,
+  } = useChat(scenario)
 
   const handleSend = useCallback(
-    (text: string, scripted = false) => {
-      sendMessage(text, scripted)
-    },
+    (text: string, scripted = false) => sendMessage(text, scripted),
     [sendMessage]
   )
 
   const handleInteract = useCallback(
-    (componentId: string, value?: string) => {
-      handleComponentInteract(componentId, value)
-    },
+    (componentId: string, value?: string) => handleComponentInteract(componentId, value),
     [handleComponentInteract]
   )
 
@@ -32,7 +30,12 @@ export default function App() {
           onSend={handleSend}
         />
       </div>
-      <Workspace components={components} onInteract={handleInteract} />
+      <Workspace
+        components={components}
+        onInteract={handleInteract}
+        onClose={closeComponent}
+        onReorder={reorderComponents}
+      />
     </div>
   )
 }

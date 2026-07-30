@@ -218,6 +218,21 @@ export function useChat(scenario?: Step[]) {
     [isTyping, advanceScript, components, callAI]
   )
 
+  // ─── 手动关闭组件 ───
+  const closeComponent = useCallback((componentId: string) => {
+    setComponents((prev) => prev.filter((c) => c.id !== componentId))
+  }, [])
+
+  // ─── 拖拽排序 ───
+  const reorderComponents = useCallback((fromIndex: number, toIndex: number) => {
+    setComponents((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+  }, [])
+
   return {
     chatMessages,
     components,
@@ -225,5 +240,7 @@ export function useChat(scenario?: Step[]) {
     suggestions,
     sendMessage,
     handleComponentInteract,
+    closeComponent,
+    reorderComponents,
   }
 }
