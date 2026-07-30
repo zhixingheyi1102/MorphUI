@@ -1,4 +1,4 @@
-export const API_URL = "https://maas.devops.xiaohongshu.com/openai/openai/chat/completions?api-version=2024-12-01-preview"
+export const API_URL = "/api/openai/openai/chat/completions?api-version=2024-12-01-preview"
 export const API_KEY = "QST794f3e52de111dfdfaf6fda137cad293"
 export const MODEL = "gpt-5.5"
 
@@ -211,24 +211,32 @@ export async function streamChat(
   onToolCall: (toolCall: { name: string; arguments: string }) => void,
   onDone: () => void,
 ) {
-  const resp = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "api-key": API_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      tools: TOOLS,
-      stream: true,
-    }),
-  })
+  let resp: Response
+  try {
+    resp = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        tools: TOOLS,
+        stream: true,
+      }),
+    })
+  } catch (e) {
+    console.error("Fetch error:", e)
+    onText("（网络请求失败，请检查网络连接）")
+    onDone()
+    return
+  }
 
   if (!resp.ok || !resp.body) {
-    const err = await resp.text()
-    console.error("API error:", err)
-    onText("（模型调用失败，请稍后再试）")
+    const err = await resp.text().catch(() => "unknown")
+    console.error("API error:", resp.status, err)
+    onText(`（模型调用失败 ${resp.status}，请稍后再试）`)
     onDone()
     return
   }
