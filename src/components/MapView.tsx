@@ -71,12 +71,23 @@ export default function MapView({ data, onInteract }: Props) {
     })
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "",
+      maxZoom: 19,
     }).addTo(map)
     L.control.zoom({ position: "bottomright" }).addTo(map)
     mapInstance.current = map
     markersLayer.current = L.layerGroup().addTo(map)
 
+    // 延迟 invalidateSize 确保瓦片加载完整
+    setTimeout(() => map.invalidateSize(), 200)
+
+    // 监听容器尺寸变化，自动刷新瓦片
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize()
+    })
+    observer.observe(mapRef.current)
+
     return () => {
+      observer.disconnect()
       map.remove()
       mapInstance.current = null
     }
@@ -117,10 +128,23 @@ export default function MapView({ data, onInteract }: Props) {
         dashArray: "8 8",
       }).addTo(map)
     }
+
+    // 数据更新后刷新一下瓦片
+    setTimeout(() => map.invalidateSize(), 100)
   }, [data, onInteract])
 
+  // 阻止地图区域的 drag 事件冒泡到父级（防止拖拽组件时把地图也拖走）
+  const stopDragPropagation = (e: React.DragEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+  }
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-96 shrink-0">
+    <div
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-96 shrink-0"
+      onDragStart={stopDragPropagation}
+      draggable={false}
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h3 className="text-sm font-medium text-gray-700">📍 路线地图</h3>
         <div className="flex gap-3 text-xs text-gray-400">
@@ -129,7 +153,12 @@ export default function MapView({ data, onInteract }: Props) {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> 酒店</span>
         </div>
       </div>
-      <div ref={mapRef} className="h-80" />
+      <div
+        ref={mapRef}
+        className="h-80"
+        onDragStart={stopDragPropagation}
+        draggable={false}
+      />
     </div>
   )
 }

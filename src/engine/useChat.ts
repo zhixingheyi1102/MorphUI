@@ -115,6 +115,51 @@ export function useChat(scenario?: Step[]) {
     [scenario, scriptIndex, isTyping, typeText, applyActions]
   )
 
+  // ─── 解析模型把 tool call 当文本输出的情况 ───
+  const parseInlineToolCalls = useCallback(
+    (text: string): { cleanText: string; toolCalls: Array<{ name: string; arguments: string }> } => {
+      const toolCalls: Array<{ name: string; arguments: string }> = []
+
+      // GPT-5.5 有时会用 <multi_tool_use.parallel> 格式
+      const multiMatch = text.match(/<multi_tool_use\.parallel\s*>([\s\S]*?)<\/multi_tool_use\.parallel>/)
+      if (multiMatch) {
+        try {
+          const parsed = JSON.parse(multiMatch[1].trim())
+          if (parsed.tool_uses) {
+            for (const tu of parsed.tool_uses) {
+              const fnName = tu.recipient_name?.replace("functions.", "") ?? ""
+              if (fnName) {
+                toolCalls.push({ name: fnName, arguments: JSON.stringify(tu.parameters) })
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to parse multi_tool_use:", e)
+        }
+        const cleanText = text.replace(/<multi_tool_use\.parallel\s*>[\s\S]*?<\/multi_tool_use\.parallel>\s*/g, "").trim()
+        return { cleanText, toolCalls }
+      }
+
+      // 也处理单个 tool call 文本格式
+      const singleMatch = text.match(/\{"(?:name|recipient_name)"[\s\S]*?"(?:arguments|parameters)"[\s\S]*?\}(?=\s|$)/)
+      if (singleMatch) {
+        try {
+          const parsed = JSON.parse(singleMatch[0])
+          const fnName = (parsed.name ?? parsed.recipient_name ?? "").replace("functions.", "")
+          const args = parsed.arguments ?? parsed.parameters
+          if (fnName) {
+            toolCalls.push({ name: fnName, arguments: typeof args === "string" ? args : JSON.stringify(args) })
+          }
+        } catch { /* ignore */ }
+        const cleanText = text.replace(singleMatch[0], "").trim()
+        return { cleanText, toolCalls }
+      }
+
+      return { cleanText: text, toolCalls: [] }
+    },
+    []
+  )
+
   // ─── AI 模式：调真实 API ───
   const callAI = useCallback(
     (history: Array<{ role: string; content: string }>) => {
@@ -129,6 +174,7 @@ export function useChat(scenario?: Step[]) {
         history,
         (chunk) => {
           aiText += chunk
+          // 流式显示时先原样展示，完成后再清理
           setChatMessages((prev) =>
             prev.map((m) => (m.id === aiMsgId ? { ...m, text: aiText } : m))
           )
@@ -139,16 +185,30 @@ export function useChat(scenario?: Step[]) {
         },
         () => {
           setIsTyping(false)
-          // 调试：模型没调工具但似乎应该调
-          if (collectedToolCalls.length === 0 && aiText) {
-            const shouldHaveCalled = /餐厅|酒店|景点|行程|路线|地图|推荐/.test(aiText)
-            if (shouldHaveCalled) {
-              console.warn("[MorphUI] 模型回复了信息但没调用工具，可能需要重试", aiText)
+
+          // 检查文本里有没有内联的 tool call（GPT-5.5 的 multi_tool_use 格式）
+          const { cleanText, toolCalls: inlineToolCalls } = parseInlineToolCalls(aiText)
+          if (inlineToolCalls.length > 0) {
+            for (const tc of inlineToolCalls) {
+              collectedToolCalls.push(tc)
+              handleToolCall(tc)
             }
+            aiText = cleanText
+            // 更新聊天消息，去掉原始 JSON
+            setChatMessages((prev) =>
+              prev.map((m) => (m.id === aiMsgId ? { ...m, text: cleanText } : m))
+            )
           }
 
-          // 把 assistant 回复（文字 + 工具调用）完整记录到历史
-          // 这样后续轮次模型能看到自己之前做了什么
+          // 如果清理后文字为空，显示一个默认消息
+          if (!aiText && collectedToolCalls.length > 0) {
+            aiText = "已为你更新工作区 ✨"
+            setChatMessages((prev) =>
+              prev.map((m) => (m.id === aiMsgId ? { ...m, text: aiText } : m))
+            )
+          }
+
+          // 把 assistant 回复完整记录到历史
           const assistantEntry: Record<string, unknown> = {
             role: "assistant",
             content: aiText || null,
@@ -162,7 +222,7 @@ export function useChat(scenario?: Step[]) {
           }
           historyRef.current.push(assistantEntry as { role: string; content: string })
 
-          // 给每个 tool call 补一条 tool result（模型需要看到工具执行结果）
+          // 给每个 tool call 补一条 tool result
           for (const tc of collectedToolCalls) {
             historyRef.current.push({
               role: "tool",
