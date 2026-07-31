@@ -14,7 +14,7 @@ export const TOOLS = [
           component_id: { type: "string", description: "组件实例的唯一 ID，如 'clarify'、'map'、'itinerary'" },
           component_type: {
             type: "string",
-            enum: ["clarify_form", "itinerary", "map_view", "activity_cards", "poi_card", "budget_tracker", "flight_list"],
+            enum: ["clarify_form", "itinerary", "map_view", "activity_cards", "poi_card", "budget_tracker", "flight_list", "checklist"],
             description: "组件类型，必须从 enum 中选择",
           },
           data: { type: "object", description: "组件数据，结构取决于 component_type，参考 system prompt 中的说明" },
@@ -211,6 +211,27 @@ component_id: "flights"
 }
 \`\`\`
 提供 3-5 个航班选项，覆盖早中晚不同时段。价格为预估。
+
+### checklist（待办清单）
+component_id: 自定义，如 "packing"
+用于展示可勾选的待办清单，支持天气提示和用户自行添加新项。
+\`\`\`json
+{
+  "title": "深圳出差准备清单",
+  "weather": {
+    "city": "深圳",
+    "date": "下周一至周五",
+    "temp": "28-34°C",
+    "condition": "多云，周三有雷阵雨",
+    "tips": "带伞，室内空调冷建议备薄外套"
+  },
+  "items": [
+    { "id": "p1", "text": "身份证", "checked": false },
+    { "id": "p2", "text": "笔记本电脑 + 充电器", "checked": false }
+  ]
+}
+\`\`\`
+weather 字段可选。items 里每项必须有 id、text、checked。适合出差准备、行李清单等场景。
 
 ## 示例
 
