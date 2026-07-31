@@ -970,7 +970,7 @@ export default function MapView({ data, onInteract }: Props) {
       <div className="w-96 shrink-0 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
           <h3 className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
-          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)", paddingRight: selectedMarker ? 0 : 16 }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {
                 const active = data.activeDay == null || data.activeDay === d
@@ -1039,25 +1039,68 @@ export default function MapView({ data, onInteract }: Props) {
           <motion.div
             className="shrink-0 relative"
             initial={{ width: 0 }}
-            animate={{ width: 14 }}
+            animate={{ width: 16 }}
             exit={{ width: 0, transition: { duration: 0.2 } }}
-            style={{
-              borderLeft: "1px solid var(--ink-line)",
-              background:
-                "repeating-linear-gradient(0deg, rgba(122,92,58,0.05) 0 2px, transparent 2px 6px)," +
-                "linear-gradient(90deg, rgba(43,43,43,0.14), #F0E9D2 45%, #E8DFC4)",
-              boxShadow: "inset 3px 0 6px rgba(43,43,43,0.10)",
-            }}
           >
-            {/* 露出来的折角：右上角一小片翻起的纸尖 */}
+            {/* 底层纸页：露得最宽的一页（背面详情页的纸边） */}
             <span
               className="absolute pointer-events-none"
               style={{
-                top: 10, right: 0, width: 15, height: 15,
-                background: "linear-gradient(135deg, #F6F0DC 48%, #E2D8BC 52%, #D8CCAA)",
+                top: 5, bottom: 3, left: 0, right: 0,
+                background: "linear-gradient(90deg, #E6DCBD, #F3ECD4 40%, #F7F1DE 62%, #DFD3B0 92%, #C9BB94)",
+                borderRight: "1px solid rgba(122,92,58,0.5)",
+                borderTop: "1px solid rgba(122,92,58,0.28)",
+                borderBottom: "1px solid rgba(122,92,58,0.32)",
+                borderRadius: "0 2px 2px 0",
+              }}
+            />
+            {/* 上层纸页：略窄、上下错位，叠出“不止一页”的纸厚度 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 1, bottom: 9, left: 0, right: 6,
+                background: "linear-gradient(90deg, #EFE7CC, #F6F0DC 55%, #E8DEC0)",
+                borderRight: "1px solid rgba(122,92,58,0.4)",
+                borderTop: "1px solid rgba(122,92,58,0.22)",
+                borderRadius: "0 1px 1px 0",
+                boxShadow: "1px 1px 2px rgba(43,43,43,0.18)",
+              }}
+            />
+            {/* 前页（地图）压在背页上的投影：贴着折缝最深，向外淡出 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, bottom: 0, left: 0, width: 9,
+                background: "linear-gradient(90deg, rgba(43,43,43,0.30), rgba(43,43,43,0.10) 55%, transparent)",
+              }}
+            />
+            {/* 翻角：卡片右上角被折下来。缺口处露出背页色 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background: "linear-gradient(135deg, #CDBF9C, #B9AA82)",
                 clipPath: "polygon(0 0, 100% 0, 100% 100%)",
-                filter: "drop-shadow(-1px 1px 1.5px rgba(43,43,43,0.30))",
-                transform: "rotate(8deg)",
+              }}
+            />
+            {/* 翻角：折下来的纸片本体（折线=斜边，靠折线亮、纸尖渐暗），投影落在卡面上 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background:
+                  "linear-gradient(135deg, #FCF8EC 0%, #F5EEDA 40%, #E9DFC0 68%, #D2C49C 92%, #C4B58C 100%)",
+                clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+                filter: "drop-shadow(-1.5px 1.5px 1.5px rgba(43,43,43,0.35))",
+              }}
+            />
+            {/* 翻角折线上的细阴影，强化转折 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background: "linear-gradient(135deg, rgba(43,43,43,0.20), transparent 26%)",
+                clipPath: "polygon(0 0, 100% 100%, 0 100%)",
               }}
             />
           </motion.div>
