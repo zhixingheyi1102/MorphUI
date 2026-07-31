@@ -1,0 +1,65 @@
+/* ============================================================
+   MorphUI · SEA ARCHIVE 字体方案（唯一指定两套）
+   中文：寒蝉活宋体 ChillHuoSong（复古活字宋）
+   英文/数字：JMH Typewriter（真打字机体，Personal Use Only）
+   引用：<link rel="stylesheet" href="assets/fonts/fonts.css">
+   ============================================================ */
+
+/* —— 中文 · 寒蝉活宋体 —— */
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('ChillHuoSong-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('ChillHuoSong-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('ChillHuoSong-ExBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+/* 长体（窄字面）：情绪短句 / 竖排点缀，独立 family */
+@font-face {
+  font-family: 'ChillHuoSong Con';
+  src: url('ChillHuoSong-Con.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* —— 英文/数字 · JMH Typewriter —— */
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('JMHTypewriter-Thin.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('JMHTypewriter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('JMHTypewriter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('JMHTypewriter-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
+/* —— 推荐变量（组件直接用）——
+   --f-cn      : 'ChillHuoSong', 'Songti SC', serif;        中文正文/标题
+   --f-cn-con  : 'ChillHuoSong Con', 'ChillHuoSong', serif; 中文情绪短句/窄排
+   --f-type    : 'JMH Typewriter', 'Courier New', monospace; 英文数字/编号/meta
+*/
