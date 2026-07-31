@@ -71,27 +71,16 @@ export default function ClarifyForm({ data, onInteract }: Props) {
       />
 
       <div
-        className="intake-paper"
+        className="intake-paper overflow-hidden"
         style={{
-          borderRadius: 10,
+          border: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)",
+          borderRadius: "var(--r-paper)",
           color: "var(--ink)",
-          padding: 7,
         }}
       >
-        {/* 印章票框：外粗实线（四角咬缺）+ 内虚线 */}
-        <div className="relative">
-          <div className="stamp-frame" />
-          <div
-            className="overflow-hidden"
-            style={{
-              margin: 6,
-              border: "1.5px dashed color-mix(in srgb, var(--ink-blue) 60%, transparent)",
-              borderRadius: 8,
-            }}
-          >
         {/* 票头：印刷表头 */}
         <div
-          className="px-5 pt-4 pb-3 text-center"
+          className="px-5 pt-5 pb-3 text-center"
           style={{ borderBottom: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)" }}
         >
           <div style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.28em", color: "var(--ink-blue)" }}>
@@ -182,27 +171,25 @@ export default function ClarifyForm({ data, onInteract }: Props) {
                 </span>
               </div>
             ) : (
+              /* 印章票框式提交章：外粗实线四角咬缺 + 内虚线 + 做旧斑驳 */
               <button
                 onClick={handleConfirm}
                 disabled={!allAnswered}
-                className="w-full py-2 transition-all"
+                className="relative w-full py-2.5 stamp-worn transition-opacity"
                 style={{
-                  fontFamily: "var(--font-cn)",
-                  fontSize: "var(--fs-data)",
-                  fontWeight: 700,
-                  letterSpacing: "0.3em",
-                  color: allAnswered ? "var(--paper-cream)" : "var(--postmark)",
-                  background: allAnswered ? "var(--ink-blue)" : "transparent",
-                  border: allAnswered
-                    ? "1.5px solid var(--ink-blue)"
-                    : "1.5px dashed var(--ink-line)",
-                  borderRadius: 2,
+                  background: "transparent",
+                  color: allAnswered ? "var(--ink-blue)" : "var(--postmark)",
+                  opacity: allAnswered ? 1 : 0.55,
+                  transform: "rotate(-0.8deg)",
                   cursor: allAnswered ? "pointer" : "default",
-                  boxShadow: allAnswered ? "0 2px 0 color-mix(in srgb, var(--ink-blue) 45%, transparent)" : "none",
                 }}
               >
-                确认提交
-                <span style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.22em", marginLeft: 10 }}>
+                <span className="stamp-frame" style={{ borderColor: "currentColor", borderWidth: 2.5, borderRadius: 12 }} />
+                <span
+                  className="absolute pointer-events-none"
+                  style={{ inset: 5, border: "1.5px dashed currentColor", borderRadius: 7, opacity: 0.75 }}
+                />
+                <span style={{ fontFamily: "var(--font-en)", fontSize: 13, fontWeight: 700, letterSpacing: "0.38em", marginLeft: "0.38em" }}>
                   SUBMIT
                 </span>
               </button>
@@ -220,8 +207,6 @@ export default function ClarifyForm({ data, onInteract }: Props) {
         >
           <span>MORPH TRAVEL CO.</span>
           <span>FORM-08 / ARCHIVE</span>
-        </div>
-          </div>
         </div>
       </div>
     </div>
