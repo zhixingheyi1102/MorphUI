@@ -1,14 +1,18 @@
 import { useCallback } from "react"
 import { useChat } from "./engine/useChat"
 import scenario from "./scenario/cityWalk"
+import previewSeed from "./scenario/previewSeed"
 import ChatPanel from "./chat/ChatPanel"
 import Workspace from "./workspace/Workspace"
+
+// 样式预览模式：?preview=1 直接铺满全部组件（固定假数据），用于逐个调样式
+const isPreview = new URLSearchParams(window.location.search).has("preview")
 
 export default function App() {
   const {
     chatMessages, components, isTyping, isThinking, suggestions, quotedSpot, clearQuote,
     sendMessage, handleComponentInteract, addComponent, closeComponent, organizeWorkspace, handleHintClick,
-  } = useChat(scenario)
+  } = useChat(scenario, isPreview ? previewSeed : [])
 
   const handleSend = useCallback(
     (text: string, scripted = false) => sendMessage(text, scripted),

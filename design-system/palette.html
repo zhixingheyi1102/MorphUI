@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MorphUI Palette Deck · 配色 PPT</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+:root{
+  /* ===== NEW PALETTE · 采样自 map-palette.jpg ===== */
+  --white:#F8F7F2; --sage:#ECEBDC; --mist:#E3E3E0;          /* 底 */
+  --mint:#E1EFDA; --celadon:#CBE3CD; --jade:#8FC7A6;        /* 绿系 */
+  --powder:#CBE2E8; --peri:#D3DAEF;                          /* 蓝系 */
+  --blossom:#F6D8E8; --rose:#F0BFDA;                         /* 粉系 */
+  --apricot:#F2B078; --honey:#F6DF9A; --lilac:#CDC9E6;       /* 暖点缀/紫 */
+  --cobalt:#2F62C4; --pine:#1E5A46; --mag:#C43B8C; --terra:#C96F4A; /* 笔迹 */
+  --ink:#3A4656; --gray:#9C9C9C;
+  --f-type:'JMH Typewriter','Courier New',monospace; --f-hand:'JMH Typewriter','Courier New',monospace;
+  --f-cn-hand:'ChillHuoSong','Songti SC',serif; --f-cn:'ChillHuoSong','Songti SC',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--sage);color:var(--ink);font-family:var(--f-cn);overflow:hidden}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.deck{display:flex;height:100%;transition:transform .55s cubic-bezier(.6,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;padding:7vh 8vw;display:flex;flex-direction:column;position:relative}
+.pageno{position:absolute;bottom:26px;right:8vw;font-family:var(--f-type);font-size:12px;color:var(--gray);letter-spacing:.15em}
+.kicker{font-family:var(--f-type);font-size:12px;letter-spacing:.2em;color:var(--mag);margin-bottom:10px}
+h1{font-family:var(--f-cn-hand);font-weight:400;font-size:56px;line-height:1.2}
+h2{font-family:var(--f-cn-hand);font-weight:400;font-size:40px;margin-bottom:4px}
+h2 .en{font-family:var(--f-hand);font-size:28px;color:var(--cobalt);margin-left:12px}
+.sub{font-size:15px;color:rgba(58,70,86,.7);max-width:620px;margin-bottom:4vh}
+.nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:100}
+.nav i{width:26px;height:4px;background:rgba(58,70,86,.18);cursor:pointer}
+.nav i.on{background:var(--cobalt)}
+.hint{position:fixed;bottom:24px;left:8vw;font-family:var(--f-type);font-size:11px;color:var(--gray);z-index:100}
+/* swatch */
+.sw-row{display:flex;gap:2.2vw;flex-wrap:wrap;align-items:flex-end}
+.sw{text-align:left}
+.sw .c{box-shadow:0 2px 10px rgba(58,70,86,.10);border:1px solid rgba(58,70,86,.06)}
+.sw .n{font-size:14px;margin-top:10px}
+.sw .hex{font-family:var(--f-type);font-size:11px;color:var(--gray);letter-spacing:.05em}
+.sw .u{font-size:12px;color:rgba(58,70,86,.6)}
+/* proportion bar */
+.prop{display:flex;height:120px;box-shadow:0 4px 16px rgba(58,70,86,.10);margin:3vh 0 2vh}
+.prop div{display:flex;align-items:flex-end;padding:10px;font-family:var(--f-type);font-size:11px}
+/* combo cards */
+.combo{background:var(--white);padding:22px;box-shadow:0 3px 14px rgba(58,70,86,.08)}
+.combo .strip{display:flex;height:64px;margin:12px 0}
+.combo .strip i{flex:1}
+.combo .strip i.line{flex:0 0 4px}
+.tag{font-family:var(--f-type);font-size:11px;color:var(--gray);letter-spacing:.1em}
+.badge-x{display:inline-block;font-family:var(--f-type);font-size:11px;color:var(--mag);border:1.5px solid var(--mag);padding:1px 8px;transform:rotate(-3deg)}
+.badge-ok{display:inline-block;font-family:var(--f-type);font-size:11px;color:var(--pine);border:1.5px solid var(--pine);padding:1px 8px;transform:rotate(-2deg)}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- S1 封面 -->
+<section class="slide" style="justify-content:center;background:var(--sage)">
+  <div class="kicker">MORPH-UI · PALETTE DECK · V2 · SAMPLED FROM THE MAP</div>
+  <h1>配色，重新取一次</h1>
+  <div style="font-family:var(--f-hand);font-size:30px;color:var(--cobalt);transform:rotate(-1.2deg);margin:8px 0 4vh">whisper pastels on sage paper — ink only draws lines</div>
+  <div style="display:flex;height:14px;width:64%;box-shadow:0 3px 12px rgba(58,70,86,.12)">
+    <i style="flex:5.5;background:var(--white)"></i><i style="flex:1.2;background:var(--sage);border-left:1px solid rgba(58,70,86,.06)"></i>
+    <i style="flex:1;background:var(--mint)"></i><i style="flex:.9;background:var(--celadon)"></i><i style="flex:.7;background:var(--jade)"></i>
+    <i style="flex:.9;background:var(--powder)"></i><i style="flex:.7;background:var(--peri)"></i>
+    <i style="flex:.8;background:var(--blossom)"></i><i style="flex:.5;background:var(--rose)"></i>
+    <i style="flex:.4;background:var(--apricot)"></i><i style="flex:.4;background:var(--honey)"></i><i style="flex:.3;background:var(--lilac)"></i>
+    <i style="flex:.12;background:var(--cobalt)"></i><i style="flex:.1;background:var(--mag)"></i><i style="flex:.1;background:var(--pine)"></i>
+  </div>
+  <div class="tag" style="margin-top:10px">↑ 真实占比：底色一大片，pastel 一小截，饱和色只有一条缝</div>
+  <div class="pageno">01 / 08</div>
+</section>
+
+<!-- S2 取色依据 -->
+<section class="slide" style="background:var(--white)">
+  <div class="kicker">SEC.01 · EVIDENCE</div>
+  <h2>取色依据<span class="en">sampled, not guessed</span></h2>
+  <p class="sub">对 <b>地图-最终配色灵感.jpg</b> 做像素级采样后的三个事实：</p>
+  <div style="display:flex;gap:4vw;align-items:flex-start">
+    <img src="assets/map-palette.jpg" style="width:30vw;max-width:420px;box-shadow:0 6px 24px rgba(58,70,86,.15)">
+    <div style="flex:1;font-size:16px;line-height:2.1;padding-top:1vh">
+      <p><b style="color:var(--pine)">① 底色不是暖米黄。</b>占比最高的是灰鼠尾草米 <span class="tag">#ECEBDC · 17%</span> 和白 <span class="tag">#F8F8F8</span>——整体偏冷、偏灰。</p>
+      <p><b style="color:var(--cobalt)">② 所有色块都掺了大量白。</b>粉是雾粉、蓝是粉蓝、黄是蜜黄薄雾——没有一个颜色是"实"的。唯一例外：玉绿 <span class="tag">#8FC7A6 · 4.6%</span>，全图唯一的中饱和面积色。</p>
+      <p><b style="color:var(--mag)">③ 饱和色近乎不存在。</b>钴蓝 / 品红 / 松墨绿 / 陶土在百万像素里只占 <b>&lt;0.5%</b>——它们只画线、只描边、只盖章。</p>
+      <p style="margin-top:1vh"><span class="badge-x">病因</span> 上一版的柠檬黄 #F6EDA9、马尼拉 #E8D9B0、牛皮 #D8CBB4 是三个又暖又浊的黄，原图里根本不存在 → 土。<b>全部废除。</b></p>
+    </div>
+  </div>
+  <div class="pageno">02 / 08</div>
+</section>
+
+<!-- S3 底色 -->
+<section class="slide" style="background:var(--sage)">
+  <div class="kicker">SEC.02 · LAYER 1 — 底 · 占画面 ≈ 55%</div>
+  <h2>纸的底色<span class="en">the paper itself</span></h2>
+  <p class="sub">桌面与纸张只用这三个：冷灰调，绝不偏黄。任何组件的第一笔永远是它们。</p>
+  <div class="sw-row">
+    <div class="sw"><div class="c" style="width:17vw;height:34vh;background:var(--white)"></div><div class="n">纸白 Paper</div><div class="hex">#F8F7F2</div><div class="u">内页、卡面、收据</div></div>
+    <div class="sw"><div class="c" style="width:17vw;height:28vh;background:var(--sage)"></div><div class="n">鼠尾草米 Sage</div><div class="hex">#ECEBDC</div><div class="u">桌面、Folder 外壳（原马尼拉黄→退役）</div></div>
+    <div class="sw"><div class="c" style="width:17vw;height:22vh;background:var(--mist)"></div><div class="n">雾灰 Mist</div><div class="hex">#E3E3E0</div><div class="u">次级底、阴影面、disabled</div></div>
+  </div>
+  <div class="pageno">03 / 08</div>
+</section>
+
+<!-- S4 pastel -->
+<section class="slide" style="background:var(--white)">
+  <div class="kicker">SEC.03 · LAYER 2 — 雾感色块 · 占画面 ≈ 40%</div>
+  <h2>Whisper Pastels<span class="en">blocks, never walls</span></h2>
+  <p class="sub">全部是"掺足了白"的雾感色。一屏最多同时出现 <b>3 个</b>；玉绿是唯一允许稍微用力的面积色。</p>
+  <div class="sw-row" id="pastelRow"></div>
+  <div class="pageno">04 / 08</div>
+</section>
+
+<!-- S5 笔迹 -->
+<section class="slide" style="background:var(--sage)">
+  <div class="kicker">SEC.04 · LAYER 3 — 笔迹 · 占画面 &lt; 5%</div>
+  <h2>只画线的颜色<span class="en">ink draws, never fills</span></h2>
+  <p class="sub">四支笔 + 一瓶正文墨。它们出现在：路线、虚线边界、印章、勾划、下划线。<b>永远不做背景填充。</b></p>
+  <div class="sw-row" style="align-items:center">
+    <div class="sw"><div class="c" style="width:13vw;height:10px;background:var(--cobalt)"></div><div class="n">钴蓝 Cobalt</div><div class="hex">#2F62C4</div><div class="u">主路线、链接、AI 边框</div></div>
+    <div class="sw"><div class="c" style="width:13vw;height:10px;background:var(--mag);background-image:repeating-linear-gradient(90deg,transparent 0 8px,var(--sage) 8px 15px)"></div><div class="n">品红 Magenta</div><div class="hex">#C43B8C</div><div class="u">虚线边界、印章、勾选笔迹</div></div>
+    <div class="sw"><div class="c" style="width:13vw;height:10px;background:var(--pine)"></div><div class="n">松墨绿 Pine</div><div class="hex">#1E5A46</div><div class="u">点阵肌理、确认章</div></div>
+    <div class="sw"><div class="c" style="width:13vw;height:10px;background:var(--terra)"></div><div class="n">陶土 Terracotta</div><div class="hex">#C96F4A</div><div class="u">警示描边、撕裂线</div></div>
+    <div class="sw"><div class="c" style="width:13vw;height:56px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:13px">正文 Aa 永不纯黑</div><div class="n">墨青 Ink</div><div class="hex">#3A4656</div><div class="u">所有文字</div></div>
+  </div>
+  <div style="margin-top:4vh;font-size:14px"><span class="badge-x">DON'T</span>&nbsp; 拿这五个颜色填任何底 —— 它们一旦成为色块，整套系统立刻现代化、立刻脏。</div>
+  <div class="pageno">05 / 08</div>
+</section>
+
+<!-- S6 比例 -->
+<section class="slide" style="background:var(--white)">
+  <div class="kicker">SEC.05 · RATIO</div>
+  <h2>55 / 40 / 5<span class="en">the only rule that matters</span></h2>
+  <p class="sub">上一版丑，不是色卡不对，是比例不对：我让 pastel 平铺当了主角。正确的画面里，主角永远是纸。</p>
+  <div class="prop">
+    <div style="flex:55;background:var(--sage)">底 55% · 纸白/鼠尾草</div>
+    <div style="flex:13;background:var(--mint)">mint</div>
+    <div style="flex:10;background:var(--powder)">powder</div>
+    <div style="flex:9;background:var(--blossom)">blossom</div>
+    <div style="flex:5;background:var(--jade);color:#fff">jade</div>
+    <div style="flex:3;background:var(--honey)"></div>
+    <div style="flex:2;background:var(--apricot)"></div>
+    <div style="flex:1.2;background:var(--cobalt)"></div>
+    <div style="flex:.9;background:var(--mag)"></div>
+    <div style="flex:.9;background:var(--pine)"></div>
+  </div>
+  <div style="display:flex;gap:3vw;font-size:14px;line-height:1.9;margin-top:1vh">
+    <div style="flex:1"><b>55% 底</b><br>桌面、壳、纸面。看起来"什么都没做"的部分，就是质感本身。</div>
+    <div style="flex:1"><b>40% 雾 pastel</b><br>色块、票纸、区块填充。同屏 ≤3 色，同色系可用深浅两档。</div>
+    <div style="flex:1"><b>5% 笔迹</b><br>线、虚线、章、勾。饱和度全靠这 5% 提神——多一分就俗。</div>
+  </div>
+  <div class="pageno">06 / 08</div>
+</section>
+
+<!-- S7 组合 -->
+<section class="slide" style="background:var(--sage)">
+  <div class="kicker">SEC.06 · COMBOS</div>
+  <h2>成组使用<span class="en">one day, one family</span></h2>
+  <p class="sub">跨组件呼应：一天一个色族（底 pastel + 同族深一档 + 一支笔）。地图路线、POI 卡、票根、收据分区共用同一族。</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.6vw">
+    <div class="combo"><div class="tag">DAY 1 · 海线</div>
+      <div class="strip"><i style="flex:4;background:var(--white)"></i><i style="background:var(--powder)"></i><i style="background:var(--peri)"></i><i class="line" style="background:var(--cobalt)"></i></div>
+      纸白 + 粉蓝/长春花 + 钴蓝笔</div>
+    <div class="combo"><div class="tag">DAY 2 · 山线</div>
+      <div class="strip"><i style="flex:4;background:var(--white)"></i><i style="background:var(--mint)"></i><i style="background:var(--jade)"></i><i class="line" style="background:var(--pine)"></i></div>
+      纸白 + 淡薄荷/玉绿 + 松墨笔</div>
+    <div class="combo"><div class="tag">DAY 3 · 老城线</div>
+      <div class="strip"><i style="flex:4;background:var(--white)"></i><i style="background:var(--blossom)"></i><i style="background:var(--rose)"></i><i class="line" style="background:var(--mag)"></i></div>
+      纸白 + 雾粉/玫粉 + 品红笔</div>
+    <div class="combo"><div class="tag">BUDGET / 警示</div>
+      <div class="strip"><i style="flex:4;background:var(--white)"></i><i style="background:var(--honey)"></i><i style="background:var(--apricot)"></i><i class="line" style="background:var(--terra)"></i></div>
+      纸白 + 蜜黄/杏橘 + 陶土笔<br><span class="tag">收据不再整张黄——白纸 + 蜜黄分区条</span></div>
+  </div>
+  <div style="margin-top:3vh;font-size:14px"><span class="badge-ok">OK</span>&nbsp; 每组内永远：4 份白 + 2 份雾 pastel + 1 根线。薰衣草 <span class="tag">#CDC9E6</span> 只做全局第 4 顺位点缀，不进任何 Day 族。</div>
+  <div class="pageno">07 / 08</div>
+</section>
+
+<!-- S8 新旧对照 -->
+<section class="slide" style="background:var(--white)">
+  <div class="kicker">SEC.07 · BEFORE / AFTER</div>
+  <h2>为什么之前土<span class="en">and the fix</span></h2>
+  <div style="display:flex;gap:3vw;margin-top:2vh">
+    <div class="combo" style="flex:1;background:var(--mist)">
+      <span class="badge-x">BEFORE</span>
+      <div class="strip"><i style="background:#E8D9B0"></i><i style="background:#F6EDA9"></i><i style="background:#D8CBB4"></i><i style="background:#F5C6DE"></i><i style="background:#A9D3E5"></i><i style="background:#F0A87E"></i></div>
+      <div style="font-size:14px;line-height:1.9">① 三个浊黄（马尼拉/柠檬/牛皮）压住全场，画面发暖发闷<br>② 六色并列平铺、无主次，pastel 当了主角<br>③ 色块全部"实心"，没有原图的雾感</div>
+    </div>
+    <div class="combo" style="flex:1">
+      <span class="badge-ok">AFTER</span>
+      <div class="strip"><i style="flex:5;background:var(--white)"></i><i style="flex:1.4;background:var(--sage)"></i><i style="flex:1;background:var(--mint)"></i><i style="flex:.8;background:var(--powder)"></i><i style="flex:.6;background:var(--blossom)"></i><i class="line" style="background:var(--cobalt)"></i></div>
+      <div style="font-size:14px;line-height:1.9">① 浊黄全废，底色换冷灰调鼠尾草米<br>② 55/40/5 比例铁律，白永远是主角<br>③ pastel 全部提亮掺白到"雾"级，一屏 ≤3 色<br>④ 饱和色回归笔迹身份，只画线</div>
+    </div>
+  </div>
+  <div style="margin-top:3vh;font-family:var(--f-hand);font-size:26px;color:var(--cobalt);transform:rotate(-1deg)">"The map isn't colorful — it's a pale city with a few confident pens."</div>
+  <div class="pageno">08 / 08</div>
+</section>
+
+</div>
+
+<div class="hint">← → 方向键 / 点击翻页</div>
+<div class="nav" id="nav"></div>
+
+<script>
+const PASTELS=[
+ ['--mint','淡薄荷 Mint','#E1EFDA','绿地、Day2 底',30],
+ ['--celadon','青瓷绿 Celadon','#CBE3CD','次级绿块',24],
+ ['--jade','玉绿 Jade','#8FC7A6','唯一中饱和面积色 · 重点区',20],
+ ['--powder','粉蓝 Powder','#CBE2E8','水域、Day1 底',26],
+ ['--peri','长春花 Periwinkle','#D3DAEF','蓝紫街区',20],
+ ['--blossom','雾粉 Blossom','#F6D8E8','Day3 底、贴纸',24],
+ ['--rose','玫粉 Rose','#F0BFDA','粉色深一档',18],
+ ['--honey','蜜黄 Honey','#F6DF9A','收据分区条（不再整张黄）',16],
+ ['--apricot','杏橘 Apricot','#F2B078','橙块、强调',14],
+ ['--lilac','藕紫 Lilac','#CDC9E6','第 4 顺位点缀',12],
+];
+document.getElementById('pastelRow').innerHTML=PASTELS.map(([v,n,hex,u,h])=>`
+ <div class="sw"><div class="c" style="width:7.2vw;height:${h}vh;background:var(${v})"></div>
+ <div class="n" style="font-size:13px">${n}</div><div class="hex">${hex}</div><div class="u" style="font-size:11px">${u}</div></div>`).join('');
+
+const deck=document.getElementById('deck'),slides=document.querySelectorAll('.slide'),nav=document.getElementById('nav');
+let cur=0;
+slides.forEach((_,i)=>{const d=document.createElement('i');d.onclick=()=>go(i);nav.appendChild(d)});
+function go(i){cur=Math.max(0,Math.min(slides.length-1,i));
+  deck.style.transform=`translateX(-${cur*100}vw)`;
+  nav.querySelectorAll('i').forEach((d,j)=>d.classList.toggle('on',j===cur));}
+addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
+addEventListener('click',e=>{if(!e.target.closest('.nav'))go(cur+1)});
+go(0);
+</script>
+</body>
+</html>

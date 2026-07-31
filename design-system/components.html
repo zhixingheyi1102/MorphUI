@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MorphUI Design System · 组件维度 · 复古办公文具</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+/* ============ 0. TOKENS ============ */
+:root{
+  --paper:#F7F5F0; --desk:#EDEAE2; --kraft:#D8CBB4; --manila:#E8D9B0; --ink:#3A4656;
+  --blue-baby:#A9D3E5; --green-mint:#CDE3CE; --green-pine:#4E8F6E;
+  --pink:#F5C6DE; --coral:#F0A87E; --lemon:#F6EDA9; --lav:#ABA6D4;
+  --cobalt:#2B4EA8; --magenta:#D6338A; --gray:#9C9C9C;
+  --shadow-paper:0 1px 2px rgba(58,70,86,.10),0 2px 6px rgba(58,70,86,.08);
+  --shadow-stack:0 2px 4px rgba(58,70,86,.12),0 6px 16px rgba(58,70,86,.10);
+  --shadow-lift:0 8px 24px rgba(58,70,86,.16);
+  --f-hand-en:'JMH Typewriter','Courier New',monospace;
+  --f-type:'JMH Typewriter','Courier New',monospace;
+  --f-hand-cn:'ChillHuoSong','Songti SC',serif;
+  --f-body-cn:'ChillHuoSong','Songti SC','Noto Serif SC',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--desk);
+  color:var(--ink);
+  font-family:var(--f-body-cn);
+  font-size:16px; line-height:1.75;
+  overflow-x:hidden;
+}
+/* 全局纸张颗粒 */
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+::selection{background:var(--lemon)}
+
+/* ============ 1. 肌理 utility ============ */
+.tx-halftone{background-image:radial-gradient(var(--green-pine) 1.1px, transparent 1.1px);background-size:9px 9px}
+.tx-halftone-pink{background-image:radial-gradient(var(--magenta) 1px, transparent 1px);background-size:8px 8px;opacity:.9}
+.tx-hatch{background-image:repeating-linear-gradient(45deg,rgba(58,70,86,.18) 0 1px,transparent 1px 6px)}
+.tx-grid{background-image:linear-gradient(rgba(43,78,168,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(43,78,168,.10) 1px,transparent 1px);background-size:18px 18px}
+.tx-lines{background-image:repeating-linear-gradient(transparent 0 27px,rgba(43,78,168,.18) 27px 28px)}
+.tx-paper-grain{position:relative}
+.tx-paper-grain::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.35;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .38 0 0 0 0 .33 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23p)'/%3E%3C/svg%3E")}
+
+/* ============ 2. 布局骨架 ============ */
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+section.ds{padding:72px 0;border-top:1.5px dashed rgba(214,51,138,.35)}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px}
+.sec-no{font-family:var(--f-type);font-size:12px;color:var(--magenta);letter-spacing:.15em}
+.sec-title{font-family:var(--f-hand-cn);font-size:34px;font-weight:400}
+.sec-title .en{font-family:var(--f-hand-en);font-size:26px;color:var(--cobalt);margin-left:10px}
+.sec-desc{font-size:14px;color:rgba(58,70,86,.75);max-width:640px;margin-bottom:32px}
+.meta{font-family:var(--f-type);font-size:12px;color:var(--gray);letter-spacing:.08em}
+
+/* ============ 3. 通用纸片 ============ */
+.card-paper{background:var(--paper);box-shadow:var(--shadow-paper);position:relative}
+.tilt-l{transform:rotate(-1.6deg)} .tilt-r{transform:rotate(1.4deg)} .tilt-s{transform:rotate(.7deg)}
+
+/* ============ 4. 装饰件（纯 CSS） ============ */
+/* 回形针 */
+.clip{position:absolute;width:22px;height:52px;z-index:6;pointer-events:none}
+.clip::before,.clip::after{content:'';position:absolute;border:2.5px solid #A8A9AD;border-radius:11px}
+.clip::before{inset:0 2px 8px 2px;border-bottom-left-radius:11px;border-bottom-right-radius:11px}
+.clip::after{inset:8px 6px 2px 6px;border-top:none}
+/* 纸胶带 */
+.tape{position:absolute;width:84px;height:26px;background:rgba(246,237,169,.75);box-shadow:0 1px 2px rgba(58,70,86,.12);z-index:5;pointer-events:none}
+.tape.blue{background:rgba(169,211,229,.65)} .tape.pink{background:rgba(245,198,222,.65)}
+.tape::before,.tape::after{content:'';position:absolute;top:0;bottom:0;width:5px;background:inherit;
+  clip-path:polygon(0 0,100% 0,60% 12%,100% 25%,40% 38%,100% 50%,50% 63%,100% 75%,55% 88%,100% 100%,0 100%)}
+.tape::before{left:-4px} .tape::after{right:-4px;transform:scaleX(-1)}
+/* 印章（圆） */
+.stamp{display:inline-flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;
+  border:2.5px solid var(--magenta);color:var(--magenta);font-family:var(--f-type);font-size:11px;text-align:center;
+  line-height:1.3;transform:rotate(-12deg);opacity:.85;position:relative;letter-spacing:.05em;mix-blend-mode:multiply}
+.stamp::before{content:'';position:absolute;inset:5px;border-radius:50%;border:1px solid var(--magenta)}
+.stamp.blue{border-color:var(--cobalt);color:var(--cobalt)} .stamp.blue::before{border-color:var(--cobalt)}
+/* 邮票 */
+.postage{display:inline-block;padding:8px;background:var(--blue-baby);position:relative;
+  background-image:radial-gradient(var(--paper) 4px,transparent 4.5px);background-size:16px 16px;background-position:-8px -8px;
+  background-color:var(--blue-baby)}
+.postage-inner{background:var(--paper);padding:10px 12px;font-family:var(--f-type);font-size:11px;text-align:center;border:1px solid rgba(58,70,86,.2)}
+/* 活页打孔 */
+.holes{position:absolute;left:10px;top:0;bottom:0;width:14px;display:flex;flex-direction:column;justify-content:space-evenly}
+.holes i{width:11px;height:11px;border-radius:50%;background:var(--desk);box-shadow:inset 0 1px 2px rgba(58,70,86,.25)}
+/* 撕纸边 */
+.torn-b{clip-path:polygon(0 0,100% 0,100% calc(100% - 7px),96% 100%,91% calc(100% - 5px),86% 100%,80% calc(100% - 6px),74% 100%,68% calc(100% - 4px),61% 100%,55% calc(100% - 7px),48% 100%,42% calc(100% - 5px),35% 100%,29% calc(100% - 6px),22% 100%,16% calc(100% - 4px),9% 100%,4% calc(100% - 6px),0 100%)}
+/* 标签贴纸 / 铭牌 */
+.label-plate{display:inline-block;background:var(--paper);border:1px solid rgba(58,70,86,.25);padding:6px 14px;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;box-shadow:var(--shadow-paper);position:relative}
+.label-plate::before{content:'';position:absolute;inset:2px;border:1px dashed rgba(58,70,86,.2);pointer-events:none}
+/* 文件夹 Tab */
+.tab{display:inline-block;padding:5px 18px 4px;background:var(--manila);border:1px solid rgba(58,70,86,.18);border-bottom:none;
+  border-radius:7px 7px 0 0;font-family:var(--f-type);font-size:12px;cursor:pointer;position:relative;top:1px;letter-spacing:.08em}
+.tab.active{background:var(--paper);font-weight:700}
+.tab.c-blue{background:var(--blue-baby)} .tab.c-mint{background:var(--green-mint)} .tab.c-pink{background:var(--pink)}
+.tab.c-blue.active,.tab.c-mint.active,.tab.c-pink.active{background:var(--paper)}
+/* 条码 */
+.barcode{height:34px;width:120px;background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 9px,var(--ink) 9px 12px,transparent 12px 14px)}
+/* 票根打孔线（竖） */
+.perf-v{width:0;border-left:2px dashed rgba(58,70,86,.35);position:relative}
+.perf-v::before,.perf-v::after{content:'';position:absolute;left:-7px;width:12px;height:12px;border-radius:50%;background:var(--desk)}
+.perf-v::before{top:-7px} .perf-v::after{bottom:-7px}
+/* 长尾夹 */
+.binder{position:absolute;width:44px;height:20px;background:var(--ink);border-radius:3px 3px 0 0;z-index:6}
+.binder::before,.binder::after{content:'';position:absolute;top:-14px;width:2.5px;height:18px;background:#A8A9AD;transform-origin:bottom}
+.binder::before{left:8px;transform:rotate(-22deg)} .binder::after{right:8px;transform:rotate(22deg)}
+
+/* ============ 5. 参考图（灵感抠图） ============ */
+.ref-strip{display:flex;gap:20px;flex-wrap:wrap;margin:24px 0 32px}
+.ref-item{background:var(--paper);padding:10px 10px 8px;box-shadow:var(--shadow-stack);position:relative;max-width:230px}
+.ref-item img{display:block;width:100%;filter:saturate(.92) contrast(.98)}
+.ref-item figcaption{font-family:var(--f-type);font-size:11px;color:var(--gray);padding-top:6px;letter-spacing:.05em}
+
+/* ============ 6. demo 桌面 ============ */
+.demo-desk{background:var(--desk);border:1.5px solid rgba(58,70,86,.15);padding:40px;position:relative;overflow:hidden;
+  background-image:radial-gradient(rgba(58,70,86,.05) 1px,transparent 1px);background-size:26px 26px;min-height:280px}
+.demo-note{position:absolute;top:10px;right:14px;font-family:var(--f-type);font-size:11px;color:var(--gray)}
+.btn-ink{font-family:var(--f-type);font-size:13px;letter-spacing:.08em;background:var(--paper);color:var(--ink);
+  border:1.5px solid var(--ink);padding:7px 18px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.btn-ink:hover{background:var(--lemon)}
+.btn-ink:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+.btn-ink.magenta{border-color:var(--magenta);color:var(--magenta);box-shadow:2px 2px 0 var(--magenta)}
+.btn-ink.cobalt{border-color:var(--cobalt);color:var(--cobalt);box-shadow:2px 2px 0 var(--cobalt)}
+
+/* 状态标签行 */
+.state-row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.state-chip{font-family:var(--f-type);font-size:11px;padding:3px 12px;border:1px solid rgba(58,70,86,.3);background:var(--paper);letter-spacing:.08em}
+.state-chip b{color:var(--magenta)}
+
+/* ============ HERO ============ */
+.hero{min-height:88vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:60px 0}
+.hero-folder{background:var(--manila);box-shadow:var(--shadow-stack);padding:56px 56px 48px;position:relative;max-width:720px;
+  border:1px solid rgba(58,70,86,.12)}
+.hero-folder::before{content:'';position:absolute;top:-14px;left:36px;width:150px;height:15px;background:var(--manila);
+  border:1px solid rgba(58,70,86,.12);border-bottom:none;border-radius:8px 8px 0 0}
+.hero-title-cn{font-family:var(--f-hand-cn);font-size:58px;line-height:1.2}
+.hero-title-en{font-family:var(--f-hand-en);font-size:40px;color:var(--cobalt);transform:rotate(-1.5deg);display:inline-block}
+.hero-sub{font-size:15px;margin-top:18px;max-width:480px;color:rgba(58,70,86,.8)}
+.hero-meta{display:flex;gap:24px;margin-top:30px;flex-wrap:wrap}
+.hero-peek{position:absolute;background:var(--paper);box-shadow:var(--shadow-paper);padding:10px 16px;font-family:var(--f-type);font-size:12px}
+</style>
+</head>
+<body class="tx-paper-grain">
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-folder tilt-s" id="heroFolder">
+      <span class="clip" style="top:-8px;right:60px;transform:rotate(8deg)"></span>
+      <span class="tape blue" style="top:-12px;left:-20px;transform:rotate(-40deg)"></span>
+      <div class="meta">FILE #01 · ARCHIVE 2026 · MORPH-UI STATIONERY KIT</div>
+      <h1 class="hero-title-cn">MorphUI 工作台组件库</h1>
+      <div class="hero-title-en">Retro Office Stationery — Design &amp; Motion System</div>
+      <p class="hero-sub">每个组件都是摆在办公桌上的一件复古文具：文件夹、收据、票根、纸地图、便利贴。壳是朴素的牛皮纸，内容物从城市分析图取色；饱和色只做笔迹；万物皆被回形针、胶带与打孔线固定。</p>
+      <div class="hero-meta">
+        <span class="label-plate">6 COMPONENTS</span>
+        <span class="label-plate">MOTION = PAPER PHYSICS</span>
+        <span class="stamp" style="width:64px;height:64px;font-size:9px">EST.<br>2026</span>
+      </div>
+      <div class="hero-peek tilt-r" style="right:-26px;bottom:38px;background:var(--lemon)">budget ¥ — peek</div>
+      <div class="hero-peek tilt-l" style="left:-30px;bottom:-16px;background:var(--pink)">Day 1 · POI</div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= 00 色彩 ================= -->
+<section class="ds" id="sec-color">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 00</span><h2 class="sec-title">色彩体系<span class="en">Color</span></h2></div>
+    <p class="sec-desc">双层架构：<b>① 壳层</b>（Folder 外壳、桌面）用牛皮纸中性色，不参与呼应；<b>② 内容层</b>（一切纸片与笔迹）从城市分析图取色。大面积永远 = 纸白底 + pastel 色块；饱和色只出现在线、虚线、印章、描边这类"笔迹"上。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-l"><span class="tape" style="top:-12px;left:60px"></span><img src="assets/map-palette.jpg" alt="配色锚点：城市分析图"><figcaption>COLOR ANCHOR · 地图-最终配色灵感</figcaption></figure>
+    </div>
+    <div id="swatches" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px"></div>
+    <div class="state-row" style="margin-top:26px">
+      <span class="state-chip"><b>规则1</b> 壳=中性，芯=彩色</span>
+      <span class="state-chip"><b>规则2</b> 饱和色只做笔迹</span>
+      <span class="state-chip"><b>规则3</b> Day 色 = 跨组件关联线索</span>
+      <span class="state-chip"><b>禁</b> 纯黑 / 克莱因蓝大色块 / 扁平渐变</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 01 字体 ================= -->
+<section class="ds" id="sec-type">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 01</span><h2 class="sec-title">字体体系<span class="en">Typography</span></h2></div>
+    <p class="sec-desc">层级靠<b>切换字体族</b>而非字号爆炸。字号只有 5 档：12 / 14 / 16 / 22 / 34px。</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
+      <div class="card-paper tilt-l" style="padding:24px">
+        <div class="meta">EN · DISPLAY — JMH Typewriter Black</div>
+        <div style="font-family:var(--f-hand-en);font-weight:900;font-size:30px;color:var(--cobalt)">Seaside Trip Planner</div>
+        <div class="meta" style="margin-top:14px">EN · BODY / METADATA — JMH Typewriter</div>
+        <div style="font-family:var(--f-type);font-size:14px">No. 00090 — ARCHIVE 08 — Dep. 09:40 AM<br>Two days by the seaside, filed &amp; stamped.</div>
+      </div>
+      <div class="card-paper tilt-r" style="padding:24px">
+        <div class="meta">CN · 标题 — 寒蝉活宋 ExBold</div>
+        <div style="font-family:var(--f-body-cn);font-weight:800;font-size:32px">海边城市两日游方案</div>
+        <div class="meta" style="margin-top:14px">CN · 正文 — 寒蝉活宋 Regular（复古活字铅印）</div>
+        <div style="font-size:14px">清晨先去老码头看渔船进港，沿滨海步道慢慢走到灯塔广场；中午在骑楼老街吃一碗海鲜面，下午的日程交给美术馆和旧书店。</div>
+      </div>
+    </div>
+    <div class="state-row">
+      <span class="state-chip">CN: 'ChillHuoSong' 400/700/800</span>
+      <span class="state-chip">EN: 'JMH Typewriter' 300/400/700/900</span>
+      <span class="state-chip">fallback: 'Songti SC'/'Courier New'（本地 woff2 自托管，无外链）</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 肌理 ================= -->
+<section class="ds" id="sec-texture">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 02</span><h2 class="sec-title">肌理与背景<span class="en">Texture</span></h2></div>
+    <p class="sec-desc">直接借用分析图的图面语言：halftone 点阵、hatching 排线、格网、虚线边界、纸张颗粒。做旧是点缀，不是滤镜。</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:18px">
+      <div class="card-paper" style="height:110px;padding:8px"><div class="tx-halftone" style="height:70px;background-color:var(--green-mint)"></div><div class="meta" style="margin-top:6px">halftone · 绿地点阵</div></div>
+      <div class="card-paper" style="height:110px;padding:8px"><div class="tx-halftone-pink" style="height:70px;background-color:var(--paper)"></div><div class="meta" style="margin-top:6px">halftone · 品红点群</div></div>
+      <div class="card-paper" style="height:110px;padding:8px"><div class="tx-hatch" style="height:70px;background-color:var(--blue-baby)"></div><div class="meta" style="margin-top:6px">hatching 排线</div></div>
+      <div class="card-paper" style="height:110px;padding:8px"><div class="tx-grid" style="height:70px"></div><div class="meta" style="margin-top:6px">方格纸</div></div>
+      <div class="card-paper" style="height:110px;padding:8px"><div class="tx-lines" style="height:70px"></div><div class="meta" style="margin-top:6px">横线信纸</div></div>
+      <div class="card-paper" style="height:110px;padding:8px"><div style="height:70px;border:2px dashed var(--magenta);background:var(--paper)"></div><div class="meta" style="margin-top:6px">虚线边界（笔迹色）</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 03 装饰件 ================= -->
+<section class="ds" id="sec-deco">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 03</span><h2 class="sec-title">装饰与固定件<span class="en">Fasteners</span></h2></div>
+    <p class="sec-desc">"万物皆有固定件"——任何附属元素必须被物理固定，没有悬空漂浮。以下全部纯 CSS 描绘。</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px" id="decoGallery">
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="clip" style="position:static;display:inline-block"></span><div class="meta" style="position:absolute;bottom:8px">回形针 .clip</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="tape pink" style="position:static;transform:rotate(-6deg)"></span><div class="meta" style="position:absolute;bottom:8px">纸胶带 .tape</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="stamp">FILED<br>OK</span><div class="meta" style="position:absolute;bottom:8px">印章 .stamp</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="postage"><span class="postage-inner">SEA MAIL<br>¥ 8.00</span></span><div class="meta" style="position:absolute;bottom:8px">邮票 .postage</div></div>
+      <div class="card-paper" style="height:150px"><div class="holes"><i></i><i></i><i></i><i></i></div><div class="meta" style="position:absolute;bottom:8px;left:40px">活页打孔 .holes</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><div class="torn-b" style="width:110px;height:70px;background:var(--lemon)"></div><div class="meta" style="position:absolute;bottom:8px">撕纸边 .torn-b</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="label-plate">POI · No.03</span><div class="meta" style="position:absolute;bottom:8px">铭牌标签 .label-plate</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:40px"><span class="tab c-blue active">DAY 1</span><span class="tab c-mint">DAY 2</span><span class="tab c-pink">DAY 3</span><div class="meta" style="position:absolute;bottom:8px">Tab 标签 .tab</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><div class="barcode"></div><div class="meta" style="position:absolute;bottom:8px">条码 .barcode</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><div class="perf-v" style="height:90px"></div><div class="meta" style="position:absolute;bottom:8px">票根打孔线 .perf-v</div></div>
+      <div class="card-paper" style="height:150px;display:flex;align-items:center;justify-content:center"><span class="binder" style="position:static;display:inline-block"></span><div class="meta" style="position:absolute;bottom:8px">长尾夹 .binder</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 Clarify 登记卡 ================= -->
+<style>
+.clarify-card{width:340px;background:var(--paper);box-shadow:var(--shadow-stack);padding:22px 22px 18px;position:relative}
+.clarify-card .head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:8px;margin-bottom:14px}
+.clarify-card h3{font-family:var(--f-hand-cn);font-size:22px;font-weight:400}
+.cl-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:14px}
+.cl-row .q{font-family:var(--f-type);font-size:12px;color:var(--gray);min-width:64px}
+.cl-blank{flex:1;border-bottom:1px solid rgba(58,70,86,.4);font-family:var(--f-hand-en);font-size:18px;color:var(--cobalt);padding:0 4px;min-height:24px}
+.cl-check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;user-select:none}
+.cl-box{width:18px;height:18px;border:1.5px solid var(--ink);position:relative;background:var(--paper)}
+.cl-box svg{position:absolute;left:-3px;top:-6px;width:26px;height:26px;overflow:visible}
+.cl-box svg path{stroke:var(--magenta);stroke-width:2.5;fill:none;stroke-linecap:round}
+.cl-follow{overflow:hidden;height:0;opacity:0}
+.cl-stamped{position:absolute;right:14px;bottom:12px;opacity:0;transform:scale(2.4) rotate(-14deg)}
+</style>
+<section class="ds" id="sec-clarify">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 04 · COMPONENT 0</span><h2 class="sec-title">Clarify 需求澄清登记卡<span class="en">Registration Card</span></h2></div>
+    <p class="sec-desc">文件夹系统的"附属小 file"：一张<b>回形针别在 Folder 封面上的档案登记卡</b>。手写体填空线 + 勾选框，像建档时填的索引卡。选了某项后<b>长出后续追问</b>；填完 = 建档完成：盖章，别回 Folder 封面。</p>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 滑入桌面（待填写）</span>
+      <span class="state-chip"><b>S2</b> 填写中（勾选=手写描边 / 追问=向下抽出新栏）</span>
+      <span class="state-chip"><b>S3</b> 已盖章（别回 Folder 封面，成为档案索引）</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <div class="demo-note">INTERACTIVE · 点勾选框 / 选"紧凑"看追问 / 点提交盖章</div>
+      <div class="clarify-card tilt-l tx-grid" id="clarifyCard">
+        <span class="clip" style="top:-14px;left:24px;transform:rotate(-4deg)"></span>
+        <div class="head"><h3>旅行建档登记卡</h3><span class="meta">REG. No.0009</span></div>
+        <div class="cl-row"><span class="q">同行人员</span><span class="cl-blank">2 adults</span></div>
+        <div class="cl-row"><span class="q">预算范围</span><span class="cl-blank">¥ 3,000 / person</span></div>
+        <div class="cl-row"><span class="q">旅行节奏</span>
+          <label class="cl-check" data-check><span class="cl-box"><svg viewBox="0 0 26 26"><path d="M4 13 L10 20 L23 3"/></svg></span>悠闲</label>
+          <label class="cl-check" data-check data-follow><span class="cl-box"><svg viewBox="0 0 26 26"><path d="M4 13 L10 20 L23 3"/></svg></span>紧凑</label>
+        </div>
+        <div class="cl-follow" id="clFollow">
+          <div class="cl-row" style="background:var(--lemon);padding:8px;margin:0 -8px 12px"><span class="q">↳ 追问</span><span style="font-size:13px">紧凑的话，早起赶日出可以吗？
+            <label class="cl-check" data-check style="margin-left:8px"><span class="cl-box"><svg viewBox="0 0 26 26"><path d="M4 13 L10 20 L23 3"/></svg></span>可以</label></span></div>
+        </div>
+        <div class="cl-row"><span class="q">风格偏好</span>
+          <label class="cl-check" data-check><span class="cl-box"><svg viewBox="0 0 26 26"><path d="M4 13 L10 20 L23 3"/></svg></span>小众</label>
+          <label class="cl-check" data-check><span class="cl-box"><svg viewBox="0 0 26 26"><path d="M4 13 L10 20 L23 3"/></svg></span>浪漫</label>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+          <span class="meta">ARCHIVE 08 · MORPH</span>
+          <button class="btn-ink magenta" id="clSubmit">提交建档</button>
+        </div>
+        <span class="stamp cl-stamped" id="clStamp">FILED<br>已建档</span>
+      </div>
+      <div style="max-width:300px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 底纹 = 方格纸 .tx-grid，固定件 = 回形针<br>
+        · 填空线上的答案用 JMH Typewriter + 钴蓝<br>
+        · 勾选 = SVG stroke-dashoffset 手写描边（品红笔迹）<br>
+        · 追问栏 = 柠檬黄底，从上一行"向下抽出"<br>
+        · 盖章 = back.out(3) 落下缩放，mix-blend multiply
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+document.querySelectorAll('#clarifyCard [data-check]').forEach(l=>{
+  const p=l.querySelector('path'),len=p.getTotalLength();
+  gsap.set(p,{strokeDasharray:len,strokeDashoffset:len});
+  l.dataset.on='0';
+  l.addEventListener('click',()=>{
+    const on=l.dataset.on==='1';l.dataset.on=on?'0':'1';
+    gsap.to(p,{strokeDashoffset:on?len:0,duration:.35,ease:'power1.inOut'});
+    if(l.hasAttribute('data-follow')&&!on){
+      gsap.to('#clFollow',{height:'auto',opacity:1,duration:.45,ease:'power2.out'});
+    }else if(l.hasAttribute('data-follow')&&on){
+      gsap.to('#clFollow',{height:0,opacity:0,duration:.3});
+    }
+  });
+});
+document.getElementById('clSubmit').addEventListener('click',()=>{
+  const tl=gsap.timeline();
+  tl.to('#clStamp',{opacity:.9,scale:1,duration:.28,ease:'back.out(3)'})
+    .to('#clarifyCard',{rotate:-3,x:-6,duration:.15},'+=.2')
+    .to('#clarifyCard',{rotate:-1.6,x:0,duration:.25,ease:'power2.out'});
+});
+</script>
+
+<!-- ================= 05 Folder 旅行方案 ================= -->
+<style>
+.folder-scene{perspective:1400px;width:420px}
+.folder-shell{background:var(--manila);border:1px solid rgba(58,70,86,.15);box-shadow:var(--shadow-stack);position:relative;min-height:300px}
+.folder-shell::before{content:'';position:absolute;top:-13px;left:26px;width:110px;height:14px;background:var(--manila);border:1px solid rgba(58,70,86,.15);border-bottom:none;border-radius:8px 8px 0 0}
+.folder-cover{position:absolute;inset:0;background:var(--manila);border:1px solid rgba(58,70,86,.15);z-index:4;
+  transform-origin:left center;transform-style:preserve-3d;backface-visibility:hidden;padding:26px;cursor:pointer}
+.folder-cover::before{content:'';position:absolute;top:-13px;left:26px;width:110px;height:14px;background:var(--manila);border:1px solid rgba(58,70,86,.15);border-bottom:none;border-radius:8px 8px 0 0}
+.folder-inner{padding:20px;position:relative}
+.poi-card{background:var(--paper);box-shadow:var(--shadow-paper);padding:12px 14px;font-size:13px;position:relative;border-left:5px solid var(--blue-baby);margin-bottom:4px}
+.poi-card .t{font-family:var(--f-type);font-size:11px;color:var(--gray)}
+.poi-card .n{font-family:var(--f-hand-cn);font-size:19px}
+.poi-card.hotel{border-left-color:var(--lav)} .poi-card.food{border-left-color:var(--coral)}
+.poi-card:hover{box-shadow:var(--shadow-stack);z-index:3}
+.transit{display:flex;align-items:center;gap:8px;padding:2px 0 2px 22px;font-family:var(--f-type);font-size:11px;color:var(--cobalt)}
+.transit .line{flex:0 0 40px;border-top:2px dashed var(--cobalt)}
+.folder-ask{position:absolute;right:-18px;bottom:26px;background:var(--lemon);box-shadow:var(--shadow-paper);padding:10px 14px;font-size:13px;transform:rotate(2deg);opacity:0}
+</style>
+<section class="ds" id="sec-folder">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 05 · COMPONENT 1</span><h2 class="sec-title">旅行方案 Folder<span class="en">Manila Folder</span></h2></div>
+    <p class="sec-desc">主组件（最大最主要）：<b>带 Tab 的马尼拉文件夹</b>。壳=中性马尼拉色，内容物从边缘探出一角。封面 3D 翻开像翻日记，内含 POI 卡序列 + 交通路线节点；文档会主动向用户提问（"要不要看一下预算？"）。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-r"><span class="clip" style="top:-12px;left:20px"></span><img src="assets/folder-manila.jpg" alt=""><figcaption>REF · 马尼拉文件夹</figcaption></figure>
+      <figure class="ref-item tilt-l"><span class="tape" style="top:-12px;right:30px;transform:rotate(4deg)"></span><img src="assets/folder-tabs.jpg" alt=""><figcaption>REF · Tab 标签系统</figcaption></figure>
+      <figure class="ref-item tilt-s"><span class="tape blue" style="top:-12px;left:40px;transform:rotate(-5deg)"></span><img src="assets/video-folder-2.jpg" alt=""><figcaption>REF · 档案夹层叠内页（视频帧）</figcaption></figure>
+      <figure class="ref-item tilt-l"><span class="clip" style="top:-12px;right:24px;transform:rotate(6deg)"></span><img src="assets/sketch-spread.png" alt=""><figcaption>SKETCH · 双页展开设想</figcaption></figure>
+    </div>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 折叠态（封面+铭牌+探出角）</span>
+      <span class="state-chip"><b>S2</b> 展开态（Day Tab + POI 序列）</span>
+      <span class="state-chip"><b>S3</b> 主动提问（便签探出）</span>
+      <span class="state-chip"><b>S4</b> 合拢收纳 + 盖章</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start">
+      <div class="demo-note">INTERACTIVE · 点封面翻开 / 切 Day Tab / 再点封面区合拢</div>
+      <div class="folder-scene tilt-s">
+        <div class="folder-shell" id="folderShell">
+          <div class="folder-inner">
+            <div style="margin-bottom:10px">
+              <span class="tab c-blue active" data-day="1">DAY 1</span><span class="tab c-mint" data-day="2">DAY 2</span><span class="tab c-pink" data-day="3">DAY 3</span>
+            </div>
+            <div id="dayPage">
+              <div class="poi-card"><div class="t">09:00 · POI No.01</div><div class="n">老码头渔市</div>看渔船进港，趁早市买一杯现煮花蛤汤，码头尽头有座绿色灯塔可以合影。</div>
+              <div class="transit"><span class="line"></span>步行 12 min</div>
+              <div class="poi-card"><div class="t">11:30 · POI No.02</div><div class="n">骑楼老街</div>百年骑楼下全是老字号：海鲜面、绿豆饼、手冲咖啡，攻略正文能装下这样一大段文字。</div>
+              <div class="transit"><span class="line"></span>公交 20 min · ¥2</div>
+              <div class="poi-card hotel"><div class="t">15:00 · HOTEL</div><div class="n">灯塔旁的青旅</div>酒店/餐厅复用同一 POI 卡样式，仅左侧色条区分（酒店=薰衣草，餐厅=珊瑚橙）。</div>
+            </div>
+            <div class="meta" style="margin-top:10px">FILE #02 · 2 DAYS · SEASIDE CITY</div>
+          </div>
+          <div class="folder-cover" id="folderCover">
+            <span class="clip" style="top:18px;right:22px;transform:rotate(10deg)"></span>
+            <div class="label-plate" style="margin-top:34px">TRAVEL PLAN · 海边两日</div>
+            <div class="meta" style="margin-top:14px">ARCHIVE 08 · FILE #02<br>EST. 2026 · MORPH-UI</div>
+            <div style="position:absolute;bottom:-8px;left:30px;width:150px;height:20px;background:var(--pink);box-shadow:var(--shadow-paper);transform:rotate(-1.5deg)"></div>
+            <div style="position:absolute;bottom:-12px;left:52px;width:150px;height:20px;background:var(--blue-baby);box-shadow:var(--shadow-paper);transform:rotate(1deg)"></div>
+            <div class="meta" style="position:absolute;bottom:16px;right:20px">点击翻开 →</div>
+          </div>
+          <div class="folder-ask" id="folderAsk">📎 要不要看一下预算？</div>
+        </div>
+      </div>
+      <div style="max-width:280px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 封面 = rotateY 3D 翻开，transform-origin 左侧折痕，perspective 1400px<br>
+        · POI 卡从夹页依次"挪出来"（stagger 0.08s）<br>
+        · 交通节点 = 钴蓝虚线 + 打字机小字<br>
+        · Day 色系：Day1 婴儿蓝 / Day2 薄荷 / Day3 浅粉——与地图路线同色<br>
+        · 翻开 2.5s 后文档主动探出提问便签
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+const cover=document.getElementById('folderCover');let open=false,askT;
+cover.addEventListener('click',()=>{
+  if(open)return;open=true;
+  const tl=gsap.timeline();
+  tl.to(cover,{rotateY:-118,duration:.7,ease:'power3.inOut'})
+    .set(cover,{pointerEvents:'none'})
+    .from('#dayPage .poi-card, #dayPage .transit',{x:-24,opacity:0,stagger:.08,duration:.35,ease:'power2.out'},'-=.25');
+  askT=setTimeout(()=>{gsap.fromTo('#folderAsk',{opacity:0,x:-16},{opacity:1,x:0,duration:.4,ease:'back.out(2)'})},2500);
+});
+document.getElementById('folderShell').addEventListener('dblclick',()=>{
+  if(!open)return;open=false;clearTimeout(askT);
+  gsap.to('#folderAsk',{opacity:0,duration:.2});
+  gsap.set(cover,{pointerEvents:'auto'});
+  gsap.to(cover,{rotateY:0,duration:.6,ease:'power3.inOut'});
+});
+const DAY={1:['blue-baby','老码头渔市','骑楼老街'],2:['green-mint','山顶美术馆','旧书店街区'],3:['pink','离岛轮渡','灯塔日落点']};
+document.querySelectorAll('#folderShell .tab').forEach(t=>t.addEventListener('click',e=>{
+  e.stopPropagation();
+  document.querySelectorAll('#folderShell .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const[c,a,b]=DAY[t.dataset.day];
+  const cards=document.querySelectorAll('#dayPage .poi-card:not(.hotel)');
+  cards[0].querySelector('.n').textContent=a;cards[1].querySelector('.n').textContent=b;
+  cards.forEach(cd=>cd.style.borderLeftColor=`var(--${c})`);
+  gsap.from('#dayPage > *',{x:-16,opacity:0,stagger:.06,duration:.3,ease:'power2.out'});
+}));
+})();
+</script>
+
+<!-- ================= 06 POI 卡 + 交通路线 ================= -->
+<style>
+.route-board{width:520px;background:var(--paper);box-shadow:var(--shadow-stack);padding:26px;position:relative}
+.route-svg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.route-svg .rl{stroke:var(--cobalt);stroke-width:2;stroke-dasharray:6 6;fill:none}
+.route-svg .car{font-size:18px}
+.rp-poi{width:200px;background:var(--paper);border:1px solid rgba(58,70,86,.2);box-shadow:var(--shadow-paper);padding:10px 12px;font-size:12.5px;position:absolute}
+.rp-poi .ph{height:52px;background:var(--blue-baby);margin-bottom:6px;position:relative}
+.rp-poi .ph::after{content:'PHOTO';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-type);font-size:10px;color:rgba(58,70,86,.5)}
+.play-strip{display:none;gap:6px;margin-top:8px}
+.play-strip.open{display:flex}
+.play-chip{flex:1;padding:5px 6px;font-size:11px;text-align:center;box-shadow:var(--shadow-paper);transform:rotate(-1.5deg)}
+.play-chip:nth-child(2){transform:rotate(1.2deg)} .play-chip:nth-child(3){transform:rotate(-.8deg)}
+</style>
+<section class="ds" id="sec-route">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 06 · SUB-COMPONENT</span><h2 class="sec-title">POI 卡 + 交通路线<span class="en">POI &amp; Route</span></h2></div>
+    <p class="sec-desc">Folder 的子组件：POI 卡是索引卡/档案卡形态（时间、名称、描述、照片）；交通路线是卡与卡之间的连接节点，像<b>航线虚线</b>。玩法推荐最多 3 个，以拼贴小纸片形式贴在卡下，可折叠。</p>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 依次入场（stagger）</span>
+      <span class="state-chip"><b>S2</b> 航线描边生长 + 小车沿路径走</span>
+      <span class="state-chip"><b>S3</b> 玩法拼贴展开 / 折叠（≤3 个）</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:40px;flex-wrap:wrap">
+      <div class="demo-note">INTERACTIVE · 点"重播路线" / 点 POI 卡展开玩法</div>
+      <div class="route-board tilt-s" id="routeBoard" style="height:360px">
+        <div class="meta">DAY 1 ROUTE · SCALE 1:2000</div>
+        <svg class="route-svg" viewBox="0 0 520 360">
+          <path id="routePath" class="rl" d="M110 90 C 220 60, 300 120, 330 200 S 260 300, 170 290"/>
+          <text id="routeCar" class="car">🚌</text>
+        </svg>
+        <div class="rp-poi tilt-l" style="left:22px;top:44px" data-play>
+          <div class="ph"></div><div class="t meta">09:00 · No.01</div><b>老码头渔市</b>
+          <div class="play-strip"><span class="play-chip" style="background:var(--lemon)">赶早市</span><span class="play-chip" style="background:var(--pink)">灯塔合影</span><span class="play-chip" style="background:var(--green-mint)">花蛤汤</span></div>
+        </div>
+        <div class="rp-poi tilt-r" style="right:22px;top:130px" data-play>
+          <div class="ph" style="background:var(--green-mint)"></div><div class="t meta">11:30 · No.02</div><b>骑楼老街</b>
+          <div class="play-strip"><span class="play-chip" style="background:var(--blue-baby)">海鲜面</span><span class="play-chip" style="background:var(--lemon)">旧书店</span><span class="play-chip" style="background:var(--coral)">手冲咖啡</span></div>
+        </div>
+        <button class="btn-ink cobalt" id="routeReplay" style="position:absolute;left:24px;bottom:18px">重播路线 ↻</button>
+      </div>
+      <div style="max-width:280px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 航线 = 钴蓝 6/6 虚线，stroke-dashoffset 生长<br>
+        · 小车/小船沿 path 运动（MotionPath 思路，逐点取样实现）<br>
+        · 玩法推荐 = 彩色拼贴纸片，±1~2° 旋转，最多 3 个<br>
+        · 卡片照片位 = pastel 色块占位（低保真原则）
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+const path=document.getElementById('routePath'),car=document.getElementById('routeCar');
+const len=path.getTotalLength();
+function play(){
+  gsap.set(path,{strokeDasharray:'6 6',strokeDashoffset:0,opacity:1});
+  const draw={v:0};
+  gsap.set(path,{strokeDasharray:len,strokeDashoffset:len});
+  gsap.timeline()
+   .to(path,{strokeDashoffset:0,duration:1.6,ease:'power1.inOut'})
+   .set(path,{strokeDasharray:'6 6'})
+   .to(draw,{v:1,duration:1.6,ease:'power1.inOut',onUpdate(){
+      const p=path.getPointAtLength(draw.v*len);
+      gsap.set(car,{attr:{x:p.x-9,y:p.y+6}});
+   }},0);
+}
+document.getElementById('routeReplay').addEventListener('click',play);
+document.querySelectorAll('[data-play]').forEach(c=>c.addEventListener('click',()=>{
+  const s=c.querySelector('.play-strip');s.classList.toggle('open');
+  if(s.classList.contains('open'))gsap.from(s.children,{y:8,opacity:0,rotate:6,stagger:.07,duration:.3,ease:'back.out(2)'});
+}));
+play();
+})();
+</script>
+
+<!-- ================= 07 Budget 收据 ================= -->
+<style>
+.bud-doc{width:250px;background:var(--paper);box-shadow:var(--shadow-paper);padding:18px;font-size:13px;position:relative}
+.bud-sticky{position:absolute;bottom:-20px;left:26px;width:130px;background:var(--lemon);box-shadow:var(--shadow-paper);
+  padding:10px;font-size:12.5px;transform:rotate(-2.5deg);cursor:pointer;transition:transform .15s}
+.bud-sticky:hover{transform:rotate(-2.5deg) translateY(-3px)}
+.bud-sticky::before{content:'';position:absolute;top:-4px;left:34px;width:56px;height:12px;background:rgba(246,237,169,.8);box-shadow:0 1px 2px rgba(58,70,86,.15);transform:rotate(1deg)}
+.receipt{width:250px;background:var(--lemon);box-shadow:var(--shadow-stack);padding:18px 16px 22px;font-family:var(--f-type);
+  font-size:12px;position:relative;display:none}
+.receipt .rl-row{display:flex;justify-content:space-between;padding:3px 0;opacity:0}
+.receipt .rl-sec{border-top:1px dashed rgba(58,70,86,.4);margin-top:6px;padding-top:6px;color:var(--magenta);opacity:0}
+.receipt .rl-total{border-top:2px solid var(--ink);margin-top:8px;padding-top:8px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;opacity:0}
+.bud-merged{position:absolute;right:14px;top:60px;width:110px;background:var(--lemon);box-shadow:var(--shadow-paper);padding:8px;font-family:var(--f-type);font-size:10.5px;transform:rotate(2deg);opacity:0}
+</style>
+<section class="ds" id="sec-budget">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 07 · COMPONENT 2</span><h2 class="sec-title">Budget list 预算收据<span class="en">Receipt</span></h2></div>
+    <p class="sec-desc">形态 = <b>真实收据</b>：分区逐行金额明细 + 合计，打印质感、撕边。三态流转：<b>便利贴粘在文档底部 → 点击"撕下"展开为独立收据（逐行打印吐出 + 金额滚动）→ Accept 后飞入方案合体</b>。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-l"><span class="clip" style="top:-12px;left:30px"></span><img src="assets/video-folder-1.jpg" alt=""><figcaption>REF · 撕边黄收据 + 回形针（视频帧）</figcaption></figure>
+    </div>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 便利贴（粘在文档底部）</span>
+      <span class="state-chip"><b>S2</b> 独立收据容器（打印吐出）</span>
+      <span class="state-chip"><b>S3</b> Accept 合入方案</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:56px;flex-wrap:wrap;padding-bottom:64px">
+      <div class="demo-note">INTERACTIVE · 点便利贴撕下 → 收据打印 → Accept 飞入文档</div>
+      <div class="bud-doc tilt-l" id="budDoc">
+        <div class="label-plate" style="margin-bottom:10px">初步方案 · DRAFT</div>
+        <div style="font-size:12.5px;line-height:1.7">Day1 老码头 → 骑楼老街 → 灯塔<br>Day2 美术馆 → 离岛轮渡……</div>
+        <div class="meta" style="margin-top:10px">FILE #02 · P.1</div>
+        <div class="bud-merged torn-b" id="budMerged">BUDGET ✓<br>TOTAL ¥1,286<br><span style="color:var(--magenta)">ACCEPTED</span></div>
+        <div class="bud-sticky" id="budSticky">💰 要不要看一下预算？<div class="meta" style="margin-top:4px">tap to peel</div></div>
+      </div>
+      <div class="receipt torn-b tilt-r" id="receipt">
+        <span class="clip" style="top:-14px;right:26px;transform:rotate(6deg)"></span>
+        <div style="text-align:center;letter-spacing:.15em;margin-bottom:8px">* BUDGET RECEIPT *<br><span class="meta">No.0090 · 2026-07-31</span></div>
+        <div class="rl-sec">— TRANSPORT —</div>
+        <div class="rl-row"><span>轮渡往返</span><span data-amt="86">¥0</span></div>
+        <div class="rl-row"><span>市内公交×4</span><span data-amt="8">¥0</span></div>
+        <div class="rl-sec">— FOOD —</div>
+        <div class="rl-row"><span>海鲜面+小吃</span><span data-amt="152">¥0</span></div>
+        <div class="rl-sec">— STAY —</div>
+        <div class="rl-row"><span>灯塔青旅×1晚</span><span data-amt="240">¥0</span></div>
+        <div class="rl-row"><span>门票合计</span><span data-amt="120">¥0</span></div>
+        <div class="rl-total"><span>TOTAL</span><span data-amt="1286">¥0</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+          <div class="barcode" style="width:80px;height:24px"></div>
+          <button class="btn-ink magenta" id="budAccept">ACCEPT ✓</button>
+        </div>
+      </div>
+      <div style="max-width:260px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 收据纸色 = 柠檬黄，底部撕边 .torn-b<br>
+        · 分区标题 = 品红笔迹 + 虚线分隔<br>
+        · 逐行打印吐出：行 stagger 0.12s 自上而下<br>
+        · 金额滚动：0 → 目标值 数字 tween<br>
+        · Accept = 收据缩小飞入文档右上，落点变成"合入态"小票
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+const sticky=document.getElementById('budSticky'),rec=document.getElementById('receipt');
+sticky.addEventListener('click',()=>{
+  gsap.timeline()
+   .to(sticky,{rotate:8,y:14,duration:.18,ease:'power1.in'})
+   .to(sticky,{y:80,x:40,opacity:0,rotate:24,duration:.4,ease:'power2.in'})
+   .set(sticky,{display:'none'})
+   .set(rec,{display:'block'})
+   .from(rec,{y:-30,opacity:0,duration:.4,ease:'power2.out'})
+   .to('#receipt .rl-sec, #receipt .rl-row, #receipt .rl-total',{opacity:1,stagger:.12,duration:.2})
+   .add(()=>{
+     document.querySelectorAll('#receipt [data-amt]').forEach(el=>{
+       const o={v:0},t=+el.dataset.amt;
+       gsap.to(o,{v:t,duration:.9,ease:'power1.out',onUpdate(){el.textContent='¥'+Math.round(o.v)}});
+     });
+   },'-=.3');
+});
+document.getElementById('budAccept').addEventListener('click',()=>{
+  const doc=document.getElementById('budDoc').getBoundingClientRect(),r=rec.getBoundingClientRect();
+  gsap.timeline()
+   .to(rec,{x:doc.right-r.right+ -60,y:doc.top-r.top+50,scale:.32,opacity:0,duration:.65,ease:'power3.in'})
+   .set(rec,{display:'none'})
+   .to('#budMerged',{opacity:1,scale:1,duration:.35,ease:'back.out(2.5)'},'-=.05')
+   .fromTo('#budDoc',{rotate:-2.6},{rotate:-1.6,duration:.3});
+});
+})();
+</script>
+
+<!-- ================= 08 Map 地图 ================= -->
+<style>
+.map-wrap{display:flex;align-items:stretch}
+.map-scene{perspective:1600px;width:380px;height:300px;position:relative}
+.map-fold{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;transform-style:preserve-3d}
+.map-q{position:relative;overflow:hidden;background:var(--paper);border:1px solid rgba(58,70,86,.12);transform-style:preserve-3d;backface-visibility:visible}
+.map-canvas{position:absolute;width:380px;height:300px;cursor:none}
+.map-q:nth-child(1) .map-canvas{left:0;top:0} .map-q:nth-child(2) .map-canvas{left:-190px;top:0}
+.map-q:nth-child(3) .map-canvas{left:0;top:-150px} .map-q:nth-child(4) .map-canvas{left:-190px;top:-150px}
+.map-bg{position:absolute;inset:0;background:var(--paper)}
+.map-bg .water{position:absolute;right:0;top:0;width:38%;height:100%;background:var(--blue-baby);clip-path:polygon(30% 0,100% 0,100% 100%,10% 100%,25% 55%)}
+.map-bg .park{position:absolute;left:8%;bottom:10%;width:30%;height:34%;background:var(--green-mint);border-radius:45% 55% 50% 50%}
+.map-bg .park::after{content:'';position:absolute;inset:0;background-image:radial-gradient(var(--green-pine) 1px,transparent 1px);background-size:7px 7px;border-radius:inherit;opacity:.7}
+.map-bg .blk{position:absolute;background:var(--pink);opacity:.55}
+.map-bg .road{position:absolute;background:var(--gray);opacity:.4}
+.map-pin{position:absolute;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:19px;
+  filter:drop-shadow(0 2px 2px rgba(58,70,86,.3));cursor:none;transform-origin:bottom center;z-index:3}
+.map-pin.food{font-size:14px;opacity:0;scale:.5}
+.map-pin.hotel{font-size:16px;opacity:0}
+.map-poi-panel{width:0;overflow:hidden;background:var(--paper);box-shadow:var(--shadow-stack);transform-origin:left center}
+.map-poi-inner{width:230px;padding:18px;font-size:13px}
+.walker{position:fixed;z-index:1000;pointer-events:none;font-size:22px;opacity:0;transform:translate(-50%,-90%)}
+.map-daytabs{position:absolute;top:-30px;left:8px;z-index:5}
+.map-svg-route{position:absolute;inset:0;pointer-events:none;z-index:2}
+</style>
+<section class="ds" id="sec-map">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 08 · COMPONENT 3</span><h2 class="sec-title">Map 折叠纸地图<span class="en">Folded Paper Map</span></h2></div>
+    <p class="sec-desc">形态 = <b>可折叠的复古纸地图</b>：奶油底柔和路网。十字折痕展开像真地图；POI 图钉逐个"啪"落下；<b>鼠标进入地图区变成行走小人</b>（hover 图钉变换动作）；点景点纸张再展开——<b>左边依然是地图，右边展开 POI 卡</b>；智能 Zoom in 时景点放大、周边浮现统一卡通餐饮图标；确认找酒店后酒店图标 pop up。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-l"><span class="tape blue" style="top:-12px;left:44px"></span><img src="assets/map-illustrated.png" alt=""><figcaption>REF · 奶油底插画地图</figcaption></figure>
+      <figure class="ref-item tilt-r"><span class="clip" style="top:-12px;right:24px"></span><img src="assets/sketch-map.png" alt=""><figcaption>SKETCH · 折叠/展开态设想</figcaption></figure>
+    </div>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 折叠态（四折纸）</span>
+      <span class="state-chip"><b>S2</b> 展开态 + 图钉落下</span>
+      <span class="state-chip"><b>S3</b> POI 展开态（左图右卡）</span>
+      <span class="state-chip"><b>S4</b> Zoom in（餐饮图标浮现）</span>
+      <span class="state-chip"><b>S5</b> 酒店 pop up（闪词联动）</span>
+    </div>
+    <div class="demo-desk" style="padding:56px 40px 44px">
+      <div class="demo-note">INTERACTIVE · 点展开地图 / hover 看小人光标 / 点图钉开 POI / Zoom in 看餐饮</div>
+      <div class="map-wrap" style="gap:0">
+        <div class="map-scene">
+          <div class="map-daytabs"><span class="tab c-blue active">DAY 1</span><span class="tab c-mint">DAY 2</span><span class="tab c-pink">DAY 3</span></div>
+          <div class="map-fold" id="mapFold">
+            <div class="map-q"><div class="map-canvas" data-mc></div></div>
+            <div class="map-q"><div class="map-canvas" data-mc></div></div>
+            <div class="map-q"><div class="map-canvas" data-mc></div></div>
+            <div class="map-q"><div class="map-canvas" data-mc></div></div>
+          </div>
+          <div class="label-plate" id="mapLabel" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-2deg);z-index:10;cursor:pointer">CITY MAP · 点击展开 ✦</div>
+        </div>
+        <div class="map-poi-panel" id="mapPoiPanel">
+          <div class="map-poi-inner tx-lines">
+            <div class="meta">POI No.01 · DAY 1</div>
+            <div style="font-family:var(--f-hand-cn);font-size:22px">老码头渔市</div>
+            <div style="height:58px;background:var(--blue-baby);margin:8px 0"></div>
+            <p style="font-size:12.5px">看渔船进港，早市买现煮花蛤汤。复用方案里的 POI 卡样式——同一张卡，出现在 Folder 里和地图右页里。</p>
+            <div style="display:flex;gap:5px;margin-top:8px">
+              <span class="play-chip" style="background:var(--lemon);padding:4px 6px;font-size:10.5px;flex:1;text-align:center">赶早市</span>
+              <span class="play-chip" style="background:var(--pink);padding:4px 6px;font-size:10.5px;flex:1;text-align:center">灯塔合影</span>
+              <span class="play-chip" style="background:var(--green-mint);padding:4px 6px;font-size:10.5px;flex:1;text-align:center">花蛤汤</span>
+            </div>
+            <button class="btn-ink" id="mapPoiClose" style="margin-top:12px;font-size:11px;padding:4px 12px">折叠 ▲</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn-ink cobalt" id="mapZoomIn">Zoom in · 景点1周边餐厅?</button>
+        <button class="btn-ink" id="mapZoomOut">Zoom out</button>
+        <button class="btn-ink magenta" id="mapHotel">酒店 pop up（闪词联动演示）</button>
+      </div>
+    </div>
+    <div style="max-width:660px;font-size:13px;color:rgba(58,70,86,.75);margin-top:18px">
+      <div class="meta" style="margin-bottom:8px">SPEC</div>
+      · 折叠 = 2×2 四联页，rotateX/rotateY 沿十字折痕展开（power3.inOut, 0.6s/折）<br>
+      · 图钉落下 = back.out(3) + 缩放，stagger 0.15s，"啪"的落点感<br>
+      · 光标 = 隐藏系统光标，行走小人跟随；落到图钉上换动作（🚶→🕺）提示可点击<br>
+      · 景点/住宿图标按地标个性化（⚓灯塔/🏮老街）；餐饮等配套用统一卡通图标（🍜）<br>
+      · Zoom = 对整个 map-canvas 做 scale + 平移的"镜头"动效，目标景点图钉同步放大
+    </div>
+  </div>
+</section>
+<div class="walker" id="walker">🚶</div>
+<script>
+(()=>{
+/* 在四个象限里绘制同一张地图（各自偏移） */
+const BG=`<div class="map-bg">
+  <div class="water"></div><div class="park"></div>
+  <div class="road" style="left:0;top:34%;width:100%;height:3px;transform:rotate(-4deg)"></div>
+  <div class="road" style="left:44%;top:0;width:3px;height:100%;transform:rotate(6deg)"></div>
+  <div class="road" style="left:0;top:64%;width:80%;height:2px;transform:rotate(3deg)"></div>
+  <div class="blk" style="left:12%;top:10%;width:16%;height:14%"></div>
+  <div class="blk" style="left:52%;top:56%;width:13%;height:16%;background:var(--lemon)"></div>
+  <svg class="map-svg-route" viewBox="0 0 380 300"><path id="mapRoute" d="M120 96 C 180 120, 230 150, 252 208" stroke="var(--cobalt)" stroke-width="2" stroke-dasharray="5 5" fill="none"/></svg>
+  <span class="map-pin main" data-poi style="left:105px;top:70px">⚓</span>
+  <span class="map-pin main" style="left:238px;top:184px">🏮</span>
+  <span class="map-pin food" style="left:70px;top:52px">🍜</span>
+  <span class="map-pin food" style="left:140px;top:44px">🍜</span>
+  <span class="map-pin food" style="left:90px;top:104px">🍧</span>
+  <span class="map-pin hotel" style="left:150px;top:86px">🏨</span>
+</div>`;
+document.querySelectorAll('[data-mc]').forEach(c=>c.innerHTML=BG);
+const qs=document.querySelectorAll('.map-q');
+/* 折叠初始态：右列和下行折起 */
+gsap.set(qs[1],{rotateY:-180,transformOrigin:'left center'});
+gsap.set(qs[3],{rotateY:-180,transformOrigin:'left center'});
+gsap.set(qs[2],{rotateX:180,transformOrigin:'top center'});
+gsap.set('#mapFold',{scale:.55,transformOrigin:'top left',x:40,y:30});
+let unfolded=false;
+document.getElementById('mapLabel').addEventListener('click',function(){
+  if(unfolded)return;unfolded=true;
+  const tl=gsap.timeline();
+  tl.to(this,{opacity:0,scale:.7,duration:.25})
+    .set(this,{display:'none'})
+    .to('#mapFold',{scale:1,x:0,y:0,duration:.5,ease:'power2.out'})
+    .to([qs[1],qs[3]],{rotateY:0,duration:.6,ease:'power3.inOut'})
+    .to(qs[2],{rotateX:0,duration:.6,ease:'power3.inOut'},'-=.2')
+    .from('.map-pin.main',{scale:0,y:-26,stagger:.15,duration:.4,ease:'back.out(3)'})
+    .from('#mapRoute',{strokeDashoffset:300,strokeDasharray:300,duration:1,ease:'power1.inOut'},'-=.2')
+    .set('#mapRoute',{strokeDasharray:'5 5'});
+});
+/* 行走小人光标 */
+const walker=document.getElementById('walker');
+const fold=document.getElementById('mapFold');
+fold.addEventListener('mousemove',e=>{gsap.to(walker,{opacity:1,left:e.clientX,top:e.clientY,duration:.12})});
+fold.addEventListener('mouseleave',()=>gsap.to(walker,{opacity:0,duration:.2}));
+document.querySelectorAll('.map-pin.main').forEach(p=>{
+  p.addEventListener('mouseenter',()=>{walker.textContent='🕺';gsap.fromTo(p,{scale:1},{scale:1.25,duration:.2,ease:'back.out(2)'})});
+  p.addEventListener('mouseleave',()=>{walker.textContent='🚶';gsap.to(p,{scale:1,duration:.2})});
+});
+/* 点图钉 → 纸再展开（左图右卡） */
+const panel=document.getElementById('mapPoiPanel');
+document.querySelectorAll('[data-poi]').forEach(p=>p.addEventListener('click',()=>{
+  gsap.timeline()
+   .fromTo(panel,{rotateY:-70},{width:230,rotateY:0,duration:.55,ease:'power3.out'})
+   .from('.map-poi-inner > *',{x:-14,opacity:0,stagger:.06,duration:.3},'-=.2');
+}));
+document.getElementById('mapPoiClose').addEventListener('click',()=>{
+  gsap.to(panel,{width:0,rotateY:-70,duration:.45,ease:'power3.in'});
+});
+/* 智能 Zoom */
+const cams=document.querySelectorAll('[data-mc]');
+document.getElementById('mapZoomIn').addEventListener('click',()=>{
+  gsap.to(cams,{scale:1.7,x:-60,y:-20,duration:.8,ease:'power2.inOut',transformOrigin:'105px 80px'});
+  gsap.to('.map-pin.food',{opacity:1,scale:1,stagger:.12,delay:.5,duration:.35,ease:'back.out(3)'});
+  gsap.to('.map-pin.main',{scale:1.3,delay:.4,duration:.3});
+});
+document.getElementById('mapZoomOut').addEventListener('click',()=>{
+  gsap.to(cams,{scale:1,x:0,y:0,duration:.7,ease:'power2.inOut'});
+  gsap.to('.map-pin.food, .map-pin.hotel',{opacity:0,scale:.5,duration:.3});
+  gsap.to('.map-pin.main',{scale:1,duration:.3});
+});
+document.getElementById('mapHotel').addEventListener('click',()=>{
+  gsap.fromTo('.map-pin.hotel',{opacity:0,scale:0,y:-20},{opacity:1,scale:1.15,y:0,duration:.5,ease:'back.out(3)'});
+});
+})();
+</script>
+
+<!-- ================= 09 Flight 票根 ================= -->
+<style>
+.ticket{display:flex;width:440px;background:var(--lemon);box-shadow:var(--shadow-paper);position:relative;font-family:var(--f-type)}
+.ticket .main-part{flex:1;padding:14px 16px}
+.ticket .stub{width:120px;padding:14px 12px;text-align:center;position:relative}
+.ticket .route-big{font-size:20px;letter-spacing:.06em}
+.ticket .route-big b{color:var(--cobalt)}
+.ticket .grid-row{display:flex;gap:14px;margin-top:8px;font-size:10.5px}
+.ticket .grid-row div{border-top:1px solid rgba(58,70,86,.3);padding-top:3px;flex:1}
+.ticket .grid-row span{display:block;color:var(--gray);font-size:9px}
+.ticket.alt{background:var(--blue-baby)}
+.ticket .tear-hint{position:absolute;top:-16px;right:44px;font-size:10px;color:var(--magenta)}
+</style>
+<section class="ds" id="sec-flight">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 09 · COMPONENT 4</span><h2 class="sec-title">Flight list 机票清单<span class="en">Ticket Stubs</span></h2></div>
+    <p class="sec-desc">形态 = <b>复古票根叠成的 list</b>：撕边、打孔线、条码、印章、双色印刷。多张票可比选；确认某张 = <b>沿打孔线撕下副券</b>，其余票收走。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-r"><span class="tape pink" style="top:-12px;left:50px"></span><img src="assets/ticket-sheet.jpg" alt=""><figcaption>REF · 复古票根版式</figcaption></figure>
+      <figure class="ref-item tilt-l"><span class="clip" style="top:-12px;right:30px"></span><img src="assets/ticket-train.jpg" alt=""><figcaption>REF · 车票双色印刷</figcaption></figure>
+    </div>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 票根叠放（±2° 比选）</span>
+      <span class="state-chip"><b>S2</b> hover 抽出</span>
+      <span class="state-chip"><b>S3</b> 撕开副券（选定）</span>
+    </div>
+    <div class="demo-desk" style="display:flex;flex-direction:column;gap:18px;align-items:flex-start">
+      <div class="demo-note">INTERACTIVE · 点副券（右段）沿打孔线撕开</div>
+      <div class="ticket tilt-l" data-ticket>
+        <div class="tear-hint">✂ tear here</div>
+        <div class="main-part">
+          <div class="meta" style="color:var(--magenta)">MORPH AIR · BOARDING PASS · No.00918</div>
+          <div class="route-big">SHA <b>✈ →</b> SEASIDE CITY</div>
+          <div class="grid-row"><div><span>DATE</span>08-02</div><div><span>DEP</span>09:40</div><div><span>SEAT</span>12A</div><div><span>FARE</span>¥ 486</div></div>
+        </div>
+        <div class="perf-v"></div>
+        <div class="stub" data-stub>
+          <div class="meta">STUB 12A</div>
+          <div class="barcode" style="width:80px;height:26px;margin:8px auto"></div>
+          <div style="font-size:10px">08-02 · 09:40</div>
+        </div>
+      </div>
+      <div class="ticket alt tilt-r" data-ticket>
+        <div class="main-part">
+          <div class="meta" style="color:var(--cobalt)">MORPH AIR · BOARDING PASS · No.00919</div>
+          <div class="route-big">SHA <b>✈ →</b> SEASIDE CITY</div>
+          <div class="grid-row"><div><span>DATE</span>08-02</div><div><span>DEP</span>14:20</div><div><span>SEAT</span>03C</div><div><span>FARE</span>¥ 552</div></div>
+        </div>
+        <div class="perf-v"></div>
+        <div class="stub" data-stub>
+          <div class="meta">STUB 03C</div>
+          <div class="barcode" style="width:80px;height:26px;margin:8px auto"></div>
+          <div style="font-size:10px">08-02 · 14:20</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+document.querySelectorAll('[data-stub]').forEach(s=>{
+  s.style.cursor='pointer';
+  s.addEventListener('click',()=>{
+    if(s.dataset.torn)return;s.dataset.torn='1';
+    gsap.timeline()
+     .to(s,{rotate:4,x:6,duration:.12})
+     .to(s,{rotate:14,x:90,y:26,opacity:0,duration:.5,ease:'power2.in'})
+     .add(()=>{const st=s.closest('[data-ticket]').appendChild(document.createElement('span'));
+       st.className='stamp';st.style.cssText='position:absolute;right:130px;top:8px;width:60px;height:60px;font-size:9px';
+       st.innerHTML='BOOKED<br>已选';gsap.from(st,{scale:2.2,opacity:0,duration:.3,ease:'back.out(3)'});});
+  });
+});
+document.querySelectorAll('[data-ticket]').forEach(t=>{
+  t.addEventListener('mouseenter',()=>gsap.to(t,{x:10,duration:.25,ease:'power2.out'}));
+  t.addEventListener('mouseleave',()=>gsap.to(t,{x:0,duration:.25}));
+});
+</script>
+
+<!-- ================= 10 Packing 便签 ================= -->
+<style>
+.packing{width:260px;background:var(--paper);box-shadow:var(--shadow-stack);position:relative;padding-bottom:16px}
+.packing .kraft-head{background:var(--kraft);padding:14px 18px 10px;position:relative}
+.packing .kraft-head::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:6px;
+  background:repeating-linear-gradient(90deg,var(--kraft) 0 10px,transparent 10px 13px)}
+.pk-item{display:flex;align-items:center;gap:10px;padding:0 18px;height:34px;border-bottom:1px solid rgba(43,78,168,.16);cursor:pointer;font-size:14px;position:relative;user-select:none}
+.pk-item svg.chk{width:20px;height:20px;overflow:visible;flex:none}
+.pk-item svg.chk path{stroke:var(--magenta);stroke-width:2.4;fill:none;stroke-linecap:round}
+.pk-item svg.strike{position:absolute;left:44px;right:14px;top:50%;height:8px;overflow:visible}
+.pk-item svg.strike path{stroke:var(--gray);stroke-width:2;fill:none}
+.pk-item.done span{color:var(--gray)}
+</style>
+<section class="ds" id="sec-packing">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 10 · COMPONENT 5</span><h2 class="sec-title">Packing list 行李清单<span class="en">Memo Pad</span></h2></div>
+    <p class="sec-desc">形态 = <b>自我提示便利贴</b>：牛皮纸头长条便签本，编号 + 横线 + check 栏。勾选 = 手绘笔迹描边，同时划上删除线。</p>
+    <div class="ref-strip">
+      <figure class="ref-item tilt-l"><span class="clip" style="top:-12px;left:28px"></span><img src="assets/packing-pad.jpg" alt=""><figcaption>REF · 牛皮纸头便签本</figcaption></figure>
+      <figure class="ref-item tilt-r"><span class="tape" style="top:-12px;right:36px"></span><img src="assets/packing-tour.jpg" alt=""><figcaption>REF · 点阵打印行程表+涂鸦</figcaption></figure>
+    </div>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 便签滑入</span>
+      <span class="state-chip"><b>S2</b> 逐项勾选（描边+删除线）</span>
+      <span class="state-chip"><b>S3</b> 全部完成（盖 READY 章）</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:44px;flex-wrap:wrap">
+      <div class="demo-note">INTERACTIVE · 逐项点击划勾，全勾完自动盖章</div>
+      <div class="packing tilt-r" id="packing">
+        <span class="binder" style="top:-10px;left:104px"></span>
+        <div class="kraft-head">
+          <div style="font-family:var(--f-hand-cn);font-size:21px">出发前 · 自我提示</div>
+          <div class="meta">PACKING MEMO · No.05</div>
+        </div>
+        <div style="padding-top:10px" id="pkList"></div>
+        <div class="meta" style="padding:10px 18px 0">☑ tap line to check</div>
+      </div>
+      <div style="max-width:280px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 牛皮纸头 + 底部撕孔齿边<br>
+        · 横线 = 钴蓝 16% 信纸线<br>
+        · 勾 = 品红 SVG 描边（0.3s power1.inOut）<br>
+        · 删除线 = 灰色波浪 path 描边生长，文字同步变灰<br>
+        · 固定件 = 长尾夹
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+const ITEMS=['防晒霜 SPF50+','泳衣 & 速干毛巾','相机 + 备用电池','晕船药','充电宝','帽子 & 墨镜'];
+const list=document.getElementById('pkList');
+ITEMS.forEach((t,i)=>{
+  list.insertAdjacentHTML('beforeend',
+  `<div class="pk-item"><svg class="chk" viewBox="0 0 20 20"><path d="M3 11 L8 16 L18 3"/></svg><span>${t}</span>
+   <svg class="strike" preserveAspectRatio="none" viewBox="0 0 100 8"><path d="M0 4 Q 25 1, 50 4 T 100 4"/></svg></div>`);
+});
+let done=0;
+document.querySelectorAll('.pk-item').forEach(it=>{
+  const chk=it.querySelector('.chk path'),stk=it.querySelector('.strike path');
+  const cl=chk.getTotalLength(),sl=stk.getTotalLength();
+  gsap.set(chk,{strokeDasharray:cl,strokeDashoffset:cl});
+  gsap.set(stk,{strokeDasharray:sl,strokeDashoffset:sl});
+  it.addEventListener('click',()=>{
+    const on=it.classList.toggle('done');
+    gsap.to(chk,{strokeDashoffset:on?0:cl,duration:.3,ease:'power1.inOut'});
+    gsap.to(stk,{strokeDashoffset:on?0:sl,duration:.4,ease:'power1.inOut',delay:on?.15:0});
+    done+=on?1:-1;
+    if(done===ITEMS.length){
+      const st=document.createElement('span');st.className='stamp blue';
+      st.style.cssText='position:absolute;right:14px;bottom:40px;width:66px;height:66px;font-size:9px';
+      st.innerHTML='READY<br>可出发';document.getElementById('packing').appendChild(st);
+      gsap.from(st,{scale:2.4,opacity:0,duration:.3,ease:'back.out(3)'});
+    }
+  });
+});
+})();
+</script>
+
+<!-- ================= 11 闪词提示 ================= -->
+<style>
+.flash-note{width:230px;background:var(--pink);box-shadow:var(--shadow-stack);padding:14px 16px;font-size:13.5px;position:relative;transform:rotate(-1.5deg)}
+.flash-note::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%) rotate(1deg);width:64px;height:14px;background:rgba(247,245,240,.7);box-shadow:0 1px 2px rgba(58,70,86,.15)}
+.flash-note .btns{display:flex;gap:8px;margin-top:10px}
+</style>
+<section class="ds" id="sec-flash">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 11 · SYSTEM</span><h2 class="sec-title">闪词轻提示<span class="en">Flash Note</span></h2></div>
+    <p class="sec-desc">系统主动性的载体：发现用户在深入查看某景点时，右侧<b>轻量便签从侧边弹出、抖动引起注意</b>。用户确认 → 触发跨组件联动（酒店图标在地图上 pop up）。</p>
+    <div class="state-row">
+      <span class="state-chip"><b>S1</b> 侧边弹出 + 抖动</span>
+      <span class="state-chip"><b>S2</b> 确认 → 联动地图</span>
+      <span class="state-chip"><b>S3</b> 拒绝 → 滑出收走</span>
+    </div>
+    <div class="demo-desk" style="display:flex;gap:40px;align-items:center">
+      <div class="demo-note">INTERACTIVE · 点重播 / 要·不要</div>
+      <button class="btn-ink" id="flashReplay">重播闪词 ↻</button>
+      <div class="flash-note" id="flashNote">
+        👀 看到你正在深入了解这个景点，需要帮你找个<b>周边的酒店</b>吗？
+        <div class="btns">
+          <button class="btn-ink magenta" id="flashYes" style="font-size:11px;padding:4px 14px">要 ✓</button>
+          <button class="btn-ink" id="flashNo" style="font-size:11px;padding:4px 14px">不要</button>
+        </div>
+      </div>
+      <div style="max-width:260px;font-size:13px;color:rgba(58,70,86,.75)">
+        <div class="meta" style="margin-bottom:8px">SPEC</div>
+        · 便签粉底 + 顶部纸胶带固定（不悬空）<br>
+        · 入场：x +40 → 0，back.out(2)，随后 rotate ±2° 抖 3 次<br>
+        · "要" → 滚动到地图组件并触发酒店 pop up<br>
+        · "不要" → 向右滑出 + 淡出（收走）
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+const n=document.getElementById('flashNote');
+function enter(){
+  gsap.timeline()
+   .set(n,{opacity:1,x:0})
+   .fromTo(n,{x:60,opacity:0},{x:0,opacity:1,duration:.45,ease:'back.out(2)'})
+   .to(n,{rotate:1,duration:.07,repeat:5,yoyo:true},'+=.15')
+   .to(n,{rotate:-1.5,duration:.15});
+}
+document.getElementById('flashReplay').addEventListener('click',enter);
+document.getElementById('flashYes').addEventListener('click',()=>{
+  document.getElementById('sec-map').scrollIntoView({behavior:'smooth'});
+  setTimeout(()=>document.getElementById('mapHotel').click(),700);
+});
+document.getElementById('flashNo').addEventListener('click',()=>{
+  gsap.to(n,{x:80,opacity:0,rotate:4,duration:.4,ease:'power2.in'});
+});
+})();
+</script>
+
+<!-- ================= 12 收纳组合演示 ================= -->
+<style>
+.pack-desk{position:relative;height:400px}
+.mini{position:absolute;box-shadow:var(--shadow-paper);font-family:var(--f-type);font-size:10.5px;padding:8px 10px;background:var(--paper)}
+.pack-folder{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) rotate(-.8deg);width:260px;height:180px;background:var(--manila);
+  border:1px solid rgba(58,70,86,.15);box-shadow:var(--shadow-stack);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.pack-folder::before{content:'';position:absolute;top:-12px;left:22px;width:90px;height:13px;background:var(--manila);border:1px solid rgba(58,70,86,.15);border-bottom:none;border-radius:7px 7px 0 0}
+</style>
+<section class="ds" id="sec-pack">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 12 · FINALE</span><h2 class="sec-title">收纳组合：散落桌面 → 合拢成手册<span class="en">File It All</span></h2></div>
+    <p class="sec-desc">file 系统的二层结构：附属小 file 平时散落桌面独立使用，探索完成后全部<b>收进 / 别在 / 贴在 Folder 上</b>，合拢成一本手册——方案沉淀完成。</p>
+    <div class="demo-desk pack-desk" id="packDesk">
+      <div class="demo-note">INTERACTIVE · 点"全部归档"</div>
+      <div class="mini tilt-l" data-fly style="left:6%;top:12%;background:var(--lemon)">BUDGET ¥1,286</div>
+      <div class="mini tilt-r" data-fly style="left:12%;top:60%;background:var(--blue-baby)">TICKET 12A ✈</div>
+      <div class="mini tilt-s" data-fly style="right:10%;top:14%;background:var(--pink)">CLARIFY REG.0009</div>
+      <div class="mini tilt-l" data-fly style="right:7%;top:58%;background:var(--green-mint)">PACKING No.05</div>
+      <div class="mini tilt-r" data-fly style="left:34%;top:6%">CITY MAP ✦</div>
+      <div class="pack-folder" id="packFolder">
+        <span class="label-plate">海边两日 · 手册</span>
+        <span class="meta">FILE #02 · ARCHIVE 08</span>
+      </div>
+      <button class="btn-ink magenta" id="packBtn" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%)">全部归档 ⇒ 合拢</button>
+    </div>
+  </div>
+</section>
+<script>
+(()=>{
+let packed=false;
+document.getElementById('packBtn').addEventListener('click',function(){
+  const f=document.getElementById('packFolder').getBoundingClientRect();
+  if(packed){location.hash='#sec-pack';location.reload();return}
+  packed=true;this.textContent='重置 ↻';
+  const tl=gsap.timeline();
+  document.querySelectorAll('[data-fly]').forEach((m,i)=>{
+    const r=m.getBoundingClientRect();
+    tl.to(m,{x:f.left+f.width/2-(r.left+r.width/2),y:f.top+f.height/2-(r.top+r.height/2),
+      rotate:(i%2?6:-6),scale:.55,opacity:0,duration:.55,ease:'power3.in'},i*.14);
+  });
+  tl.to('#packFolder',{scaleY:.96,duration:.1,yoyo:true,repeat:1},'-=.1')
+    .add(()=>{
+      const st=document.createElement('span');st.className='stamp';
+      st.style.cssText='position:absolute;right:18px;bottom:14px;width:70px;height:70px;font-size:9px';
+      st.innerHTML='ARCHIVED<br>沉淀完成';document.getElementById('packFolder').appendChild(st);
+      gsap.from(st,{scale:2.4,opacity:0,duration:.32,ease:'back.out(3)'});
+    });
+});
+})();
+</script>
+
+<!-- ================= 13 Dos & Don'ts ================= -->
+<section class="ds" id="sec-dos">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">SEC. 13</span><h2 class="sec-title">Dos &amp; Don'ts</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start">
+      <div class="card-paper tilt-l" style="padding:24px;border-top:6px solid var(--green-mint)">
+        <div style="font-family:var(--f-hand-en);font-size:26px;color:var(--green-pine)">Do ✓</div>
+        <ul style="font-size:14px;padding-left:18px;line-height:2">
+          <li>每个元素先问：它是哪件文具？被什么固定？</li>
+          <li>叠纸带 ±1~3° 旋转与偏移</li>
+          <li>饱和色只画线、只盖章（笔迹原则）</li>
+          <li>折叠态克制、展开态密集（密度反差）</li>
+          <li>层级靠切换字体族，字号只有 5 档</li>
+          <li>动效是纸做得出的动作，终点是"被收纳"</li>
+          <li>metadata 打字机小字散布角落</li>
+          <li>Day 色系跨组件呼应（地图↔POI↔票根↔收据）</li>
+        </ul>
+      </div>
+      <div class="card-paper tilt-r" style="padding:24px;border-top:6px solid var(--magenta)">
+        <div style="font-family:var(--f-hand-en);font-size:26px;color:var(--magenta)">Don't ✗</div>
+        <ul style="font-size:14px;padding-left:18px;line-height:2">
+          <li>悬空漂浮的元素（无固定件）</li>
+          <li>纯黑 #000 / 克莱因蓝大色块 / 高饱和大面积</li>
+          <li>现代扁平风：大圆角、发光、毛玻璃、渐变按钮</li>
+          <li>淡入淡出打底、果冻弹跳、模糊变形动效</li>
+          <li>折叠态摊开内容（破坏密度反差）</li>
+          <li>做旧铺满成滤镜（颗粒印章只是点缀）</li>
+          <li>字号爆炸做层级</li>
+          <li>海洋风元素（贝壳/海浪）——主题是办公文具</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="padding:60px 0;text-align:center">
+  <div class="meta">MORPH-UI DESIGN SYSTEM · COMPONENTS EDITION · NO. 00090 · PRINTED 2026</div>
+</footer>
+
+<script>
+/* ===== 色板渲染 ===== */
+const SW=[
+ ['--paper','纸白 · 内页底'],['--desk','桌面灰米'],['--kraft','牛皮纸 · 壳'],['--manila','马尼拉 · Folder壳'],
+ ['--ink','深灰蓝 · 文字'],['--blue-baby','婴儿蓝 · Day1/水域'],['--green-mint','薄荷绿 · Day2/绿地'],
+ ['--pink','浅粉 · Day3/贴纸'],['--coral','珊瑚橙 · 餐饮/强调'],['--lemon','柠檬黄 · 收据票根'],
+ ['--lav','薰衣草 · 点缀'],['--green-pine','深松绿 · 只做点阵'],
+ ['--cobalt','钴蓝 · 笔迹/路线'],['--magenta','品红 · 笔迹/印章'],['--gray','中性灰 · metadata']
+];
+const swEl=document.getElementById('swatches');
+SW.forEach(([v,n],i)=>{
+  const val=getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const isPen=['--cobalt','--magenta','--gray','--green-pine'].includes(v);
+  swEl.insertAdjacentHTML('beforeend',
+   `<div class="card-paper" style="padding:8px;transform:rotate(${(i%3-1)*1.2}deg)">
+     <div style="height:56px;background:${val};${isPen?'background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(247,245,240,.85) 6px 12px);':''}border:1px solid rgba(58,70,86,.12)"></div>
+     <div class="meta" style="margin-top:6px">${val}</div>
+     <div style="font-size:12px">${n}${isPen?' <b style="color:var(--magenta)">✎笔迹</b>':''}</div>
+   </div>`);
+});
+/* hero 入场 */
+gsap.from('#heroFolder',{y:60,rotate:3,opacity:0,duration:.9,ease:'power2.out'});
+gsap.from('.hero-peek',{scale:.6,opacity:0,duration:.5,stagger:.15,delay:.5,ease:'back.out(2)'});
+</script>
+</body>
+</html>

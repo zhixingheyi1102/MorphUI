@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MorphUI Design System · 工作台维度 · The Desk</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root{
+  --paper:#F7F5F0; --desk:#EDEAE2; --kraft:#D8CBB4; --manila:#E8D9B0; --ink:#3A4656;
+  --blue-baby:#A9D3E5; --green-mint:#CDE3CE; --green-pine:#4E8F6E;
+  --pink:#F5C6DE; --coral:#F0A87E; --lemon:#F6EDA9; --lav:#ABA6D4;
+  --cobalt:#2B4EA8; --magenta:#D6338A; --gray:#9C9C9C;
+  --shadow-paper:0 1px 2px rgba(58,70,86,.10),0 2px 6px rgba(58,70,86,.08);
+  --shadow-stack:0 2px 4px rgba(58,70,86,.12),0 6px 16px rgba(58,70,86,.10);
+  --f-hand-en:'JMH Typewriter','Courier New',monospace; --f-type:'JMH Typewriter','Courier New',monospace;
+  --f-hand-cn:'ChillHuoSong','Songti SC',serif; --f-body-cn:'ChillHuoSong','Songti SC',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--desk);color:var(--ink);font-family:var(--f-body-cn);font-size:16px;line-height:1.75;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+section.ds{padding:64px 0;border-top:1.5px dashed rgba(214,51,138,.35)}
+.sec-no{font-family:var(--f-type);font-size:12px;color:var(--magenta);letter-spacing:.15em}
+.sec-title{font-family:var(--f-hand-cn);font-size:32px;font-weight:400}
+.sec-title .en{font-family:var(--f-hand-en);font-size:24px;color:var(--cobalt);margin-left:10px}
+.sec-desc{font-size:14px;color:rgba(58,70,86,.75);max-width:660px;margin:6px 0 30px}
+.meta{font-family:var(--f-type);font-size:12px;color:var(--gray);letter-spacing:.08em}
+.card-paper{background:var(--paper);box-shadow:var(--shadow-paper);position:relative}
+.label-plate{display:inline-block;background:var(--paper);border:1px solid rgba(58,70,86,.25);padding:5px 13px;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;box-shadow:var(--shadow-paper)}
+.tilt-l{transform:rotate(-1.4deg)} .tilt-r{transform:rotate(1.2deg)}
+
+/* ===== 工作台蓝图（线稿风，笔迹色描线） ===== */
+.blueprint{background:var(--paper);border:1.5px solid rgba(58,70,86,.2);box-shadow:var(--shadow-stack);padding:28px;position:relative;
+  background-image:linear-gradient(rgba(43,78,168,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(43,78,168,.07) 1px,transparent 1px);background-size:20px 20px}
+.bp-frame{display:flex;gap:14px;height:420px}
+.bp-chat{flex:0 0 26%;border:2px solid var(--cobalt);position:relative;padding:12px;display:flex;flex-direction:column}
+.bp-desk{flex:1;border:2px dashed var(--magenta);position:relative;padding:12px}
+.bp-tag{position:absolute;top:-11px;left:12px;background:var(--paper);padding:0 8px;font-family:var(--f-type);font-size:11px}
+.bp-chat .bp-tag{color:var(--cobalt)} .bp-desk .bp-tag{color:var(--magenta)}
+.bp-bubble{border:1.5px solid rgba(58,70,86,.4);padding:6px 10px;font-size:12px;margin-bottom:8px;max-width:88%;background:var(--paper)}
+.bp-bubble.ai{border-style:dashed;border-color:var(--cobalt);color:var(--cobalt)}
+.bp-bubble.me{margin-left:auto;background:var(--lemon)}
+.bp-input{margin-top:auto;border:1.5px solid rgba(58,70,86,.5);padding:7px 10px;font-family:var(--f-type);font-size:11px;color:var(--gray)}
+.bp-comp{position:absolute;border:1.5px solid var(--ink);background:var(--paper);box-shadow:var(--shadow-paper);
+  font-family:var(--f-type);font-size:10.5px;padding:6px 8px;cursor:grab}
+.bp-comp:active{cursor:grabbing}
+.bp-comp .cx{position:absolute;top:2px;right:5px;color:var(--magenta);cursor:pointer;font-size:11px}
+.bp-comp .bar{height:4px;margin-top:4px}
+.callout{position:absolute;font-family:var(--f-hand-en);font-size:16px;color:var(--magenta);pointer-events:none}
+.callout svg{position:absolute;overflow:visible}
+.callout svg path{stroke:var(--magenta);stroke-width:1.5;fill:none;stroke-dasharray:4 4}
+
+/* 规范表格 */
+table.spec{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--paper);box-shadow:var(--shadow-paper)}
+table.spec th{font-family:var(--f-type);font-size:11.5px;letter-spacing:.08em;text-align:left;border-bottom:2px solid var(--ink);padding:10px 14px}
+table.spec td{border-bottom:1px dashed rgba(58,70,86,.25);padding:9px 14px;vertical-align:top}
+table.spec td:first-child{font-family:var(--f-type);font-size:12px;white-space:nowrap;color:var(--cobalt)}
+.chip{display:inline-block;font-family:var(--f-type);font-size:11px;padding:2px 10px;border:1px solid rgba(58,70,86,.3);background:var(--paper);margin:2px 4px 2px 0}
+.chip b{color:var(--magenta)}
+.btn-ink{font-family:var(--f-type);font-size:13px;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);padding:6px 16px;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.btn-ink:hover{background:var(--lemon)} .btn-ink:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+.hero{padding:90px 0 60px}
+.hero h1{font-family:var(--f-hand-cn);font-size:52px;line-height:1.25}
+.hero .en{font-family:var(--f-hand-en);font-size:34px;color:var(--cobalt);display:inline-block;transform:rotate(-1.5deg)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="meta">FILE #00 · WORKSPACE EDITION · MORPH-UI DESIGN SYSTEM</div>
+    <h1>MorphUI 工作台 · 一张办公桌</h1>
+    <div class="en">The Desk — where components live</div>
+    <p class="sec-desc" style="margin-top:14px">工作台 = 一张桌面。左侧是 AI 对话（打字机纸带），右侧是桌面 workspace：组件由 AI 在对话中动态 create / update / remove，像文具一样被"放上桌面 / 收走"，可拖拽换位、可关闭。本篇只用线稿与文字说明整体编排——组件本身的细节见 <a href="components.html" style="color:var(--cobalt)">components.html</a>。</p>
+  </div>
+</header>
+
+<!-- ===== 01 布局蓝图 ===== -->
+<section class="ds">
+  <div class="wrap">
+    <span class="sec-no">SEC. 01</span>
+    <h2 class="sec-title">布局蓝图<span class="en">Layout Blueprint</span></h2>
+    <p class="sec-desc">左 26% 对话栏（钴蓝实线 = 固定结构），右侧桌面（品红虚线 = 动态区域，AI 主导生长）。蓝图上的注记全部用"笔迹色"，与组件系统同一语言。</p>
+    <div class="blueprint">
+      <div class="meta" style="position:absolute;top:8px;right:14px">BLUEPRINT No.001 · SCALE 1:8</div>
+      <div class="bp-frame">
+        <div class="bp-chat">
+          <span class="bp-tag">CHAT · 26% · 固定</span>
+          <div class="bp-bubble ai">我要去海边城市两日游</div>
+          <div class="bp-bubble me">好的，先建个档 →（放上 Clarify 卡）</div>
+          <div class="bp-bubble ai">给我地图，看看路线长什么样</div>
+          <div class="bp-bubble me">地图已放上桌面 ✦</div>
+          <div class="bp-input">TYPE HERE … ⏎</div>
+        </div>
+        <div class="bp-desk" id="bpDesk">
+          <span class="bp-tag">WORKSPACE · 桌面 · AI 动态生长</span>
+          <div class="bp-comp" data-drag style="left:4%;top:8%;width:34%;height:44%">
+            <span class="cx">✕</span>FOLDER · 方案(主组件)
+            <div class="bar" style="background:var(--blue-baby)"></div>
+            <div class="bar" style="background:var(--green-mint)"></div>
+            <div class="bar" style="background:var(--pink)"></div>
+          </div>
+          <div class="bp-comp" data-drag style="left:42%;top:14%;width:36%;height:52%">
+            <span class="cx">✕</span>MAP · 折叠地图
+            <div class="bar" style="background:var(--blue-baby);width:60%"></div>
+          </div>
+          <div class="bp-comp" data-drag style="left:8%;top:60%;width:26%;height:24%">
+            <span class="cx">✕</span>BUDGET · 收据
+            <div class="bar" style="background:var(--lemon)"></div>
+          </div>
+          <div class="bp-comp" data-drag style="left:52%;top:72%;width:30%;height:20%">
+            <span class="cx">✕</span>FLIGHT · 票根
+            <div class="bar" style="background:var(--blue-baby)"></div>
+          </div>
+          <div class="callout" style="right:2%;top:2%">drag &amp; snap ↺</div>
+        </div>
+      </div>
+      <div class="meta" style="margin-top:10px">试试拖动虚线区里的组件（吸附网格 20px）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 02 桌面规范 ===== -->
+<section class="ds">
+  <div class="wrap">
+    <span class="sec-no">SEC. 02</span>
+    <h2 class="sec-title">桌面规范<span class="en">Desk Rules</span></h2>
+    <table class="spec">
+      <tr><th>项</th><th>规范</th></tr>
+      <tr><td>桌面底色</td><td>--desk #EDEAE2 + 26px 点网格 + 全局纸张颗粒（fixed 叠加，opacity .5）</td></tr>
+      <tr><td>组件间距</td><td>≥ 24px；新组件放上桌面时优先落在空白区，允许轻微压角（≤ 12px）制造堆叠感</td></tr>
+      <tr><td>初始姿态</td><td>每个组件带 ±1~3° 随机旋转（--tilt），拖拽开始时转正为 0°，落下时回到 tilt</td></tr>
+      <tr><td>z 序</td><td>桌面(0) &lt; Folder 壳(1) &lt; 内页纸(2~5) &lt; 附属小 file(6) &lt; 拖拽中(99) &lt; 闪词(100)</td></tr>
+      <tr><td>阴影</td><td>静置 --shadow-paper；堆叠 --shadow-stack；仅拖拽中允许 --shadow-lift（8/24px）</td></tr>
+      <tr><td>关闭按钮</td><td>不用现代 ✕ 圆钮——用品红笔迹小叉，位于组件右上角，hover 时画圈（描边动效）</td></tr>
+      <tr><td>滚动条</td><td>细条 6px，颜色 rgba(ink,.25)，轨道透明——像纸边不像控件</td></tr>
+      <tr><td>空桌面态</td><td>只留一枚居中铭牌标签："THE DESK IS CLEAR · 说点什么，放件文具上来"</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 03 组件生命周期 ===== -->
+<section class="ds">
+  <div class="wrap">
+    <span class="sec-no">SEC. 03</span>
+    <h2 class="sec-title">组件生命周期<span class="en">Lifecycle</span></h2>
+    <p class="sec-desc">AI 驱动的 create / update / remove 必须对应"放上桌面 / 换页盖印 / 收走"三种纸的动作。</p>
+    <table class="spec">
+      <tr><th>事件</th><th>动效（GSAP）</th><th>时长/缓动</th></tr>
+      <tr><td>CREATE 放上桌面</td><td>从桌面上方 40px 落下 + 旋转从 ±6° 回到 tilt，落地时阴影从 lift 收到 paper（"放下"感）</td><td>0.55s · power2.out</td></tr>
+      <tr><td>UPDATE 内容更新</td><td>纸面轻抖 1 次 + 更新区域用品红下划线描边扫过；如换 Day 页 = 翻页动作</td><td>0.35s · power1.inOut</td></tr>
+      <tr><td>REMOVE 收走</td><td>被提起（scale 1.03 + lift 阴影）→ 滑向 Folder 或桌面右缘 → 缩小消失</td><td>0.5s · power3.in</td></tr>
+      <tr><td>DRAG 拖拽</td><td>提起转正、lift 阴影；释放时 snap 网格 + 回 tilt，落点"啪"一下（scale .98→1）</td><td>提起 0.18s / 落下 0.3s</td></tr>
+      <tr><td>FOCUS 对话提及</td><td>对应组件回形针轻晃 + 铭牌标签高亮柠檬黄 1.2s（对话 ↔ 桌面的指向关系）</td><td>0.8s · sine.inOut</td></tr>
+      <tr><td>联动</td><td>闪词确认→地图酒店 pop up；Budget Accept→飞入 Folder；探索完成→全部收纳合拢+盖章</td><td>见 Motion System</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 04 对话栏样式 ===== -->
+<section class="ds">
+  <div class="wrap">
+    <span class="sec-no">SEC. 04</span>
+    <h2 class="sec-title">对话栏<span class="en">Chat Rail</span></h2>
+    <p class="sec-desc">对话栏是"打字机纸带"：AI 消息 = 钴蓝虚线框 + 打字机逐字揭示；用户消息 = 柠檬黄纸片右对齐。组件产生时，在对话流里留一行<b>存根（stub）</b>——点击存根，桌面上的组件晃动示意位置。</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <span class="chip"><b>AI</b> 虚线框 · 打字机体 · 逐字揭示（12ms/字）</span>
+      <span class="chip"><b>USER</b> 柠檬黄纸片 · 右对齐 · 轻微 tilt</span>
+      <span class="chip"><b>STUB</b> "✦ 已放上桌面：地图" · 可点击定位</span>
+      <span class="chip"><b>输入框</b> 底部横线信纸样式，无圆角无发光</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 05 工作台 Don'ts ===== -->
+<section class="ds">
+  <div class="wrap">
+    <span class="sec-no">SEC. 05</span>
+    <h2 class="sec-title">工作台 Dos &amp; Don'ts</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div class="card-paper tilt-l" style="padding:22px;border-top:5px solid var(--green-mint);font-size:14px">
+        <b style="font-family:var(--f-hand-en);font-size:22px;color:var(--green-pine)">Do ✓</b>
+        <ul style="padding-left:18px;line-height:2">
+          <li>桌面永远保持"纸放在桌上"的隐喻：落下、提起、收走</li>
+          <li>新组件入场后 2s 内不再有其他动效（一次只做一件事）</li>
+          <li>对话与桌面互相指向（stub 点击 / FOCUS 晃动）</li>
+          <li>组件密集时允许压角堆叠，但铭牌标签必须可见</li>
+        </ul>
+      </div>
+      <div class="card-paper tilt-r" style="padding:22px;border-top:5px solid var(--magenta);font-size:14px">
+        <b style="font-family:var(--f-hand-en);font-size:22px;color:var(--magenta)">Don't ✗</b>
+        <ul style="padding-left:18px;line-height:2">
+          <li>网格化卡片流布局（那是 dashboard，不是桌面）</li>
+          <li>组件淡入淡出出现（必须"放上/收走"）</li>
+          <li>现代控件语言：圆角浮窗、毛玻璃侧栏、悬浮 FAB</li>
+          <li>同屏超过 2 个组件同时做动效</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="padding:56px 0;text-align:center">
+  <div class="meta">MORPH-UI DESIGN SYSTEM · WORKSPACE EDITION · No.00091 · PRINTED 2026</div>
+</footer>
+
+<script>
+/* 蓝图内拖拽 + 20px snap */
+(()=>{
+const desk=document.getElementById('bpDesk');
+document.querySelectorAll('[data-drag]').forEach(el=>{
+  let sx,sy,ox,oy,drag=false;
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.classList.contains('cx'))return;
+    drag=true;sx=e.clientX;sy=e.clientY;ox=el.offsetLeft;oy=el.offsetTop;
+    el.setPointerCapture(e.pointerId);el.style.zIndex=99;
+    gsap.to(el,{rotate:0,boxShadow:'0 8px 24px rgba(58,70,86,.16)',duration:.18});
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    el.style.left=Math.max(0,Math.min(desk.clientWidth-el.offsetWidth,ox+e.clientX-sx))+'px';
+    el.style.top=Math.max(0,Math.min(desk.clientHeight-el.offsetHeight,oy+e.clientY-sy))+'px';
+  });
+  el.addEventListener('pointerup',()=>{
+    drag=false;el.style.zIndex=6;
+    const l=Math.round(el.offsetLeft/20)*20,t=Math.round(el.offsetTop/20)*20;
+    gsap.to(el,{left:l,top:t,rotate:(Math.random()*3-1.5),boxShadow:'0 1px 2px rgba(58,70,86,.10)',duration:.3,ease:'power2.out'});
+    gsap.fromTo(el,{scale:.98},{scale:1,duration:.2});
+  });
+  el.querySelector('.cx').addEventListener('click',()=>{
+    gsap.to(el,{scale:.5,opacity:0,x:60,duration:.45,ease:'power3.in',onComplete:()=>el.remove()});
+  });
+});
+gsap.from('.bp-comp',{y:-40,opacity:0,rotate:6,stagger:.12,duration:.55,ease:'power2.out',delay:.3});
+})();
+</script>
+</body>
+</html>
