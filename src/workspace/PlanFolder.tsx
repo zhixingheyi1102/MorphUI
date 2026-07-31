@@ -85,7 +85,6 @@ export default function PlanFolder({ planId, data, dockedComponents, dockableCou
     return (
       <ClosedFolder
         data={data}
-        dockedCount={dockedComponents.length}
         dockableCount={dockableCount}
         hintOutline={hintOutline}
         onPlanInteract={onPlanInteract}
@@ -218,7 +217,6 @@ export default function PlanFolder({ planId, data, dockedComponents, dockableCou
 // ═══ 合拢态：牛皮纸封套包着行程页，右缘露纸边 + 竖标签 ═══
 function ClosedFolder({
   data,
-  dockedCount,
   dockableCount,
   hintOutline,
   onPlanInteract,
@@ -226,7 +224,6 @@ function ClosedFolder({
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any
-  dockedCount: number
   dockableCount: number
   hintOutline: CSSProperties
   onPlanInteract: (value?: string) => void
@@ -299,20 +296,6 @@ function ClosedFolder({
       >
         <span>展开方案</span>
         <span style={{ writingMode: "horizontal-tb", fontFamily: "var(--font-en)" }}>⟩</span>
-        {(dockedCount > 0 || dockableCount > 0) && (
-          <span
-            className="rounded-full px-1"
-            style={{
-              writingMode: "horizontal-tb",
-              fontSize: 10,
-              fontFamily: "var(--font-en)",
-              background: "var(--stamp-red)",
-              color: "var(--paper-cream)",
-            }}
-          >
-            {dockedCount > 0 ? dockedCount : `+${dockableCount}`}
-          </span>
-        )}
       </motion.button>
     </div>
   )
