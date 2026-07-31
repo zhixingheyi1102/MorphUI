@@ -38,6 +38,15 @@ type Props = {
 
 export default function PlanFolder({ planId, data, dockedComponents, organized, onInteract }: Props) {
   const [unfolded, setUnfolded] = useState(false)
+  const leftRef = useRef<HTMLDivElement | null>(null)
+  const [tabH, setTabH] = useState(37)
+
+  // 量出左页 Day 标签行高度，书脊/右页下移这段距离对齐纸面
+  useLayoutEffect(() => {
+    if (!unfolded) return
+    const tabsRow = leftRef.current?.firstElementChild?.firstElementChild as HTMLElement | null
+    if (tabsRow) setTabH(tabsRow.offsetHeight - 1) // -1 对应标签行 -mb-px
+  }, [unfolded])
 
   // 整理态触发自动展开
   useEffect(() => {
@@ -66,15 +75,16 @@ export default function PlanFolder({ planId, data, dockedComponents, organized, 
   return (
     <div className="relative flex items-stretch" style={{ width: NOTEBOOK_W + SPINE_W + RIGHT_W, fontFamily: "var(--font-cn)" }}>
       {/* 左页：行程笔记本 */}
-      <div className="shrink-0" style={{ width: NOTEBOOK_W }}>
+      <div ref={leftRef} className="shrink-0" style={{ width: NOTEBOOK_W }}>
         <PlanNotebook data={data} onInteract={onPlanInteract} />
       </div>
 
-      {/* 书脊：渐变凹槽 + 装订环 */}
+      {/* 书脊：渐变凹槽 + 装订环（下移 tabH 对齐左页纸面） */}
       <div
         className="relative shrink-0 flex flex-col items-center justify-evenly py-10"
         style={{
           width: SPINE_W,
+          marginTop: tabH,
           backgroundColor: "var(--paper-cream)",
           backgroundImage:
             "linear-gradient(90deg, rgba(24,20,14,0.10) 0%, rgba(24,20,14,0.03) 30%, rgba(24,20,14,0.03) 70%, rgba(24,20,14,0.12) 100%)",
@@ -96,6 +106,7 @@ export default function PlanFolder({ planId, data, dockedComponents, organized, 
         className="relative shrink-0 flex flex-col"
         style={{
           width: RIGHT_W,
+          marginTop: tabH,
           background: "var(--paper-oat)",
           border: "1px solid var(--ink-line)",
           borderRadius: "var(--r-sticker)",
