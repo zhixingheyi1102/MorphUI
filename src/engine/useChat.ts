@@ -840,7 +840,11 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
   // ─── 一键整理：移除过程态组件，辅助组件收进方案文件夹（写 dockedIds）───
   const organizeWorkspace = useCallback(() => {
     setComponents((prev) => {
+      // 已收进文件夹的组件（dockedIds）一律豁免清场——机票等 process 组件收纳后不能被删
+      const planPrev = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      const dockedSet = new Set((planPrev?.data.dockedIds as string[] | undefined) ?? [])
       const kept = prev.filter((c) => {
+        if (dockedSet.has(c.id)) return true
         const cat = COMPONENT_CATEGORIES[c.type]
         return cat === "plan" || cat === "auxiliary"
       })
