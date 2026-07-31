@@ -65,8 +65,19 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
           </span>
         )}
         <div className="flex gap-3">
-          {/* 左侧：名称 + 介绍（flyer 式排版） */}
+          {/* 左侧：时间 + 名称 + 介绍（flyer 式排版） */}
           <div className="flex-1 min-w-0 flex flex-col">
+            {/* 左上角时间行：09:30 — 1.5h */}
+            {spot.time && (
+              <p
+                className="mb-0.5 flex items-center gap-1.5"
+                style={{ fontFamily: "var(--font-en)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-soft)" }}
+              >
+                {spot.time}
+                {spot.duration && <span style={{ display: "inline-block", width: 14, height: 1, background: "var(--ink-line)" }} />}
+                {spot.duration && <span style={{ fontSize: 10 }}>{spot.duration}</span>}
+              </p>
+            )}
             <h4 className="leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
             {spot.tag && (
               <span
@@ -103,23 +114,6 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
               style={{ objectFit: "fill" }}
             />
           </div>
-
-          {/* 最右：竖排时间列（flyer 右缘日期式，仅在有 time 时显示） */}
-          {spot.time && (
-            <div
-              className="shrink-0 flex flex-col items-center pt-0.5 pl-2"
-              style={{ fontFamily: "var(--font-en)", color: "var(--ink-soft)", borderLeft: "1px solid var(--ink-line)" }}
-            >
-              {spot.time.split(":").map((seg, i) => (
-                <span key={i} className="leading-tight" style={{ fontSize: 12 }}>
-                  {i > 0 && <span className="block text-center" style={{ fontSize: 8, lineHeight: "8px" }}>·</span>}
-                  {seg}
-                </span>
-              ))}
-              {spot.duration && <span className="my-1" style={{ width: 1, height: 14, background: "var(--ink-line)" }} />}
-              {spot.duration && <span style={{ fontSize: 9, writingMode: "vertical-rl", letterSpacing: "0.08em" }}>{spot.duration}</span>}
-            </div>
-          )}
         </div>
 
         {/* 已选玩法（蓝墨=用户选择） */}
