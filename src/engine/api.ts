@@ -127,9 +127,10 @@ component_id: "map"
 {
   "center": [31.23, 121.47],
   "zoom": 13,
+  "activeDay": "day1",
   "markers": [
     {
-      "id": "s1", "name": "景点名", "lat": 31.2152, "lng": 121.4368, "type": "spot",
+      "id": "s1", "name": "景点名", "lat": 31.2152, "lng": 121.4368, "type": "spot", "day": "day1",
       "desc": "一句话介绍",
       "imageUrl": "https://example.com/photo.jpg",
       "tags": ["标签1", "标签2"]
@@ -140,6 +141,7 @@ component_id: "map"
 \`\`\`
 type 值："spot"（景点）、"restaurant"（餐厅）、"hotel"（酒店）。
 每个 marker 必须有 desc（基本介绍）和 tags。imageUrl 可选但推荐。
+**多天行程务必给每个景点 marker 加 \`day\` 字段**（"day1"/"day2"…，与行程 days 的 key 对应）。地图会按天用不同颜色画路线，当前天（activeDay）高亮、其它天置灰，和行程笔记本联动。activeDay 默认放 "day1"。
 更新地图加标记时，用 update_component，把新标记放在 extraMarkers 字段里。
 用户点击标记会自动弹出 POI 面板（内嵌在地图里，从标记的 deepContent 生成），你不需要也不能单独创建 POI 组件。
 
@@ -164,6 +166,7 @@ deepContent 可用字段词表（挑选匹配用户意图的，不要全放）�
 | \`images\` | 字符串数组（4 张 URL），渲染成图片墙 | 用户想"眼见为实"看实景 |
 | \`reviews\` | \`[{user, text, score}]\` | 用户关心真实评价/口碑 |
 | \`activities\` | \`[{id, title, desc, duration, price, tag}]\` | 用户问某地"能玩什么/有什么玩法" |
+| \`suggestions\` | 字符串数组（2 条），POI 面板底部的引导追问 | **每个 marker 都建议放**，帮用户想到下一步能问什么，点击即发问 |
 
 判断示例（举一反三，不限于此）：
 - "离景点近的酒店" → priceRange + distance + nearby + access（不放 images/reviews/stars）

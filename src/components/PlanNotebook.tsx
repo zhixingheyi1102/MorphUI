@@ -41,10 +41,10 @@ type Props = {
     // 由 scenario 更新注入，PlanNotebook 内部合并到对应 spot
     selectedActivity?: { spotId: string; activity: Activity }
   }
-  onInteract: () => void
+  onInteract: (value?: string) => void
 }
 
-export default function PlanNotebook({ data }: Props) {
+export default function PlanNotebook({ data, onInteract }: Props) {
   const dayKeys = Object.keys(data.days)
   const [activeTab, setActiveTab] = useState(data.activeTab ?? dayKeys[0])
 
@@ -94,7 +94,10 @@ export default function PlanNotebook({ data }: Props) {
         {dayKeys.map((key, i) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => {
+              setActiveTab(key)
+              onInteract(`day:${key}`)
+            }}
             className={`relative px-5 py-2 text-sm rounded-t-xl border border-b-0 transition-all ${
               activeTab === key
                 ? "bg-[#fefcf7] text-gray-900 font-semibold border-gray-200 z-10"

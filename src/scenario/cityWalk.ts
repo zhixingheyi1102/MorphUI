@@ -127,12 +127,12 @@ const scenario: Step[] = [
         componentId: "map",
         componentType: "map_view",
         data: {
-          center: [31.215, 121.44] as unknown as Record<string, unknown>,
-          zoom: 13,
+          center: [31.222, 121.465] as unknown as Record<string, unknown>,
+          zoom: 12,
           activeDay: "day1",
           markers: [
             {
-              id: "wukang", name: "武康路", lat: 31.2152, lng: 121.4368, type: "spot",
+              id: "wukang", name: "武康路", lat: 31.2152, lng: 121.4368, type: "spot", day: "day1",
               desc: "从武康大楼出发，沿途老洋房和巴金故居，法租界最经典的一条路",
               imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80",
               tags: ["历史建筑", "法租界", "网红打卡"],
@@ -142,10 +142,11 @@ const scenario: Step[] = [
                   { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
                   { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
                 ],
+                suggestions: ["这附近有好吃的吗？", "怎么去下一个景点？"],
               },
             },
             {
-              id: "anfu", name: "安福路", lat: 31.2173, lng: 121.4405, type: "spot",
+              id: "anfu", name: "安福路", lat: 31.2173, lng: 121.4405, type: "spot", day: "day1",
               desc: "独立设计师店和话剧艺术中心聚集的文艺街区",
               imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80",
               tags: ["文艺街区", "设计师店", "话剧"],
@@ -155,10 +156,11 @@ const scenario: Step[] = [
                   { id: "vintage", title: "中古店淘宝", desc: "沿街 vintage 店铺，淘复古服饰和饰品", duration: "1.5h", price: 0, tag: "免费" },
                   { id: "brunch", title: "法式 Brunch", desc: "安福路 brunch 圣地，推荐 RAC 和 Egg", duration: "1h", price: 120, tag: "美食" },
                 ],
+                suggestions: ["有推荐的话剧吗？", "附近有咖啡馆吗？"],
               },
             },
             {
-              id: "lunch1", name: "衡山路午餐", lat: 31.2091, lng: 121.4456, type: "spot",
+              id: "lunch1", name: "衡山路午餐", lat: 31.2091, lng: 121.4456, type: "spot", day: "day1",
               desc: "推荐衡山小馆或 Alimentari，地道本帮菜与意式简餐",
               tags: ["美食", "本帮菜"],
               deepContent: {
@@ -166,10 +168,11 @@ const scenario: Step[] = [
                   { id: "local", title: "本帮菜体验", desc: "尝地道上海菜：红烧肉、腌笃鲜、葱油拌面", duration: "1h", price: 100, tag: "美食" },
                   { id: "italian", title: "意式简餐", desc: "Alimentari 的手工面和提拉米苏", duration: "1h", price: 150, tag: "西餐" },
                 ],
+                suggestions: ["人均大概多少？", "需要提前订位吗？"],
               },
             },
             {
-              id: "fuxing", name: "复兴西路", lat: 31.2108, lng: 121.4352, type: "spot",
+              id: "fuxing", name: "复兴西路", lat: 31.2108, lng: 121.4352, type: "spot", day: "day1",
               desc: "国际礼拜堂、衡山电影院一带，感受老上海的文化底蕴",
               imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80",
               tags: ["历史建筑", "教堂", "老上海"],
@@ -178,10 +181,11 @@ const scenario: Step[] = [
                   { id: "church", title: "教堂巡礼", desc: "国际礼拜堂 + 诸圣堂，哥特与罗马风格交汇", duration: "1h", price: 0, tag: "免费" },
                   { id: "cinema", title: "衡山电影院", desc: "1951 年开业的老影院，看一场经典电影", duration: "2h", price: 50, tag: "文化" },
                 ],
+                suggestions: ["教堂可以进去参观吗？", "这一带还有什么好逛的？"],
               },
             },
             {
-              id: "tianzifang", name: "田子坊", lat: 31.2104, lng: 121.4737, type: "spot",
+              id: "tianzifang", name: "田子坊", lat: 31.2104, lng: 121.4737, type: "spot", day: "day1",
               desc: "石库门弄堂里的艺术区，手工艺品和创意小店",
               imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80",
               tags: ["文创园区", "弄堂", "手工艺"],
@@ -191,6 +195,67 @@ const scenario: Step[] = [
                   { id: "gallery", title: "画廊巡游", desc: "10+ 家独立画廊和摄影展，免费参观", duration: "1h", price: 0, tag: "免费" },
                   { id: "snack", title: "弄堂小吃", desc: "臭豆腐、葱油饼、鸡爪，一路吃过去", duration: "1h", price: 50, tag: "美食" },
                 ],
+                suggestions: ["晚上住哪里比较好？", "第二天去哪玩？"],
+              },
+            },
+            // ── Day 2 · 滨江文化线 ──
+            {
+              id: "power", name: "上海当代艺术博物馆", lat: 31.2116, lng: 121.4862, type: "spot", day: "day2",
+              desc: "PSA，免费开放的当代艺术殿堂，原南市发电厂改建",
+              tags: ["艺术展览", "免费", "工业风"],
+              deepContent: {
+                activities: [
+                  { id: "psa_exhibit", title: "看当期特展", desc: "免费常设 + 当期特展，工业厂房改造空间很出片", duration: "2h", price: 0, tag: "免费" },
+                ],
+                suggestions: ["当期有什么展？", "附近哪里吃午饭？"],
+              },
+            },
+            {
+              id: "cool_docks", name: "老码头", lat: 31.2003, lng: 121.4977, type: "spot", day: "day2",
+              desc: "外滩背后的创意园区，老仓库改造的餐饮酒吧聚集地",
+              tags: ["文创园区", "江边", "酒吧"],
+              deepContent: {
+                activities: [
+                  { id: "dock_walk", title: "江边漫步", desc: "沿黄浦江散步，看老仓库改造的创意店铺", duration: "45min", price: 0, tag: "免费" },
+                ],
+                suggestions: ["这里有江景餐厅吗？", "去外滩怎么走？"],
+              },
+            },
+            {
+              id: "yuyuan", name: "豫园", lat: 31.2270, lng: 121.4920, type: "spot", day: "day2",
+              desc: "南翔小笼和城隍庙小吃，老上海园林与市井烟火",
+              imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80",
+              tags: ["园林", "美食", "地标"],
+              deepContent: {
+                activities: [
+                  { id: "xlb", title: "南翔小笼", desc: "百年老字号，蟹粉小笼一定要趁热吃", duration: "1h", price: 80, tag: "美食" },
+                  { id: "garden", title: "豫园游园", desc: "明代江南古典园林，亭台楼阁移步换景", duration: "1h", price: 40, tag: "文化" },
+                ],
+                suggestions: ["门票多少钱？", "小吃街怎么走？"],
+              },
+            },
+            {
+              id: "bund", name: "外滩", lat: 31.2397, lng: 121.4903, type: "spot", day: "day2",
+              desc: "经典外滩建筑群和陆家嘴江景，上海最出名的地标",
+              imageUrl: "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=640&q=80",
+              tags: ["地标", "江景", "夜景"],
+              deepContent: {
+                activities: [
+                  { id: "bund_walk", title: "万国建筑巡礼", desc: "沿江看 52 幢历史建筑，对岸就是陆家嘴", duration: "1h", price: 0, tag: "免费" },
+                  { id: "cruise", title: "浦江游船", desc: "坐船夜游黄浦江，两岸灯光尽收眼底", duration: "1h", price: 120, tag: "热门" },
+                ],
+                suggestions: ["夜景几点最好看？", "有推荐的观景台吗？"],
+              },
+            },
+            {
+              id: "nanjing", name: "南京路步行街", lat: 31.2354, lng: 121.4800, type: "spot", day: "day2",
+              desc: "百年商业街，逛街购物、晚餐收尾的好去处",
+              tags: ["购物", "步行街", "美食"],
+              deepContent: {
+                activities: [
+                  { id: "shopping", title: "逛街购物", desc: "老字号 + 潮牌云集，走到人民广场", duration: "2h", price: 0, tag: "免费" },
+                ],
+                suggestions: ["有什么老字号推荐？", "晚上吃什么好？"],
               },
             },
           ],

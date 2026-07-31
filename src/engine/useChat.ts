@@ -320,6 +320,22 @@ export function useChat(scenario?: Step[]) {
     (componentId: string, value?: string) => {
       if (isTyping) return
 
+      // POI 面板的引导词 → 当作用户发问，走正常发送流程
+      if (value && value.startsWith("ask:")) {
+        sendMessage(value.slice(4), false)
+        return
+      }
+
+      // 行程笔记本切换 Day → 联动地图高亮/置灰对应天路线
+      if (componentId === "itinerary" && value && value.startsWith("day:")) {
+        const day = value.slice(4)
+        applyActions([
+          { action: "update", componentId: "itinerary", data: { activeTab: day } },
+          { action: "update", componentId: "map", data: { activeDay: day } },
+        ])
+        return
+      }
+
       // 地图玩法选择 → 从被点标记的 deepContent 里查出真正的玩法，动态加入行程
       // （不消耗剧本步骤，点哪个加哪个）
       if (componentId === "map" && value) {
@@ -369,7 +385,7 @@ export function useChat(scenario?: Step[]) {
       historyRef.current.push({ role: "user", content: message })
       callAI(historyRef.current)
     },
-    [isTyping, advanceScript, components, callAI, typeText, applyActions]
+    [isTyping, advanceScript, components, callAI, typeText, applyActions, sendMessage]
   )
 
   // ─── 手动关闭组件 ───

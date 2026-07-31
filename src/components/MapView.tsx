@@ -35,6 +35,8 @@ type DeepContent = {
   view?: string
   // 舒适度导向内容
   images?: string[]
+  // 引导词：面板底部的追问建议
+  suggestions?: string[]
 }
 
 type Marker = {
@@ -43,6 +45,7 @@ type Marker = {
   lat: number
   lng: number
   type: "spot" | "restaurant" | "hotel"
+  day?: string
   rating?: number
   stars?: number
   desc?: string
@@ -59,6 +62,7 @@ type Props = {
     extraMarkers?: Marker[]
     routeColor?: string
     highlightSpot?: string
+    activeDay?: string
   }
   onInteract: (value: string) => void
 }
@@ -68,6 +72,23 @@ const MARKER_COLORS: Record<string, string> = {
   spot: "#6366f1",
   restaurant: "#f59e0b",
   hotel: "#10b981",
+}
+
+// 每天一个颜色，用于区分不同天的景点与路线
+const DAY_COLORS: Record<string, string> = {
+  day1: "#6366f1", // 靛蓝
+  day2: "#ec4899", // 玫红
+  day3: "#0ea5e9", // 天蓝
+  day4: "#f97316", // 橙
+}
+const DIM_COLOR = "#c7cbd1" // 非当前天置灰色
+
+const DAY_LABELS: Record<string, string> = {
+  day1: "Day 1", day2: "Day 2", day3: "Day 3", day4: "Day 4",
+}
+
+function dayColor(day?: string) {
+  return (day && DAY_COLORS[day]) || DAY_COLORS.day1
 }
 
 const MARKER_ICONS: Record<string, string> = {
@@ -88,8 +109,14 @@ const IMAGE_GRADIENTS: Record<string, string> = {
   hotel: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)",
 }
 
-function createIcon(type: string, highlight = false, selected = false) {
-  const color = MARKER_COLORS[type] ?? "#6366f1"
+function createIcon(
+  type: string,
+  highlight = false,
+  selected = false,
+  colorOverride?: string,
+  dimmed = false,
+) {
+  const color = colorOverride ?? MARKER_COLORS[type] ?? "#6366f1"
   const emoji = MARKER_ICONS[type] ?? "📍"
   const size = highlight || selected ? 36 : 28
   const ring = selected ? `border: 3px solid white; box-shadow: 0 0 0 2px ${color}, 0 4px 12px ${color}88;` : ""
@@ -101,6 +128,7 @@ function createIcon(type: string, highlight = false, selected = false) {
       background:${color}; border-radius:50%;
       color:white; font-size:${size * 0.5}px;
       box-shadow: 0 2px 8px ${color}66;
+      opacity:${dimmed ? 0.4 : 1};
       ${ring}
       ${highlight && !selected ? "animation: pulse 1.5s infinite;" : ""}
       transition: all 0.2s ease;
@@ -118,12 +146,14 @@ function PoiPanel({
   explored,
   onExplore,
   onActivityClick,
+  onSuggest,
   onClose,
 }: {
   marker: Marker
   explored: boolean
   onExplore: () => void
   onActivityClick: (actId: string) => void
+  onSuggest: (text: string) => void
   onClose: () => void
 }) {
   const deep = marker.deepContent
@@ -133,6 +163,7 @@ function PoiPanel({
   const hasReviews = deep && deep.reviews && deep.reviews.length > 0
   const hasNearby = deep && deep.nearby && deep.nearby.length > 0
   const hasImages = deep && deep.images && deep.images.length > 0
+  const hasSuggestions = deep && deep.suggestions && deep.suggestions.length > 0
 
   return (
     <motion.div
@@ -362,6 +393,24 @@ function PoiPanel({
               <span className="text-[10px]">→</span>
             </button>
           )}
+
+          {/* 引导词：底部追问建议，点击直接发问 */}
+          {hasSuggestions && (
+            <div className="mt-3 pt-2.5 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 mb-1.5">你可能还想问</p>
+              <div className="flex flex-wrap gap-1.5">
+                {deep!.suggestions!.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => onSuggest(s)}
+                    className="px-2.5 py-1 text-[10px] rounded-full border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                  >
+                    💡 {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -375,12 +424,17 @@ export default function MapView({ data, onInteract }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<L.Map | null>(null)
   const markersLayer = useRef<L.LayerGroup | null>(null)
-  const routeLayer = useRef<L.Polyline | null>(null)
+  const routeLayers = useRef<L.Polyline[]>([])
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
   const [exploredMarkerIds, setExploredMarkerIds] = useState<Set<string>>(new Set())
 
   const allMarkers = [...(data.markers ?? []), ...(data.extraMarkers ?? [])]
   const selectedMarker = selectedMarkerId ? allMarkers.find((m) => m.id === selectedMarkerId) : null
+
+  // 出现过的天（有序去重），用于顶部图例
+  const dayLegend = Array.from(
+    new Set((data.markers ?? []).filter((m) => m.type === "spot" && m.day).map((m) => m.day as string))
+  )
 
   const handleMarkerClick = useCallback((markerId: string) => {
     setSelectedMarkerId((prev) => (prev === markerId ? null : markerId))
@@ -428,15 +482,24 @@ export default function MapView({ data, onInteract }: Props) {
     if (!map || !layer) return
 
     layer.clearLayers()
-    if (routeLayer.current) {
-      routeLayer.current.remove()
-      routeLayer.current = null
-    }
+    for (const rl of routeLayers.current) rl.remove()
+    routeLayers.current = []
+
+    // 是否有分天信息（任一 spot 带 day 字段才启用双色联动）
+    const hasDays = (data.markers ?? []).some((m) => m.type === "spot" && m.day)
+    const activeDay = data.activeDay
 
     allMarkers.forEach((m) => {
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
-      const icon = createIcon(m.type, isHighlight, isSelected)
+      // 景点按天着色；非当前天置灰。非景点（餐厅/酒店）保持原色
+      let colorOverride: string | undefined
+      let dimmed = false
+      if (hasDays && m.type === "spot") {
+        colorOverride = dayColor(m.day)
+        dimmed = activeDay != null && m.day != null && m.day !== activeDay && !isSelected
+      }
+      const icon = createIcon(m.type, isHighlight, isSelected, colorOverride, dimmed)
       const marker = L.marker([m.lat, m.lng], { icon })
         .addTo(layer)
         .bindTooltip(m.name, { direction: "top", offset: [0, -16] })
@@ -444,16 +507,44 @@ export default function MapView({ data, onInteract }: Props) {
       marker.on("click", () => handleMarkerClick(m.id))
     })
 
-    // 画路线
+    // 画路线：按天分组，每天一条线；当前天用本天颜色高亮，其它天置灰
     const spotMarkers = (data.markers ?? []).filter((m) => m.type === "spot")
-    if (spotMarkers.length > 1) {
+    if (hasDays) {
+      const byDay = new Map<string, Marker[]>()
+      for (const m of spotMarkers) {
+        const d = m.day ?? "day1"
+        if (!byDay.has(d)) byDay.set(d, [])
+        byDay.get(d)!.push(m)
+      }
+      // 先画非当前天（置灰），再画当前天，保证当前天路线在最上层
+      const entries = [...byDay.entries()].sort(([a], [b]) => {
+        const aActive = activeDay == null || a === activeDay
+        const bActive = activeDay == null || b === activeDay
+        return Number(aActive) - Number(bActive)
+      })
+      for (const [d, spots] of entries) {
+        if (spots.length < 2) continue
+        const isActive = activeDay == null || d === activeDay
+        const latlngs = spots.map((m) => [m.lat, m.lng] as [number, number])
+        routeLayers.current.push(
+          L.polyline(latlngs, {
+            color: isActive ? dayColor(d) : DIM_COLOR,
+            weight: isActive ? 3.5 : 2.5,
+            opacity: isActive ? 0.75 : 0.35,
+            dashArray: "8 8",
+          }).addTo(map)
+        )
+      }
+    } else if (spotMarkers.length > 1) {
       const latlngs = spotMarkers.map((m) => [m.lat, m.lng] as [number, number])
-      routeLayer.current = L.polyline(latlngs, {
-        color: data.routeColor ?? "#6366f1",
-        weight: 3,
-        opacity: 0.6,
-        dashArray: "8 8",
-      }).addTo(map)
+      routeLayers.current.push(
+        L.polyline(latlngs, {
+          color: data.routeColor ?? "#6366f1",
+          weight: 3,
+          opacity: 0.6,
+          dashArray: "8 8",
+        }).addTo(map)
+      )
     }
 
     setTimeout(() => map.invalidateSize(), 100)
@@ -476,9 +567,23 @@ export default function MapView({ data, onInteract }: Props) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 className="text-sm font-medium text-gray-700">📍 路线地图</h3>
           <div className="flex gap-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500" /> 景点</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> 餐厅</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> 酒店</span>
+            {dayLegend.length > 0 ? (
+              dayLegend.map((d) => {
+                const active = data.activeDay == null || data.activeDay === d
+                return (
+                  <span key={d} className={`flex items-center gap-1 ${active ? "" : "opacity-40"}`}>
+                    <span className="w-2 h-2 rounded-full" style={{ background: dayColor(d) }} />
+                    {DAY_LABELS[d] ?? d}
+                  </span>
+                )
+              })
+            ) : (
+              <>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500" /> 景点</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> 餐厅</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> 酒店</span>
+              </>
+            )}
           </div>
         </div>
         <div
@@ -498,6 +603,7 @@ export default function MapView({ data, onInteract }: Props) {
             explored={exploredMarkerIds.has(selectedMarker.id)}
             onExplore={() => handleExplore(selectedMarker.id)}
             onActivityClick={(actId) => onInteract(actId)}
+            onSuggest={(text) => onInteract(`ask:${text}`)}
             onClose={() => setSelectedMarkerId(null)}
           />
         )}
