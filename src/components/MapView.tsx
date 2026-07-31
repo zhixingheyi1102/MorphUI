@@ -379,22 +379,27 @@ function PoiPanel({
       exit={{ width: 0 }}
       transition={{ type: "spring", damping: 19, stiffness: 200, mass: 1 }}
       className="shrink-0 relative"
-      style={{
-        // 错层便签：负 margin 让纸卡比地图卡上露 12px、下露 18px（stretch 高度 = 容器 + 30）
-        marginTop: -12,
-        marginBottom: -18,
-        rotate: 0.6,
-        transformOrigin: "top left",
-        background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
-        border: "1px solid var(--ink-line)",
-        borderRadius: 4,
-        boxShadow: "0 10px 20px rgba(43,43,43,0.28), 0 2px 6px rgba(43,43,43,0.16)",
-        fontFamily: "var(--font-cn)",
-        color: "var(--ink)",
-      }}
+      style={{ height: 0 }}
     >
-      {/* 裁剪层：宽度 0→340 抽出动画期间裁掉内容，圆角随纸卡 */}
-      <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: 3 }}>
+      {/* 便签本体：绝对定位，只借外层的宽度动画，不把地图卡撑高；
+          高度跟内容走（玩法再长也不出内部滚动条），上露 12px，下端自然垂到地图卡下方 */}
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          top: -12,
+          minHeight: 396,
+          transform: "rotate(0.6deg)",
+          transformOrigin: "top left",
+          background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
+          border: "1px solid var(--ink-line)",
+          borderRadius: 4,
+          boxShadow: "0 10px 20px rgba(43,43,43,0.28), 0 2px 6px rgba(43,43,43,0.16)",
+          fontFamily: "var(--font-cn)",
+          color: "var(--ink)",
+        }}
+      >
+      {/* 裁剪层：宽度 0→340 抽出动画期间横向裁掉内容，圆角随纸卡 */}
+      <div className="relative overflow-hidden" style={{ borderRadius: 3 }}>
         {/* 抽出瞬间的槽口阴影：卡刚出槽时整体偏暗，抽出后亮起来 */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
@@ -409,9 +414,9 @@ function PoiPanel({
           className="absolute inset-y-0 left-0 pointer-events-none"
           style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
         />
-        {/* 卡片内容锚定右缘：宽度展开时整张卡跟着前缘向右滑出（抽卡） */}
-        {/* 阻止 wheel 冒泡到画布 viewport，卡内滚动不带动整个页面 */}
-        <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+        {/* 卡片内容锚定右缘（ml-auto）：宽度展开时整张卡跟着前缘向右滑出（抽卡）；
+            常规流布局，内容多长便签就多长，不再内部滚动 */}
+        <div className="w-[340px] ml-auto" onWheel={(e) => e.stopPropagation()}>
         {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
         <div className="relative px-4 pt-3 mb-2">
           <button
@@ -701,6 +706,7 @@ function PoiPanel({
           strokeLinecap="round"
         />
       </svg>
+      </div>
     </motion.div>
   )
 }
