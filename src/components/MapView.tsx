@@ -368,7 +368,7 @@ function PoiPanel({
       initial={{ width: 0 }}
       animate={{ width: 340 }}
       exit={{ width: 0 }}
-      transition={{ type: "spring", damping: 22, stiffness: 240, mass: 0.9 }}
+      transition={{ type: "spring", damping: 19, stiffness: 200, mass: 1 }}
       className="shrink-0 overflow-hidden relative"
       style={{
         borderLeft: "1px solid var(--ink-line)",
