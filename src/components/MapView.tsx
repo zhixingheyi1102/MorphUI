@@ -714,12 +714,13 @@ export default function MapView({ data, onInteract }: Props) {
     const map = mapInstance.current
     if (!map || !mapReady.current) return
 
-    // 手绘笔触路线：水彩晕染底 + 钢笔墨线两层
+    // 手绘笔触路线：水彩晕染底 + 钢笔墨线两层（暂时隐藏，用户要求先删掉；置 true 可恢复）
+    const SHOW_BRUSH_ROUTE = false
     const routeData: GeoJSON.Feature = {
       type: "Feature", properties: {},
       geometry: { type: "LineString", coordinates: handDrawnPath(BRUSH_ROUTE) },
     }
-    if (!map.getSource("brush-route")) {
+    if (SHOW_BRUSH_ROUTE && !map.getSource("brush-route")) {
       map.addSource("brush-route", { type: "geojson", data: routeData })
       map.addLayer({
         id: "brush-route-halo", type: "line", source: "brush-route",
@@ -824,7 +825,11 @@ export default function MapView({ data, onInteract }: Props) {
       routeSourceIds.current.push(id)
     }
 
-    if (hasDays) {
+    // 暂时隐藏：每日路线虚线 + 餐厅/酒店 pin（用户要求先删掉，置 true 可恢复）
+    const SHOW_DAY_ROUTES = false
+    const SHOW_POI_PINS = false
+
+    if (SHOW_DAY_ROUTES && hasDays) {
       const byDay = new Map<string, Marker[]>()
       for (const m of spotMarkers) {
         const d = m.day ?? "day1"
@@ -848,14 +853,14 @@ export default function MapView({ data, onInteract }: Props) {
           isActive ? 0.9 : 0.35,
         )
       }
-    } else if (spotMarkers.length > 1) {
+    } else if (SHOW_DAY_ROUTES && spotMarkers.length > 1) {
       const coords = spotMarkers.map((m) => [m.lng, m.lat] as [number, number])
       addRoute("route-all", coords, data.routeColor ?? "#6366f1", 3, 0.6)
     }
 
     // 标记：景点（spot）不再画圆点 pin——建筑素材即景点标识；餐厅/酒店等保留 pin
     allMarkers.forEach((m) => {
-      if (m.type === "spot") return
+      if (!SHOW_POI_PINS || m.type === "spot") return
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
       const el = createMarkerEl(m.type, isHighlight, isSelected, undefined, false)
