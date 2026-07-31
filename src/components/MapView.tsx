@@ -392,7 +392,8 @@ function PoiPanel({
         style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
       />
       {/* 卡片内容锚定右缘：宽度展开时整张卡跟着前缘向右滑出（抽卡） */}
-      <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto">
+      {/* 阻止 wheel 冒泡到画布 viewport，卡内滚动不带动整个页面 */}
+      <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
         {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
         <div className="relative px-4 pt-3 mb-2">
           <button
