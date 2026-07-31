@@ -966,17 +966,11 @@ export default function MapView({ data, onInteract }: Props) {
       onDragStart={stopDragPropagation}
       draggable={false}
     >
-      {/* 地图区域：未选景点=对折态只占一半宽（192px），选中后向外展开到整张 384px */}
-      <motion.div
-        className="shrink-0 flex flex-col overflow-hidden"
-        initial={false}
-        animate={{ width: selectedMarker ? 384 : 192 }}
-        transition={{ type: "spring", damping: 26, stiffness: 170 }}
-      >
+      {/* 地图区域：始终整张 384px。POI 详情页折在背面，右缘露出纸边（见下方折边元素） */}
+      <div className="w-96 shrink-0 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
           <h3 className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
-          {/* 闭合态宽度只有一半，图例会把标题挤换行，收起时隐藏 */}
-          <div className={`flex gap-3 ${selectedMarker ? "" : "hidden"}`} style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {
                 const active = data.activeDay == null || data.activeDay === d
@@ -999,7 +993,7 @@ export default function MapView({ data, onInteract }: Props) {
         <div className="flex-1 min-h-[320px] relative">
           <div
             ref={mapRef}
-            style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 384 }}
+            style={{ position: "absolute", inset: 0 }}
             onDragStart={stopDragPropagation}
             onMouseDown={stopPointerPropagation}
             onPointerDown={stopPointerPropagation}
@@ -1036,51 +1030,48 @@ export default function MapView({ data, onInteract }: Props) {
               />
             ))}
           </div>
-          {/* 折叠中缝：固定在整张图中线 x=192。闭合态它正好压在右缘（折口），展开后是纸中间的余痕 */}
+          {/* 中缝淡折痕：整张地图对折过的纸质余痕（地图本身面积不折叠） */}
           <div
             className="absolute inset-y-0 pointer-events-none"
-            style={{ zIndex: 6, left: 192 - 36, width: 72 }}
-          >
-            {/* 闭合态：深折痕 + 两侧纸面明暗 */}
-            <div
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{
-                opacity: selectedMarker ? 0 : 1,
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(43,43,43,0.08) 34%, rgba(43,43,43,0.22) 48%, rgba(43,43,43,0.30) 50%, rgba(255,255,255,0.32) 53%, rgba(43,43,43,0.06) 68%, transparent 100%)",
-              }}
-            />
-            {/* 展开态：余痕 */}
-            <div
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{
-                opacity: selectedMarker ? 1 : 0,
-                background:
-                  "linear-gradient(90deg, transparent 32%, rgba(43,43,43,0.09) 49%, rgba(43,43,43,0.11) 50%, rgba(255,255,255,0.16) 53%, transparent 68%)",
-              }}
-            />
-          </div>
-          {/* 折口纸背边：闭合态贴在右缘的一条牛皮纸背，暗示右半页折在后面；展开时淡出 */}
-          <AnimatePresence>
-            {!selectedMarker && (
-              <motion.div
-                className="absolute inset-y-0 pointer-events-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.25 } }}
-                style={{
-                  left: 192 - 12, width: 12, zIndex: 7,
-                  background:
-                    "repeating-linear-gradient(0deg, rgba(122,92,58,0.06) 0 2px, transparent 2px 6px)," +
-                    "linear-gradient(90deg, rgba(43,43,43,0.10), #EAE2CB 40%, #E0D5B8)",
-                  borderLeft: "1px solid rgba(43,43,43,0.22)",
-                  boxShadow: "-6px 0 12px rgba(43,43,43,0.25)",
-                }}
-              />
-            )}
-          </AnimatePresence>
+            style={{
+              zIndex: 6, left: "50%", width: 72, transform: "translateX(-50%)",
+              background:
+                "linear-gradient(90deg, transparent 32%, rgba(43,43,43,0.09) 49%, rgba(43,43,43,0.11) 50%, rgba(255,255,255,0.16) 53%, transparent 68%)",
+            }}
+          />
         </div>
-      </motion.div>
+      </div>
+      {/* 折在背面的详情页：未选景点时只露出一条纸边+折角，暗示背面还有一页；
+          点击景点后 PoiPanel 从背面翻到正面（原有 rotateY 动画），整体向外拓宽 */}
+      <AnimatePresence>
+        {!selectedMarker && (
+          <motion.div
+            className="shrink-0 relative"
+            initial={{ width: 0 }}
+            animate={{ width: 14 }}
+            exit={{ width: 0, transition: { duration: 0.2 } }}
+            style={{
+              borderLeft: "1px solid var(--ink-line)",
+              background:
+                "repeating-linear-gradient(0deg, rgba(122,92,58,0.05) 0 2px, transparent 2px 6px)," +
+                "linear-gradient(90deg, rgba(43,43,43,0.14), #F0E9D2 45%, #E8DFC4)",
+              boxShadow: "inset 3px 0 6px rgba(43,43,43,0.10)",
+            }}
+          >
+            {/* 露出来的折角：右上角一小片翻起的纸尖 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 10, right: 0, width: 15, height: 15,
+                background: "linear-gradient(135deg, #F6F0DC 48%, #E2D8BC 52%, #D8CCAA)",
+                clipPath: "polygon(0 0, 100% 0, 100% 100%)",
+                filter: "drop-shadow(-1px 1px 1.5px rgba(43,43,43,0.30))",
+                transform: "rotate(8deg)",
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {selectedMarker && (
           <PoiPanel
