@@ -231,6 +231,27 @@
   stroke-linejoin: round;
 }
 
+/* 印章票框：外圈粗实线圆角框，四角用 mask 咬出缺口（橡皮章式） */
+.stamp-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 3px solid var(--ink-blue);
+  border-radius: 14px;
+  -webkit-mask:
+    radial-gradient(circle 9px at 0 0, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 100% 0, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 0 100%, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 100% 100%, transparent 8px, #000 9px);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle 9px at 0 0, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 100% 0, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 0 100%, transparent 8px, #000 9px),
+    radial-gradient(circle 9px at 100% 100%, transparent 8px, #000 9px);
+  mask-composite: intersect;
+}
+
 /* ── 收据（Receipt）─────────────────────────── */
 /* 收据纸：淡柠檬底 + 微弱纸张颗粒 */
 .receipt-paper {

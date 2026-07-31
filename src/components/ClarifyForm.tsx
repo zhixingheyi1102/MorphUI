@@ -71,16 +71,27 @@ export default function ClarifyForm({ data, onInteract }: Props) {
       />
 
       <div
-        className="intake-paper overflow-hidden"
+        className="intake-paper"
         style={{
-          border: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)",
-          borderRadius: "var(--r-paper)",
+          borderRadius: 10,
           color: "var(--ink)",
+          padding: 7,
         }}
       >
+        {/* 印章票框：外粗实线（四角咬缺）+ 内虚线 */}
+        <div className="relative">
+          <div className="stamp-frame" />
+          <div
+            className="overflow-hidden"
+            style={{
+              margin: 6,
+              border: "1.5px dashed color-mix(in srgb, var(--ink-blue) 60%, transparent)",
+              borderRadius: 8,
+            }}
+          >
         {/* 票头：印刷表头 */}
         <div
-          className="px-5 pt-5 pb-3 text-center"
+          className="px-5 pt-4 pb-3 text-center"
           style={{ borderBottom: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)" }}
         >
           <div style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.28em", color: "var(--ink-blue)" }}>
@@ -209,6 +220,8 @@ export default function ClarifyForm({ data, onInteract }: Props) {
         >
           <span>MORPH TRAVEL CO.</span>
           <span>FORM-08 / ARCHIVE</span>
+        </div>
+          </div>
         </div>
       </div>
     </div>
