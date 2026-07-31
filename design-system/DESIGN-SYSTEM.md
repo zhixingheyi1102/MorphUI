@@ -76,9 +76,8 @@
 | 英文正文 / metadata | JMH Typewriter Regular（400，编号/日期/表格标签主力） | `'JMH Typewriter','Courier New', monospace` |
 | 中文标题 | 寒蝉活宋体 ExBold/Bold（800/700） | `'ChillHuoSong','Songti SC', serif` |
 | 中文正文 | 寒蝉活宋体 Regular（复古活字铅印） | `'ChillHuoSong','Songti SC', serif` |
-| 中文情绪短句 / 窄排点缀 | 寒蝉活宋·长体 | `'ChillHuoSong Con','ChillHuoSong', serif` |
 
-> 字体全部本地自托管（`assets/fonts/fonts.css`，woff2 子集），无外链依赖。中文层级靠**字重**（400/700/800）+ 长体切换，英文靠字重 300/400/700/900。JMH Typewriter 为 Personal Use Only 授权，仅限 demo。
+> 字体全部本地自托管（`assets/fonts/fonts.css`，woff2 子集），无外链依赖。中文统一 Regular 字面（禁用长体/宽体变体），层级靠**字重**（400/700/800），英文靠字重 300/400/700/900。JMH Typewriter 为 Personal Use Only 授权，仅限 demo。
 
 字号只有 5 档：`12 / 14 / 16 / 22 / 34px`。metadata 永远 12px 打字机体 + `--gray` 或 `--ink` 70% 透明度。
 

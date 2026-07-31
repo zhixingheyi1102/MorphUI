@@ -24,14 +24,6 @@
   font-weight: 800;
   font-display: swap;
 }
-/* 长体（窄字面）：情绪短句 / 竖排点缀，独立 family */
-@font-face {
-  font-family: 'ChillHuoSong Con';
-  src: url('ChillHuoSong-Con.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-
 /* —— 英文/数字 · JMH Typewriter —— */
 @font-face {
   font-family: 'JMH Typewriter';
@@ -59,7 +51,6 @@
 }
 
 /* —— 推荐变量（组件直接用）——
-   --f-cn      : 'ChillHuoSong', 'Songti SC', serif;        中文正文/标题
-   --f-cn-con  : 'ChillHuoSong Con', 'ChillHuoSong', serif; 中文情绪短句/窄排
+   --f-cn      : 'ChillHuoSong', 'Songti SC', serif;        中文正文/标题（统一 Regular 字面，禁用长体/宽体变体）
    --f-type    : 'JMH Typewriter', 'Courier New', monospace; 英文数字/编号/meta
 */
