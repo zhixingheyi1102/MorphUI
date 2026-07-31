@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { MapPin, MapTrifold, Target, Timer } from "@phosphor-icons/react"
+import { ChatCircleText, MapPin, Target, Timer } from "@phosphor-icons/react"
 
 type Activity = {
   id: string
@@ -24,8 +24,8 @@ type SpotData = {
 type Props = {
   spot: SpotData
   isFirst: boolean
-  // 点整卡 → 打开二级 POST CARD 详情（地图卡飞到该点并抽出便签）
-  onOpenDetail?: (spotId: string) => void
+  // 点整卡「更多」→ 当作用户发问，agent 在对话里介绍该景点（不联动地图）
+  onAskMore?: (spotName: string) => void
 }
 
 // 由开始时间 + 时长推算结束时间："09:30"+"1.5h" → "11:00"；解析不了返回 null
@@ -40,7 +40,7 @@ function endTimeOf(time: string, duration?: string): string | null {
   return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`
 }
 
-export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
+export default function SpotCard({ spot, isFirst, onAskMore }: Props) {
   return (
     <div className="relative flex gap-4 group/spot" style={{ fontFamily: "var(--font-cn)" }}>
       {/* 时间轴圆点 */}
@@ -57,8 +57,8 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
 
       {/* 景点卡片 */}
       <div
-        onClick={onOpenDetail ? () => onOpenDetail(spot.id) : undefined}
-        className={`flex-1 min-w-0 p-4 mb-1 transition-shadow relative ${onOpenDetail ? "cursor-pointer hover:brightness-[0.98]" : ""}`}
+        onClick={onAskMore ? () => onAskMore(spot.name) : undefined}
+        className={`flex-1 min-w-0 p-4 mb-1 transition-shadow relative ${onAskMore ? "cursor-pointer hover:brightness-[0.98]" : ""}`}
         style={{
           background: "var(--paper-cream)",
           border: "1px solid var(--ink-line)",
@@ -67,15 +67,6 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
           color: "var(--ink)",
         }}
       >
-        {/* 详情提示（hover 出现） */}
-        {onOpenDetail && (
-          <span
-            className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full opacity-0 group-hover/spot:opacity-100 transition-opacity pointer-events-none"
-            style={{ fontSize: "10px", background: "var(--paper-blue)", color: "var(--ink-blue)", border: "1px solid var(--ink-blue)" }}
-          >
-            <MapTrifold size={11} weight="fill" /> 详情
-          </span>
-        )}
         <div className="flex gap-3">
           {/* 左侧：时间 + 名称 + 介绍（flyer 式排版） */}
           <div className="flex-1 min-w-0 flex flex-col">
@@ -181,6 +172,18 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 「更多」提示（hover 显形）——卡片右下角脚注，占常驻文档流，不与邮票/玩法区重叠 */}
+        {onAskMore && (
+          <div className="flex justify-end mt-1.5 -mb-1">
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full opacity-0 group-hover/spot:opacity-100 transition-opacity pointer-events-none"
+              style={{ fontSize: "10px", background: "var(--paper-blue)", color: "var(--ink-blue)", border: "1px solid var(--ink-blue)" }}
+            >
+              <ChatCircleText size={11} weight="fill" /> 更多
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
