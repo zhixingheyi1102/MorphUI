@@ -1,4 +1,5 @@
 import { AirplaneTilt } from "@phosphor-icons/react"
+import { motion, AnimatePresence } from "framer-motion"
 
 type Flight = {
   id: string
@@ -87,26 +88,38 @@ export default function FlightList({ data, onInteract }: Props) {
             </div>
           )}
 
-          {seg.flights.map((flight, i) => (
-            <div key={flight.id}>
-              <TicketCard
-                flight={flight}
-                ink={TICKET_INKS[i % TICKET_INKS.length]}
-                onInteract={onInteract}
-                selected={data.selectedId === flight.id}
-                dimmed={!!data.selectedId && data.selectedId !== flight.id}
-              />
-              {i < seg.flights.length - 1 && (() => {
-                const interval = getInterval(flight.departTime, seg.flights[i + 1].departTime)
+          {/* 选定后：其余票高度塌缩淡出，只留盖了章的那张 */}
+          <AnimatePresence initial={false}>
+            {seg.flights
+              .filter((f) => !data.selectedId || f.id === data.selectedId)
+              .map((flight) => {
+                const oi = seg.flights.findIndex((f) => f.id === flight.id)
                 return (
-                  <div className="flex items-center justify-center gap-2 py-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-line)" }}>
-                    <span>✦ 备选对比</span>
-                    {interval && <span>间隔约{interval}</span>}
-                  </div>
+                  <motion.div
+                    key={flight.id}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.45, ease: [0.3, 0.75, 0.25, 1] }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <TicketCard
+                      flight={flight}
+                      ink={TICKET_INKS[oi % TICKET_INKS.length]}
+                      onInteract={onInteract}
+                      selected={data.selectedId === flight.id}
+                    />
+                    {!data.selectedId && oi < seg.flights.length - 1 && (() => {
+                      const interval = getInterval(flight.departTime, seg.flights[oi + 1].departTime)
+                      return (
+                        <div className="flex items-center justify-center gap-2 py-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-line)" }}>
+                          <span>✦ 备选对比</span>
+                          {interval && <span>间隔约{interval}</span>}
+                        </div>
+                      )
+                    })()}
+                  </motion.div>
                 )
-              })()}
-            </div>
-          ))}
+              })}
+          </AnimatePresence>
         </div>
       ))}
     </div>
@@ -118,29 +131,23 @@ function TicketCard({
   ink,
   onInteract,
   selected,
-  dimmed,
 }: {
   flight: Flight
   ink: string
   onInteract: (id: string) => void
   selected?: boolean
-  dimmed?: boolean
 }) {
   const fromCode = airportCode(flight.from)
   const toCode = airportCode(flight.to)
   const recommended = flight.tags.some((t) => t.includes("推荐"))
-  const locked = selected || dimmed // 已做出选择后整组票不可再点
+  const locked = selected // 已做出选择后不可再点
 
   return (
     <button
       onClick={() => !locked && onInteract(flight.id)}
       disabled={locked}
-      className="w-full text-left group block transition-opacity duration-500"
-      style={{
-        opacity: dimmed ? 0.32 : 1,
-        filter: dimmed ? "saturate(0.4)" : undefined,
-        cursor: locked ? "default" : "pointer",
-      }}
+      className="w-full text-left group block"
+      style={{ cursor: locked ? "default" : "pointer" }}
     >
       <div
         className={`relative flex overflow-hidden transition-transform ${locked ? "" : "group-hover:-translate-y-0.5"}`}

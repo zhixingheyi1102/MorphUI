@@ -12,6 +12,9 @@ function findFlight(id?: string) {
   return SZ_FLIGHTS.find((f) => f.id === id) ?? SZ_FLIGHTS[1]
 }
 
+// Step 10 选票时记下所选航班，Step 11（用户确认收进方案）再用它生成行程/预算/清单
+let chosenFlightId: string | undefined
+
 // 去机场出发时刻 = 起飞前 3h15m（含市内交通 + 值机安检余量）
 function airportLeaveTime(departTime: string): string {
   const [h, m] = departTime.split(":").map(Number)
@@ -583,26 +586,40 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 10: 用户选了航班 → 所选票即时盖章 → 调整 Day2 行程 + 更新预算 + 出差清单
-  //          → 机票组件自动收进方案文件夹（autoDock）
+  // Step 10: 用户选了航班 → 所选票即时盖章、其余票收走 → AI 询问是否收进方案
+  //          （不收纳、不改行程，等用户确认）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "component_interact", componentId: "flights" },
-    aiMessage:
-      "航班选好了 ✈️ 机票已经帮你收进方案里。Day 2 行程调整好了，另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～",
+    aiMessage: "航班选好了 ✈️ 要不要我把这张机票收进方案里，方便后续查看？顺便帮你调整 Day 2 行程和预算～",
     aiMessageFn: (value) => {
       const f = findFlight(value)
-      const airport = f.from.includes("浦东") ? "浦东机场" : "虹桥机场"
-      return `${f.airline} ${f.departTime} 的航班选好了 ✈️ 机票已经帮你收进方案里。Day 2 行程也调好了，下午 ${airportLeaveTime(f.departTime)} 出发去${airport}。另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～`
+      return `${f.airline} ${f.departTime} 的航班选好了 ✈️ 要不要我把这张机票收进方案里，方便后续查看？顺便帮你调整 Day 2 行程和预算～`
     },
-    // 点击瞬间：所选票盖"已选"章，其余票淡出
-    immediateActionsFn: (value) => [
-      { action: "update", componentId: "flights", data: { selectedId: findFlight(value).id } },
-    ],
-    // AI 确认后：机票组件自动收进方案文件夹
+    // 点击瞬间：记下所选航班，所选票盖"已选"章，其余票收走
+    immediateActionsFn: (value) => {
+      chosenFlightId = findFlight(value).id
+      return [{ action: "update", componentId: "flights", data: { selectedId: chosenFlightId } }]
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // Step 11: 用户确认收进方案 → 机票收进文件夹（autoDock）
+  //          + Day2 加去机场节点 + 预算加机票 + 出差清单
+  // ──────────────────────────────────────────────
+  {
+    trigger: { type: "user_send" },
+    userMessage: "好，收进方案里吧",
+    aiMessage: "收好了 ✈️ 机票放进方案文件夹了。Day 2 行程调整好了，另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～",
+    aiMessageFn: () => {
+      const f = findFlight(chosenFlightId)
+      const airport = f.from.includes("浦东") ? "浦东机场" : "虹桥机场"
+      return `收好了 ✈️ 机票放进方案文件夹了。Day 2 行程也调好了，下午 ${airportLeaveTime(f.departTime)} 出发去${airport}。另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～`
+    },
+    // 确认后：机票组件收进方案文件夹
     autoDock: "flights",
-    workspaceActionsFn: (value) => {
-      const f = findFlight(value)
+    workspaceActionsFn: () => {
+      const f = findFlight(chosenFlightId)
       const airport = f.from.includes("浦东") ? "浦东机场" : "虹桥机场"
       const toAirport = f.from.includes("浦东")
         ? { method: "打车", duration: "40min", distance: "30km" }
