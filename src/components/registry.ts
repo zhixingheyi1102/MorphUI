@@ -1,8 +1,6 @@
 import ClarifyForm from "./ClarifyForm"
 import PlanNotebook from "./PlanNotebook"
 import MapView from "./MapView"
-import ActivityCards from "./ActivityCards"
-import POICard from "./POICard"
 import BudgetTracker from "./BudgetTracker"
 import FlightList from "./FlightList"
 import CheckList from "./CheckList"
@@ -18,8 +16,6 @@ const registry: Record<string, ComponentEntry> = {
   itinerary: PlanNotebook,
   plan_notebook: PlanNotebook,
   map_view: MapView,
-  activity_cards: ActivityCards,
-  poi_card: POICard,
   budget_tracker: BudgetTracker,
   flight_list: FlightList,
   checklist: CheckList,
@@ -40,8 +36,6 @@ export const COMPONENT_CATEGORIES: Record<string, ComponentCategory> = {
   checklist: "auxiliary",
   map_view: "auxiliary",
   clarify_form: "process",
-  poi_card: "process",
-  activity_cards: "process",
   flight_list: "process",
   note_card: "auxiliary",
   link_card: "auxiliary",

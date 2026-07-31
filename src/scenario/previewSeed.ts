@@ -135,36 +135,6 @@ const previewSeed: ComponentInstance[] = [
       ],
     },
   },
-  {
-    id: "poi",
-    type: "poi_card",
-    data: {
-      type: "spot",
-      name: "武康路",
-      desc: "从武康大楼出发，沿途老洋房和巴金故居，法租界最经典的一条路",
-      imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80",
-      rating: 4.8,
-      tags: ["历史建筑", "法租界", "网红打卡"],
-      distance: "距市中心 3km",
-      activities: [
-        { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房", duration: "1.5h", price: 0, tag: "免费" },
-        { id: "photo", title: "旅拍体验", desc: "在武康大楼前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
-      ],
-      activitiesLoaded: true,
-    },
-  },
-  {
-    id: "activities",
-    type: "activity_cards",
-    data: {
-      spotName: "武康路",
-      activities: [
-        { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
-        { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
-        { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
-      ],
-    },
-  },
 ]
 
 export default previewSeed
