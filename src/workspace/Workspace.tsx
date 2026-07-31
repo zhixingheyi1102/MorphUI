@@ -3,6 +3,7 @@ import { useDrag } from "@use-gesture/react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ComponentInstance } from "../engine/types"
 import registry, { COMPONENT_CATEGORIES } from "../components/registry"
+import PlanFolder from "./PlanFolder"
 
 // ─── 常量 ───
 const MIN_SCALE = 0.3
@@ -331,6 +332,7 @@ function CanvasCard({
   isDragging,
   dragCurrentPos,
   organized,
+  dockedComponents,
   onClose,
   onInteract,
   onDragStart,
@@ -349,6 +351,7 @@ function CanvasCard({
   isDragging: boolean
   dragCurrentPos: Position | null
   organized: boolean
+  dockedComponents: ComponentInstance[]
   onClose: (id: string) => void
   onInteract: (id: string, value?: string) => void
   onDragStart: (id: string) => void
@@ -527,12 +530,23 @@ function CanvasCard({
             transformOrigin: "top left",
           }}
         >
-          <Component
-            data={comp.data}
-            onInteract={(...args: unknown[]) =>
-              onInteract(comp.id, args[0] as string | undefined)
-            }
-          />
+          {COMPONENT_CATEGORIES[comp.type] === "plan" ? (
+            /* 方案组件 → 文件夹形态（合拢封套 / 展开两页），收纳组件渲染进右页 */
+            <PlanFolder
+              planId={comp.id}
+              data={comp.data}
+              dockedComponents={dockedComponents}
+              organized={organized}
+              onInteract={onInteract}
+            />
+          ) : (
+            <Component
+              data={comp.data}
+              onInteract={(...args: unknown[]) =>
+                onInteract(comp.id, args[0] as string | undefined)
+              }
+            />
+          )}
         </div>
       </div>
     </motion.div>
@@ -601,6 +615,18 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     })
   }, [components])
 
+  // ─── 文件夹收纳：dockedIds 存在方案组件 data 上；被收纳的组件不在画布上单独渲染 ───
+  const { visibleComponents, dockedComponents } = useMemo(() => {
+    const plan = components.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+    const docked = new Set(
+      (((plan?.data.dockedIds as string[] | undefined) ?? [])).filter((id) => id !== plan?.id)
+    )
+    return {
+      visibleComponents: components.filter((c) => !docked.has(c.id)),
+      dockedComponents: components.filter((c) => docked.has(c.id)),
+    }
+  }, [components])
+
   // ─── 计算所有组件位置 ───
   // 自由模式：按创建顺序从左到右排列；整理模式：方案在左，其余在右侧网格聚拢
   const positions = useMemo(() => {
@@ -609,8 +635,8 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
 
     // ── 整理模式：聚拢排布 ──
     if (organized) {
-      const planComp = components.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
-      const rightIds = components
+      const planComp = visibleComponents.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      const rightIds = visibleComponents
         .filter((c) => COMPONENT_CATEGORIES[c.type] !== "plan")
         .map((c) => c.id)
       const base = computeTidyLayout(planComp?.id ?? null, rightIds, visualSizes)
@@ -625,7 +651,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     // ── 自由模式 ──
     const result = new Map<string, Position>()
     let cursorX = AUTO_PLACE_ORIGIN.x
-    for (const comp of components) {
+    for (const comp of visibleComponents) {
       const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
       const dragged = draggedPositions.get(comp.id)
       if (dragged) {
@@ -637,7 +663,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     }
     const fixedIds = new Set(draggedPositions.keys())
     return resolveCollisions(result, fixedIds, visualSizes)
-  }, [components, draggedPositions, measureVersion, organized, scales])
+  }, [visibleComponents, draggedPositions, measureVersion, organized, scales])
 
   // ─── 画布缩放 & 平移 ───
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -941,7 +967,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
 
         {/* 组件 */}
         <AnimatePresence>
-          {components.map((comp) => {
+          {visibleComponents.map((comp) => {
             const pos = positions.get(comp.id)
             if (!pos) return null
             const isDragging = dragInfo?.componentId === comp.id
@@ -956,6 +982,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
                 isDragging={isDragging}
                 dragCurrentPos={isDragging ? dragInfo.currentPos : null}
                 organized={organized}
+                dockedComponents={dockedComponents}
                 onClose={onClose}
                 onInteract={onInteract}
                 onDragStart={handleDragStart}

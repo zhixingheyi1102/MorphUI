@@ -361,6 +361,33 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     [isTyping, advanceScript, callAI]
   )
 
+  // ─── 收纳 / 取出：dockedIds 存在方案组件 data 上（AI 也可经 update_component 操作）───
+  const dockComponent = useCallback((componentId: string) => {
+    setComponents((prev) => {
+      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      if (!plan || plan.id === componentId) return prev
+      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
+      if (docked.includes(componentId)) return prev
+      return prev.map((c) =>
+        c.id === plan.id ? { ...c, data: { ...c.data, dockedIds: [...docked, componentId] } } : c
+      )
+    })
+  }, [])
+
+  const undockComponent = useCallback((componentId: string) => {
+    setComponents((prev) => {
+      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      if (!plan) return prev
+      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
+      if (!docked.includes(componentId)) return prev
+      return prev.map((c) =>
+        c.id === plan.id
+          ? { ...c, data: { ...c.data, dockedIds: docked.filter((id) => id !== componentId) } }
+          : c
+      )
+    })
+  }, [])
+
   // ─── 组件交互 ───
   const handleComponentInteract = useCallback(
     (componentId: string, value?: string) => {
@@ -369,6 +396,16 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
       // 点方案里的景点卡 → 引用到输入框，不发消息
       if (value && value.startsWith("quote:")) {
         setQuotedSpot(value.slice(6))
+        return
+      }
+
+      // 文件夹收纳 / 取出（不触发对话）
+      if (value && value.startsWith("dock:")) {
+        dockComponent(value.slice(5))
+        return
+      }
+      if (value && value.startsWith("undock:")) {
+        undockComponent(value.slice(7))
         return
       }
 
@@ -437,7 +474,7 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
       historyRef.current.push({ role: "user", content: message })
       callAI(historyRef.current)
     },
-    [isTyping, advanceScript, components, callAI, typeText, applyActions, sendMessage]
+    [isTyping, advanceScript, components, callAI, typeText, applyActions, sendMessage, dockComponent, undockComponent]
   )
 
   // ─── 手动关闭组件 ───
@@ -460,14 +497,24 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     )
   }, [applyActions])
 
-  // ─── 一键整理：移除过程态组件，保留方案和辅助组件 ───
+  // ─── 一键整理：移除过程态组件，辅助组件收进方案文件夹（写 dockedIds）───
   const organizeWorkspace = useCallback(() => {
-    setComponents((prev) =>
-      prev.filter((c) => {
+    setComponents((prev) => {
+      const kept = prev.filter((c) => {
         const cat = COMPONENT_CATEGORIES[c.type]
         return cat === "plan" || cat === "auxiliary"
       })
-    )
+      const plan = kept.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      if (!plan) return kept
+      const existing = (plan.data.dockedIds as string[] | undefined) ?? []
+      const auxIds = kept
+        .filter((c) => COMPONENT_CATEGORIES[c.type] === "auxiliary" && !existing.includes(c.id))
+        .map((c) => c.id)
+      if (auxIds.length === 0) return kept
+      return kept.map((c) =>
+        c.id === plan.id ? { ...c, data: { ...c.data, dockedIds: [...existing, ...auxIds] } } : c
+      )
+    })
   }, [])
 
   // ─── 拖拽排序 ───
@@ -492,6 +539,8 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     handleComponentInteract,
     closeComponent,
     organizeWorkspace,
+    dockComponent,
+    undockComponent,
     handleHintClick,
     reorderComponents,
   }
