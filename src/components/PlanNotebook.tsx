@@ -3,9 +3,11 @@ import SpotCard from "./plan/SpotCard"
 import TransportCard from "./plan/TransportCard"
 
 type Transport = {
-  method: string
-  duration: string
-  distance: string
+  // 通用连接件：label 为任意过渡说明（如"间隔 1h"）；method/duration/distance 为旅行交通信息
+  label?: string
+  method?: string
+  duration?: string
+  distance?: string
 }
 
 type Activity = {
@@ -20,10 +22,10 @@ type Activity = {
 type Spot = {
   id: string
   name: string
-  time: string
-  duration: string
+  time?: string
+  duration?: string
   desc: string
-  tag: string
+  tag?: string
   imageUrl?: string
   transport?: Transport
   selectedActivities?: Activity[]

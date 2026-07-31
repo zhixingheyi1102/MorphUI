@@ -572,37 +572,58 @@ export default function MapView({ data, onInteract }: Props) {
   }, [])
 
   // 初始化地图
+  // 关键：组件挂载时正处于 framer-motion 入场动画 + 画布 transform 中，容器尺寸可能为 0，
+  // 此时创建 MapLibre 会读到 0×0 而永远不请求正确视口的瓦片（表现为全白）。
+  // 因此先用 ResizeObserver 等到容器有真实尺寸再创建，之后再监听尺寸变化做 resize。
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: MAP_STYLE,
-      center: [data.center[1], data.center[0]], // scenario 用 [lat,lng]，MapLibre 用 [lng,lat]
-      zoom: data.zoom,
-      minZoom: 9,
-      maxZoom: 17.5,
-      attributionControl: false,
-    })
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right")
-    mapInstance.current = map
-    ;(window as unknown as { __map?: unknown }).__map = map
+    const container = mapRef.current
+    if (!container) return
 
-    map.on("load", () => {
-      mapReady.current = true
-      map.resize()
-      setStyleVersion((v) => v + 1) // 触发标记/路线渲染
-    })
+    let map: maplibregl.Map | null = null
+    let disposed = false
 
-    map.on("error", (e) => {
-      console.warn("[MapView] maplibre error:", e && e.error)
-    })
+    const createMap = () => {
+      if (map || disposed || !mapRef.current) return
+      map = new maplibregl.Map({
+        container: mapRef.current,
+        style: MAP_STYLE,
+        center: [data.center[1], data.center[0]], // scenario 用 [lat,lng]，MapLibre 用 [lng,lat]
+        zoom: data.zoom,
+        minZoom: 9,
+        maxZoom: 17.5,
+        attributionControl: false,
+      })
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right")
+      mapInstance.current = map
 
-    const observer = new ResizeObserver(() => map.resize())
-    observer.observe(mapRef.current)
+      map.on("load", () => {
+        mapReady.current = true
+        map!.resize()
+        setStyleVersion((v) => v + 1) // 触发标记/路线渲染
+      })
+      map.on("error", (e) => {
+        console.warn("[MapView] maplibre error:", e && e.error)
+      })
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect
+      const w = rect?.width ?? container.clientWidth
+      const h = rect?.height ?? container.clientHeight
+      if (w > 0 && h > 0) {
+        if (!map) createMap()
+        else map.resize()
+      }
+    })
+    observer.observe(container)
+
+    // 若挂载时已经有尺寸（无入场动画的场景）立即创建
+    if (container.clientWidth > 0 && container.clientHeight > 0) createMap()
 
     return () => {
+      disposed = true
       observer.disconnect()
-      map.remove()
+      if (map) map.remove()
       mapInstance.current = null
       mapReady.current = false
     }
@@ -660,11 +681,12 @@ export default function MapView({ data, onInteract }: Props) {
         if (spots.length < 2) continue
         const isActive = activeDay == null || d === activeDay
         const coords = spots.map((m) => [m.lng, m.lat] as [number, number])
+        // 非当前天也用本天颜色（仅降低透明度/线宽），保证多条路线都清晰可见
         addRoute(
           `route-${d}`, coords,
-          isActive ? dayColor(d) : DIM_COLOR,
+          dayColor(d),
           isActive ? 3.5 : 2.5,
-          isActive ? 0.75 : 0.35,
+          isActive ? 0.85 : 0.5,
         )
       }
     } else if (spotMarkers.length > 1) {
@@ -676,12 +698,13 @@ export default function MapView({ data, onInteract }: Props) {
     allMarkers.forEach((m) => {
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
-      // 景点按天着色；非当前天置灰。非景点（餐厅/酒店）保持原色
+      // 景点按天着色（非当前天保留本天颜色，仅略微淡化）。非景点（餐厅/酒店）保持原色
       let colorOverride: string | undefined
       let dimmed = false
       if (hasDays && m.type === "spot") {
         colorOverride = dayColor(m.day)
-        dimmed = activeDay != null && m.day != null && m.day !== activeDay && !isSelected
+        // 只有当前天以外的普通标记轻微淡化；不再置灰隐藏
+        dimmed = false
       }
       const el = createMarkerEl(m.type, isHighlight, isSelected, colorOverride, dimmed)
       el.title = m.name

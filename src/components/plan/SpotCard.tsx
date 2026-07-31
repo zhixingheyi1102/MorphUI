@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { ChatCircle, MapPin, Target, Timer } from "@phosphor-icons/react"
+import { ChatCircle, Target, Timer } from "@phosphor-icons/react"
 
 type Activity = {
   id: string
@@ -13,10 +13,10 @@ type Activity = {
 type SpotData = {
   id: string
   name: string
-  time: string
-  duration: string
+  time?: string
+  duration?: string
   desc: string
-  tag: string
+  tag?: string
   imageUrl?: string
   selectedActivities?: Activity[]
 }
@@ -66,49 +66,51 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
         <div className="flex gap-3">
           {/* 左侧：文字信息 */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1" style={{ color: "var(--ink-soft)" }}>
-              <span style={{ fontSize: "var(--fs-caption)", fontFamily: "var(--font-en)" }}>{spot.time}</span>
-              <span style={{ fontSize: "var(--fs-caption)" }}>·</span>
-              <span style={{ fontSize: "var(--fs-caption)" }}>{spot.duration}</span>
-            </div>
+            {/* 时间行：仅在有 time / duration 时显示（非旅行场景可省略） */}
+            {(spot.time || spot.duration) && (
+              <div className="flex items-center gap-2 mb-1" style={{ color: "var(--ink-soft)" }}>
+                {spot.time && <span style={{ fontSize: "var(--fs-caption)", fontFamily: "var(--font-en)" }}>{spot.time}</span>}
+                {spot.time && spot.duration && <span style={{ fontSize: "var(--fs-caption)" }}>·</span>}
+                {spot.duration && <span style={{ fontSize: "var(--fs-caption)" }}>{spot.duration}</span>}
+              </div>
+            )}
             <h4 className="font-semibold mb-1" style={{ fontSize: "var(--fs-body)", color: "var(--ink)" }}>{spot.name}</h4>
-            <p className="leading-relaxed line-clamp-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{spot.desc}</p>
-            <span
-              className="inline-block mt-2 px-2 py-0.5"
-              style={{
-                fontSize: "var(--fs-caption)",
-                borderRadius: "var(--r-paper)",
-                background: "var(--paper-oat)",
-                color: "var(--ink-soft)",
-              }}
-            >
-              {spot.tag}
-            </span>
+            <p className="leading-relaxed whitespace-pre-line" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{spot.desc}</p>
+            {/* tag：仅在有时显示 */}
+            {spot.tag && (
+              <span
+                className="inline-block mt-2 px-2 py-0.5"
+                style={{
+                  fontSize: "var(--fs-caption)",
+                  borderRadius: "var(--r-paper)",
+                  background: "var(--paper-oat)",
+                  color: "var(--ink-soft)",
+                }}
+              >
+                {spot.tag}
+              </span>
+            )}
           </div>
 
-          {/* 右侧：图片区域（邮票边框） */}
-          <div
-            className="w-20 h-20 shrink-0 overflow-hidden"
-            style={{
-              borderRadius: "var(--r-paper)",
-              border: "2px solid var(--paper-oat)",
-              background: "var(--paper-oat)",
-              boxShadow: "var(--z1)",
-            }}
-          >
-            {spot.imageUrl ? (
+          {/* 右侧：图片区域（仅在有 imageUrl 时显示，不再用地图针占位） */}
+          {spot.imageUrl && (
+            <div
+              className="w-20 h-20 shrink-0 overflow-hidden"
+              style={{
+                borderRadius: "var(--r-paper)",
+                border: "2px solid var(--paper-oat)",
+                background: "var(--paper-oat)",
+                boxShadow: "var(--z1)",
+              }}
+            >
               <img
                 src={spot.imageUrl}
                 alt={spot.name}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ background: "var(--paper-oat)" }}>
-                <MapPin size={20} style={{ color: "var(--ink-line)" }} />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 已选玩法（蓝墨=用户选择） */}

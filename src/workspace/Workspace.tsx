@@ -21,8 +21,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 // 组件生成中占位卡的类型标签
 const GENERATING_LABELS: Record<string, string> = {
   clarify_form: "偏好表单",
-  itinerary: "行程方案",
-  plan_notebook: "行程方案",
+  itinerary: "方案",
+  plan_notebook: "方案",
   map_view: "路线地图",
   budget_tracker: "预算概览",
   flight_list: "航班列表",
@@ -640,7 +640,9 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   }, [components, draggedPositions, measureVersion, organized, scales])
 
   // ─── 画布缩放 & 平移 ───
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  // 用原生 wheel 监听（passive: false）：React 的 onWheel 是 passive 的，
+  // 里面调 preventDefault 会报 "Unable to preventDefault inside passive event listener"。
+  const handleWheel = useCallback((e: WheelEvent) => {
     if (isDraggingRef.current) return
 
     if (e.ctrlKey || e.metaKey) {
@@ -667,6 +669,13 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       }))
     }
   }, [])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    el.addEventListener("wheel", handleWheel, { passive: false })
+    return () => el.removeEventListener("wheel", handleWheel)
+  }, [handleWheel])
 
   // ─── 鼠标拖拽平移画布（在空白处按下） ───
   const handlePanStart = useCallback((e: React.MouseEvent) => {
@@ -886,8 +895,8 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       <div className="flex-1 flex items-center justify-center desk-bg" style={{ fontFamily: "var(--font-cn)" }}>
         <div className="text-center" style={{ color: "var(--paper-sage)" }}>
           <div className="text-5xl mb-4 opacity-60">✦</div>
-          <p className="text-lg font-light">在左侧对话中开始你的规划</p>
-          <p className="text-sm mt-1 opacity-70">组件将在这里动态生成</p>
+          <p className="text-lg font-light">这里是你的工作台</p>
+          <p className="text-sm mt-1 opacity-70">在左侧说出需求，方案与组件将在这里生成，供你查看和调整</p>
         </div>
       </div>
     )
@@ -898,7 +907,6 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       ref={viewportRef}
       className="flex-1 relative overflow-hidden desk-bg select-none"
       style={{ cursor: isPanning ? "grabbing" : "grab" }}
-      onWheel={handleWheel}
       onMouseDown={handlePanStart}
       onMouseMove={handlePanMove}
       onMouseUp={handlePanEnd}

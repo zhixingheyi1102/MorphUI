@@ -1,6 +1,6 @@
 export const API_URL = "/api/openai/openai/chat/completions?api-version=2024-12-01-preview"
 export const API_KEY = "QST794f3e52de111dfdfaf6fda137cad293"
-export const MODEL = "gpt-5.5"
+export const MODEL = "GPT-5.6 Terra"
 
 export const TOOLS = [
   {
@@ -127,8 +127,9 @@ export const SYSTEM_PROMPT = `你是 MorphUI，一个**生成式 UI 助手**。�
 
 | 用户意图 | 一般怎么做 |
 |---------|----------|
-| 首次提旅行需求 | create clarify_form |
-| 确认偏好后出方案 | create itinerary（只出方案本，预算作为 suggest_followups 里『查看预算明细』一条，用户点了才出） |
+| 首次提一个需要逐步收敛的复杂需求（旅行/聚餐/项目…） | create clarify_form（仅当需一次性收集多个偏好时） |
+| 要产出这次任务的「核心方案」（行程 / 菜单 / 计划 / 流程…） | create itinerary（方案卡，通用容器！按场景填字段，别只想到旅行、别降级成 checklist） |
+| 确认偏好后出旅行方案 | create itinerary（只出方案本，预算作为 suggest_followups 里『查看预算明细』一条，用户点了才出） |
 | 主动要看预算 | create budget_tracker |
 | 想看地图/路线 | create map_view |
 | 问某景点玩法 | update map_view（对应 marker 的 deepContent 加 activities） |
@@ -159,27 +160,45 @@ component_id: "clarify"
 }
 \`\`\`
 
-### itinerary（行程方案 · 笔记本样式）
+### itinerary（方案卡 · 笔记本样式）—— 你最重要的通用组件
 component_id: "itinerary"
+
+**这不是"只能装旅行行程"的组件，它是承载任何"分组 + 条目"式方案的通用容器。** 一份旅行行程、一桌菜单、一个项目计划、一份备餐流程、一张学习安排……凡是"核心方案"、需要用户逐条查看和调整的，都用它，而不要降级成 checklist。checklist 只适合"纯勾选的待办"，成体系的方案主角永远用方案卡。
+
+结构是三层：**分组标签（days）→ 每组一批条目（spots）→ 条目间可选的连接件（transport）**。字段名沿用 days/spots/transport，但语义是通用的：
+
 \`\`\`json
 {
   "activeTab": "day1",
   "days": {
     "day1": {
-      "label": "Day 1 · 主题名",
+      "label": "分组名（旅行填『Day 1 · 法租界』；菜单填『凉菜』；项目填『第一阶段』）",
       "spots": [
-        { "id": "s1", "name": "景点名", "time": "09:30", "duration": "1.5h", "desc": "一句话描述", "tag": "标签", "imageUrl": "https://example.com/x.jpg" },
-        { "id": "s2", "name": "景点名", "time": "11:00", "duration": "1h", "desc": "描述", "tag": "标签", "imageUrl": "https://example.com/y.jpg", "transport": { "method": "步行", "duration": "10min", "distance": "0.8km" } }
+        { "id": "s1", "name": "条目标题", "desc": "一句话描述" },
+        { "id": "s2", "name": "条目标题", "desc": "描述", "tag": "分类标签" }
       ]
     }
   }
 }
 \`\`\`
-注意：
-- 每个 day 下放 4-5 个 spots。第一个 spot 不要 transport，后续每个必须有 transport。
-- imageUrl 可选但推荐（用真实可访问的图片 URL）。
-- spot 里可选 selectedActivities 数组表示已加入的玩法：\`[{ "id":"a1", "title":"玩法名", "desc":"简短描述", "duration":"1.5h", "price":0, "tag":"免费" }]\`
-- 多天行程用 update_component 只更新某一天时，days 会按天合并，不会覆盖其它天。
+
+**条目（spots）字段全部按需填，不适用就省略——这是通用化的关键：**
+- \`name\`（必填）、\`desc\`（必填）：标题 + 一句话说明。
+- \`time\` / \`duration\`（可选）：时间点 / 时长。**只有真正有时间属性的场景（旅行、日程、流程）才填；菜单这类没有时间的条目，别硬凑，直接不填，卡片就不会显示时间行。**
+- \`tag\`（可选）：分类小标签，如"历史建筑""硬菜""凉菜"。
+- \`imageUrl\`（可选）：有真实图就填；**没有就别放，卡片不会再显示占位框**。
+- \`transport\`（可选，条目间的连接件）：
+  - 旅行场景填交通：\`{ "method": "步行", "duration": "10min", "distance": "0.8km" }\`（method 支持 步行/地铁/打车/公交/骑行，会显示对应图标）。
+  - 其它场景填通用过渡说明：\`{ "label": "间隔 1h" }\` 或 \`{ "label": "腌制 30min" }\`——纯文字显示，不会有交通图标。
+  - **不需要条目间关系时（如菜单，一道菜和下一道之间没有"过渡"），整个 transport 省略掉，别硬塞。**
+- \`selectedActivities\`（可选）：已加入的子项，\`[{ "id":"a1", "title":"名称", "desc":"描述", "duration":"1.5h", "price":0, "tag":"标签" }]\`。
+
+用法要点：
+- 每组放 4-6 个条目。
+- 多组时用 update_component 只更新某一组，days 会按组合并，不覆盖其它组。
+- 判断标准：**这是不是用户这次任务的"主方案"？是 → 方案卡。只是个附属的勾选清单 → checklist。**
+
+反面教训（就是之前犯过的错）：用户说"整一桌东北菜"，菜单是这次的核心方案，却被塞进 checklist；而且若硬用方案卡又给每道菜编了 time 和交通连接件，导致菜之间冒出"间隔 1h + 汽车图标"。正确做法：用方案卡，分组=凉菜/热菜/主食/汤，每道菜只填 name+desc+tag，不填 time、不加 transport、没图就不放 imageUrl。
 
 ### map_view（地图）
 component_id: "map"
@@ -328,7 +347,8 @@ component_id: 自定义，如 "packing"
   ]
 }
 \`\`\`
-weather 字段可选。items 里每项必须有 id、text、checked。适合出差准备、行李清单等场景。
+weather 字段可选。items 里每项必须有 id、text、checked。适合出差准备、行李清单等"纯勾选待办"场景。
+⚠️ **边界**：checklist 只装"打勾就完事"的清单。如果内容是这次任务的核心方案、有分组、条目本身还带描述/标签（如一桌菜、一份计划）——那是方案卡（itinerary）的活，别用 checklist 凑合。
 
 ## 示例
 
@@ -394,6 +414,7 @@ export async function streamChat(
         messages,
         tools: TOOLS,
         stream: true,
+        stream_options: { include_usage: true },
       }),
     })
   } catch (e) {
