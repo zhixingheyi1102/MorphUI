@@ -67,7 +67,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
         src="/decors/clip-silver.png"
         alt=""
         className="absolute pointer-events-none select-none z-10"
-        style={{ width: 92, left: "50%", top: -38, transform: "translateX(-50%) rotate(-1.5deg)" }}
+        style={{ width: 92, left: "50%", top: -50, transform: "translateX(-50%) rotate(-1.5deg)" }}
       />
 
       <div
