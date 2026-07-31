@@ -11,6 +11,7 @@ type Transport = {
 type Activity = {
   id: string
   title: string
+  desc?: string
   duration?: string
   price?: number
   tag?: string

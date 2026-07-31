@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 type Question = {
   id: string
@@ -25,6 +25,12 @@ export default function ClarifyForm({ data, onInteract }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [dynamicQuestions, setDynamicQuestions] = useState<Question[]>([])
   const [confirmed, setConfirmed] = useState(false)
+
+  // 表单被更新（新增/替换问题）时，解锁按钮让用户能重新提交
+  const questionSig = data.questions.map((q) => q.id).join(",")
+  useEffect(() => {
+    setConfirmed(false)
+  }, [questionSig])
 
   const handleConfirm = () => {
     if (confirmed) return

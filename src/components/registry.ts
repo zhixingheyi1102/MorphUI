@@ -1,5 +1,4 @@
 import ClarifyForm from "./ClarifyForm"
-import Itinerary from "./Itinerary"
 import PlanNotebook from "./PlanNotebook"
 import MapView from "./MapView"
 import ActivityCards from "./ActivityCards"
@@ -13,7 +12,7 @@ type ComponentEntry = React.ComponentType<{ data: any; onInteract: (...args: any
 
 const registry: Record<string, ComponentEntry> = {
   clarify_form: ClarifyForm,
-  itinerary: Itinerary,
+  itinerary: PlanNotebook,
   plan_notebook: PlanNotebook,
   map_view: MapView,
   activity_cards: ActivityCards,

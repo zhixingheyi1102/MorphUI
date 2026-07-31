@@ -8,6 +8,23 @@ function nextId() {
   return `msg-${++msgCounter}`
 }
 
+// 合并组件 data：默认浅合并，但对 days（行程按天）做逐天合并，
+// 避免只更新 day2 时把 day1 整个覆盖丢失
+type CompData = Record<string, unknown>
+function mergeData(prev: CompData, patch: CompData): CompData {
+  const merged: CompData = { ...prev, ...patch }
+  if (
+    patch.days && typeof patch.days === "object" &&
+    prev.days && typeof prev.days === "object"
+  ) {
+    merged.days = {
+      ...(prev.days as Record<string, unknown>),
+      ...(patch.days as Record<string, unknown>),
+    }
+  }
+  return merged
+}
+
 export function useChat(scenario?: Step[]) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [components, setComponents] = useState<ComponentInstance[]>([])
@@ -40,7 +57,7 @@ export function useChat(scenario?: Step[]) {
           next.push({ id: a.componentId, type: a.componentType, data: a.data ?? {} })
         } else if (a.action === "update") {
           next = next.map((c) =>
-            c.id === a.componentId ? { ...c, data: { ...c.data, ...a.data } } : c
+            c.id === a.componentId ? { ...c, data: mergeData(c.data, a.data ?? {}) } : c
           )
         } else if (a.action === "remove") {
           next = next.filter((c) => c.id !== a.componentId)
@@ -265,17 +282,17 @@ export function useChat(scenario?: Step[]) {
           historyRef.current.push(assistantEntry as { role: string; content: string })
 
           // 给每个 tool call 补一条 tool result
-          for (const tc of collectedToolCalls) {
+          // 必须按索引一一对应（同名调用不能用 name 匹配，否则 id 重复/缺失 → API 400）
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolCallEntries = (assistantEntry.tool_calls as any[]) ?? []
+          collectedToolCalls.forEach((tc, i) => {
             historyRef.current.push({
               role: "tool",
               content: JSON.stringify({ success: true, action: tc.name }),
               // @ts-expect-error OpenAI format needs tool_call_id
-              tool_call_id: assistantEntry.tool_calls?.find(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (t: any) => t.function.name === tc.name
-              )?.id,
+              tool_call_id: toolCallEntries[i]?.id,
             })
-          }
+          })
         }
       )
     },
@@ -303,6 +320,41 @@ export function useChat(scenario?: Step[]) {
     (componentId: string, value?: string) => {
       if (isTyping) return
 
+      // 地图玩法选择 → 从被点标记的 deepContent 里查出真正的玩法，动态加入行程
+      // （不消耗剧本步骤，点哪个加哪个）
+      if (componentId === "map" && value) {
+        const mapComp = components.find((c) => c.id === "map")
+        if (mapComp) {
+          const markers = [
+            ...((mapComp.data.markers as Array<Record<string, unknown>>) ?? []),
+            ...((mapComp.data.extraMarkers as Array<Record<string, unknown>>) ?? []),
+          ]
+          for (const m of markers) {
+            const acts = (m.deepContent as { activities?: Array<Record<string, unknown>> } | undefined)?.activities
+            const act = acts?.find((a) => a.id === value)
+            if (act) {
+              const price = act.price as number
+              const priceText = price === 0 ? "免费的，预算没变化 👍" : `预计 ¥${price}，记得留出预算～`
+              typeText(`「${act.title}」已加入「${m.name}」的行程！${priceText}`, () => {
+                applyActions([
+                  {
+                    action: "update",
+                    componentId: "itinerary",
+                    data: {
+                      selectedActivity: {
+                        spotId: m.id,
+                        activity: { id: act.id, title: act.title, desc: act.desc, duration: act.duration, price: act.price, tag: act.tag },
+                      },
+                    },
+                  },
+                ])
+              })
+              return
+            }
+          }
+        }
+      }
+
       // 先尝试走剧本
       const stepped = advanceScript({ type: "component_interact", componentId, value })
       if (stepped) return
@@ -317,7 +369,7 @@ export function useChat(scenario?: Step[]) {
       historyRef.current.push({ role: "user", content: message })
       callAI(historyRef.current)
     },
-    [isTyping, advanceScript, components, callAI]
+    [isTyping, advanceScript, components, callAI, typeText, applyActions]
   )
 
   // ─── 手动关闭组件 ───

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion"
 type Activity = {
   id: string
   title: string
+  desc?: string
   duration?: string
   price?: number
   tag?: string
@@ -80,17 +81,31 @@ export default function SpotCard({ spot, isFirst }: Props) {
               exit={{ opacity: 0, height: 0 }}
               className="mt-3 pt-3 border-t border-gray-100"
             >
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[10px] font-medium text-indigo-400 mb-1.5">已加入玩法</p>
+              <div className="space-y-1.5">
                 {spot.selectedActivities.map((act) => (
                   <div
                     key={act.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded-lg text-xs text-indigo-700 border border-indigo-100"
+                    className="px-2.5 py-2 bg-indigo-50 rounded-lg border border-indigo-100"
                   >
-                    <span>🎯</span>
-                    <span className="font-medium">{act.title}</span>
-                    {act.duration && (
-                      <span className="text-indigo-400">{act.duration}</span>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span>🎯</span>
+                      <span className="text-xs font-medium text-indigo-700">{act.title}</span>
+                      {act.tag && (
+                        <span className="px-1 py-0.5 text-[9px] rounded-full bg-white/70 text-indigo-500">
+                          {act.tag}
+                        </span>
+                      )}
+                    </div>
+                    {act.desc && (
+                      <p className="text-[10px] text-indigo-500/80 leading-relaxed mb-1">{act.desc}</p>
                     )}
+                    <div className="flex items-center gap-2 text-[10px] text-indigo-400">
+                      {act.duration && <span>⏱ {act.duration}</span>}
+                      {act.price != null && (
+                        <span>{act.price === 0 ? "免费" : `¥${act.price}`}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -203,27 +203,11 @@ const scenario: Step[] = [
   // ──────────────────────────────────────────────
   // 点击地图标记 → 地图内部处理（不消耗剧本步骤）
   // 点击"探索玩法"/"查看评价" → 地图内部展开 deepContent（本地处理）
+  // 选玩法 → useChat 动态读取被点标记的 deepContent 加入行程（不消耗剧本步骤）
   // ──────────────────────────────────────────────
 
   // ──────────────────────────────────────────────
-  // Step 5: 用户在 POI 面板选了一个玩法 → 更新行程
-  // ──────────────────────────────────────────────
-  {
-    trigger: { type: "component_interact", componentId: "map" },
-    aiMessage: "「老洋房漫步」已加入 Day 1 行程！免费的，预算没变化 👍",
-    workspaceActions: [
-      {
-        action: "update",
-        componentId: "itinerary",
-        data: {
-          selectedActivity: { spotId: "wukang", activity: { id: "arch", title: "老洋房漫步", duration: "1.5h", price: 0 } },
-        },
-      },
-    ],
-  },
-
-  // ──────────────────────────────────────────────
-  // Step 6: 用户问餐厅 → 地图加餐厅 Marker（带 deepContent）
+  // Step 5: 用户问餐厅 → 地图加餐厅 Marker（带 deepContent）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "user_send" },
@@ -309,44 +293,50 @@ const scenario: Step[] = [
           extraMarkers: [
             {
               id: "hotel1", name: "花间堂·愉园", lat: 31.2140, lng: 121.4425, type: "hotel",
-              stars: 4, rating: 4.6,
-              desc: "老洋房改造的精品酒店，花园庭院，含早餐",
-              tags: ["精品酒店", "法租界", "步行可达"],
+              desc: "老洋房改造的精品酒店，步行即可回到景点",
+              tags: ["法租界", "步行可达"],
               deepContent: {
                 priceRange: "¥680/晚",
                 distance: "距武康路步行 5 分钟",
-                reviews: [
-                  { user: "旅行日记", text: "老洋房氛围绝佳，早餐丰盛，服务贴心", score: 5 },
-                  { user: "周末出逃", text: "花园里喝下午茶太惬意了，值得入住", score: 4 },
+                nearby: [
+                  { label: "距武康路", value: "步行 5 分钟" },
+                  { label: "距安福路", value: "步行 8 分钟" },
+                  { label: "距衡山路地铁", value: "步行 6 分钟" },
                 ],
+                access: "衡山路站（1/10 号线）步行 6 分钟，打车去外滩约 15 分钟",
+                view: "临街房俯瞰法租界梧桐，庭院房正对花园",
               },
             },
             {
               id: "hotel2", name: "衡山路十二号", lat: 31.2100, lng: 121.4460, type: "hotel",
-              stars: 4, rating: 4.4,
-              desc: "衡山路核心位置，设计感强的精品酒店",
-              tags: ["设计酒店", "核心地段"],
+              desc: "衡山路核心位置，出门就是地铁",
+              tags: ["核心地段", "地铁旁"],
               deepContent: {
                 priceRange: "¥520/晚",
                 distance: "距衡山路地铁站步行 3 分钟",
-                reviews: [
-                  { user: "设计控", text: "房间设计感很强，细节到位", score: 4 },
-                  { user: "商旅客", text: "位置绝佳，出行方便，隔音稍差", score: 3 },
+                nearby: [
+                  { label: "距衡山路地铁", value: "步行 3 分钟" },
+                  { label: "距复兴西路", value: "步行 10 分钟" },
+                  { label: "距田子坊", value: "地铁 15 分钟" },
                 ],
+                access: "衡山路站（1/10 号线）步行 3 分钟，直达人民广场换乘方便",
+                view: "高层房可看衡山路林荫道，夜里安静",
               },
             },
             {
               id: "hotel3", name: "上海国际饭店", lat: 31.2330, lng: 121.4710, type: "hotel",
-              stars: 4, rating: 4.3,
-              desc: "经典老牌酒店，蝴蝶酥是招牌",
-              tags: ["经典老牌", "南京路"],
+              desc: "南京路旁的经典老牌，交通极其便利",
+              tags: ["南京路", "地铁旁"],
               deepContent: {
                 priceRange: "¥450/晚",
                 distance: "距南京路步行街步行 1 分钟",
-                reviews: [
-                  { user: "怀旧派", text: "老上海的情怀，蝴蝶酥必买，性价比高", score: 4 },
-                  { user: "上海通", text: "位置无敌，设施稍旧但干净整洁", score: 4 },
+                nearby: [
+                  { label: "距南京路步行街", value: "步行 1 分钟" },
+                  { label: "距人民广场地铁", value: "步行 4 分钟" },
+                  { label: "距外滩", value: "步行 15 分钟" },
                 ],
+                access: "人民广场站（1/2/8 号线）步行 4 分钟，去机场地铁直达",
+                view: "高区房正对南京路与人民公园，繁华夜景",
               },
             },
           ],
@@ -376,13 +366,19 @@ const scenario: Step[] = [
             {
               id: "hotel1", name: "上海柏悦酒店", lat: 31.2345, lng: 121.5060, type: "hotel",
               stars: 5, rating: 4.9,
-              desc: "87层无边际泳池，外滩全景，米其林餐厅",
+              imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=640&q=80",
+              desc: "87 层无边际泳池，外滩全景，米其林餐厅",
               tags: ["五星级", "外滩江景", "顶级服务"],
               deepContent: {
                 priceRange: "¥2800/晚",
-                distance: "距外滩步行 10 分钟",
+                images: [
+                  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=480&q=80",
+                  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=480&q=80",
+                  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=480&q=80",
+                  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=480&q=80",
+                ],
                 reviews: [
-                  { user: "奢旅达人", text: "87楼泳池无敌江景，服务堪称完美", score: 5 },
+                  { user: "奢旅达人", text: "87 楼泳池无敌江景，服务堪称完美", score: 5 },
                   { user: "生日旅行", text: "升级了套房，管家服务太贴心了", score: 5 },
                 ],
               },
@@ -390,11 +386,17 @@ const scenario: Step[] = [
             {
               id: "hotel2", name: "上海半岛酒店", lat: 31.2390, lng: 121.4900, type: "hotel",
               stars: 5, rating: 4.8,
+              imageUrl: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=640&q=80",
               desc: "外滩百年建筑，劳斯莱斯接送，管家服务",
               tags: ["五星级", "百年建筑", "管家服务"],
               deepContent: {
                 priceRange: "¥3200/晚",
-                distance: "外滩核心位置",
+                images: [
+                  "https://images.unsplash.com/photo-1590073242678-70ee3fc28e8e?w=480&q=80",
+                  "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=480&q=80",
+                  "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=480&q=80",
+                  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=480&q=80",
+                ],
                 reviews: [
                   { user: "半岛粉", text: "劳斯莱斯接机太有仪式感，大堂下午茶必体验", score: 5 },
                   { user: "周年纪念", text: "套房能直接看到陆家嘴全景，一生推", score: 5 },
@@ -404,11 +406,17 @@ const scenario: Step[] = [
             {
               id: "hotel3", name: "上海华尔道夫", lat: 31.2380, lng: 121.4880, type: "hotel",
               stars: 5, rating: 4.7,
+              imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=640&q=80",
               desc: "外滩历史建筑群中的奢华酒店，长廊酒吧",
               tags: ["五星级", "历史建筑", "长廊酒吧"],
               deepContent: {
                 priceRange: "¥2500/晚",
-                distance: "外滩核心位置",
+                images: [
+                  "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=480&q=80",
+                  "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=480&q=80",
+                  "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=480&q=80",
+                  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=480&q=80",
+                ],
                 reviews: [
                   { user: "酒店控", text: "长廊酒吧氛围绝了，调酒师很专业", score: 5 },
                   { user: "历史爱好者", text: "百年老建筑改的，每个角落都有故事", score: 4 },

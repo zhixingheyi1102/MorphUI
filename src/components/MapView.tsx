@@ -19,11 +19,22 @@ type Review = {
   score: number
 }
 
+type NearbyItem = {
+  label: string
+  value: string
+}
+
 type DeepContent = {
   activities?: Activity[]
   reviews?: Review[]
   priceRange?: string
   distance?: string
+  // 距离导向内容
+  nearby?: NearbyItem[]
+  access?: string
+  view?: string
+  // 舒适度导向内容
+  images?: string[]
 }
 
 type Marker = {
@@ -117,8 +128,11 @@ function PoiPanel({
 }) {
   const deep = marker.deepContent
   const showDeep = explored && deep
+  // 玩法仍靠"探索"触发（驱动剧本）；评价/图片/周边信息默认展示
   const hasActivities = showDeep && deep.activities && deep.activities.length > 0
-  const hasReviews = showDeep && deep.reviews && deep.reviews.length > 0
+  const hasReviews = deep && deep.reviews && deep.reviews.length > 0
+  const hasNearby = deep && deep.nearby && deep.nearby.length > 0
+  const hasImages = deep && deep.images && deep.images.length > 0
 
   return (
     <motion.div
@@ -167,7 +181,15 @@ function PoiPanel({
         <div className="p-3">
           {/* 名称 + 评分 */}
           <div className="flex items-start justify-between mb-1">
-            <h4 className="text-sm font-semibold text-gray-900 leading-snug">{marker.name}</h4>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 leading-snug">{marker.name}</h4>
+              {marker.stars != null && (
+                <div className="text-amber-400 text-[11px] mt-0.5 tracking-wide">
+                  {"★".repeat(marker.stars)}
+                  <span className="text-gray-300">{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
+                </div>
+              )}
+            </div>
             {marker.rating != null && (
               <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 rounded shrink-0 ml-2">
                 <span className="text-amber-500 text-[10px]">★</span>
@@ -192,14 +214,75 @@ function PoiPanel({
             </div>
           )}
 
-          {/* 深度内容 - 价格 + 距离 */}
-          {showDeep && (deep.priceRange || deep.distance) && (
+          {/* 价格 + 距离 */}
+          {deep && (deep.priceRange || deep.distance) && (
             <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
-              {deep.priceRange && <span>{deep.priceRange}</span>}
+              {deep.priceRange && <span className="font-medium text-gray-700">{deep.priceRange}</span>}
               {deep.priceRange && deep.distance && <span className="text-gray-300">|</span>}
               {deep.distance && <span>📍 {deep.distance}</span>}
             </div>
           )}
+
+          {/* 距离导向内容 - 周边距离（无需探索即展示） */}
+          {hasNearby && (
+            <div className="mb-2 space-y-1">
+              {deep!.nearby!.map((n) => (
+                <div key={n.label} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-400">{n.label}</span>
+                  <span className="text-gray-700 font-medium">{n.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 距离导向内容 - 交通 / 景色 */}
+          {deep?.access && (
+            <div className="flex items-start gap-1.5 mb-1.5 text-[10px] text-gray-500">
+              <span className="shrink-0">🚇</span>
+              <span className="leading-relaxed">{deep.access}</span>
+            </div>
+          )}
+          {deep?.view && (
+            <div className="flex items-start gap-1.5 mb-2 text-[10px] text-gray-500">
+              <span className="shrink-0">🌆</span>
+              <span className="leading-relaxed">{deep.view}</span>
+            </div>
+          )}
+
+          {/* 舒适度导向内容 - 图片墙（探索后展开） */}
+          <AnimatePresence>
+            {hasImages && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-2 mb-2">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {deep!.images!.map((src, i) => (
+                      <div
+                        key={i}
+                        className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100"
+                      >
+                        <img
+                          src={src}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none"
+                            const p = e.currentTarget.parentElement
+                            if (p) p.style.background = IMAGE_GRADIENTS.hotel
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* 深度内容 - 评价 */}
           <AnimatePresence>
@@ -269,13 +352,13 @@ function PoiPanel({
             )}
           </AnimatePresence>
 
-          {/* 探索按钮（有 deepContent 且未展开时显示） */}
-          {deep && !explored && (
+          {/* 探索玩法按钮（仅景点，用于触发行程更新；未展开时显示） */}
+          {deep && deep.activities && deep.activities.length > 0 && !explored && (
             <button
               onClick={onExplore}
               className="w-full mt-2 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1"
             >
-              {marker.type === "spot" ? "探索玩法" : marker.type === "restaurant" ? "查看评价" : "查看详情"}
+              探索玩法
               <span className="text-[10px]">→</span>
             </button>
           )}

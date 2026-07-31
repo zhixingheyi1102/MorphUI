@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from "react"
+import { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from "react"
 import { useDrag } from "@use-gesture/react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ComponentInstance } from "../engine/types"
@@ -214,6 +214,17 @@ function CanvasCard({
   onMeasure: (id: string, el: HTMLDivElement | null) => void
 }) {
   const Component = registry[comp.type]
+  const cardRef = useRef<HTMLDivElement | null>(null)
+
+  // 监听组件尺寸变化（如地图内嵌 POI 面板展开/收起），实时重新测量以触发碰撞重算
+  useLayoutEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    onMeasure(comp.id, el)
+    const observer = new ResizeObserver(() => onMeasure(comp.id, el))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [comp.id, onMeasure])
 
   const bindDrag = useDrag(
     ({ movement: [mx, my], first, last, event }) => {
@@ -230,6 +241,7 @@ function CanvasCard({
   if (!Component) {
     return (
       <div
+        ref={cardRef}
         className="absolute p-4 bg-red-50 rounded-xl text-red-500 text-sm"
         style={{ left: displayPos.x, top: displayPos.y }}
       >
@@ -240,7 +252,7 @@ function CanvasCard({
 
   return (
     <motion.div
-      ref={(el) => onMeasure(comp.id, el)}
+      ref={cardRef}
       initial={{ opacity: 0, scale: 0.92 }}
       animate={{
         opacity: isDragging ? 0.88 : 1,
@@ -303,6 +315,8 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   const viewportRef = useRef<HTMLDivElement>(null)
   const sizesRef = useRef<SizeCache>(new Map())
   const isDraggingRef = useRef(false)
+  const [isPanning, setIsPanning] = useState(false)
+  const panStartRef = useRef<{ mx: number; my: number; camX: number; camY: number } | null>(null)
 
   // 组件渲染后测量尺寸
   const handleMeasure = useCallback((id: string, el: HTMLDivElement | null) => {
@@ -335,64 +349,22 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     })
   }, [components])
 
-  // ─── 根据分类计算所有组件位置 + 碰撞解决 ───
+  // ─── 计算所有组件位置：按创建顺序从左到右排列，新组件在最右 ───
   const positions = useMemo(() => {
     const result = new Map<string, Position>()
-    const viewportRect = viewportRef.current?.getBoundingClientRect()
-    const vpWidth = viewportRect?.width ?? 1200
 
-    // 按分类分组
-    const planComp = components.find((c) => {
-      const cat = COMPONENT_CATEGORIES[c.type]
-      return cat === "plan"
-    })
-    const auxComps = components.filter((c) => {
-      const cat = COMPONENT_CATEGORIES[c.type]
-      return cat === "auxiliary"
-    })
-    const processComps = components.filter((c) => {
-      const cat = COMPONENT_CATEGORIES[c.type]
-      return cat !== "plan" && cat !== "auxiliary"
-    })
-
-    // 1. PlanNotebook 居中偏左
-    let planRight = AUTO_PLACE_ORIGIN.x
-    if (planComp) {
-      const dragged = draggedPositions.get(planComp.id)
-      const planSize = sizesRef.current.get(planComp.id) ?? { w: 480, h: 600 }
-      const planPos = dragged ?? {
-        x: Math.max(AUTO_PLACE_ORIGIN.x, vpWidth * 0.3 - planSize.w / 2),
-        y: AUTO_PLACE_ORIGIN.y,
-      }
-      result.set(planComp.id, planPos)
-      planRight = planPos.x + planSize.w + 32
-    }
-
-    // 2. 辅助组件放在 PlanNotebook 右侧，纵向堆叠
-    let auxY = AUTO_PLACE_ORIGIN.y
-    for (const comp of auxComps) {
+    // 按数组顺序（= 创建顺序）从左往右水平排列
+    // 已手动拖拽的组件保持手动位置，但仍占据其原本的水平槽位以便后续组件接续
+    let cursorX = AUTO_PLACE_ORIGIN.x
+    for (const comp of components) {
+      const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
       const dragged = draggedPositions.get(comp.id)
       if (dragged) {
         result.set(comp.id, dragged)
       } else {
-        result.set(comp.id, { x: planRight, y: auxY })
+        result.set(comp.id, { x: cursorX, y: AUTO_PLACE_ORIGIN.y })
       }
-      const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
-      auxY += sz.h + 24
-    }
-
-    // 3. 过程组件放在更右侧，纵向堆叠
-    const auxRight = planRight + (auxComps.length > 0 ? 384 + 32 : 0)
-    let processY = AUTO_PLACE_ORIGIN.y
-    for (const comp of processComps) {
-      const dragged = draggedPositions.get(comp.id)
-      if (dragged) {
-        result.set(comp.id, dragged)
-      } else {
-        result.set(comp.id, { x: auxRight, y: processY })
-      }
-      const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
-      processY += sz.h + AUTO_PLACE_GAP
+      cursorX += sz.w + AUTO_PLACE_GAP + 24
     }
 
     // 碰撞解决
@@ -427,6 +399,35 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
         y: cam.y - e.deltaY,
       }))
     }
+  }, [])
+
+  // ─── 鼠标拖拽平移画布（在空白处按下） ───
+  const handlePanStart = useCallback((e: React.MouseEvent) => {
+    // 只响应画布空白区域的左键；组件卡片会 stopPropagation
+    if (e.button !== 0) return
+    if (isDraggingRef.current) return
+    panStartRef.current = {
+      mx: e.clientX,
+      my: e.clientY,
+      camX: camera.x,
+      camY: camera.y,
+    }
+    setIsPanning(true)
+  }, [camera.x, camera.y])
+
+  const handlePanMove = useCallback((e: React.MouseEvent) => {
+    const start = panStartRef.current
+    if (!start) return
+    setCamera((cam) => ({
+      ...cam,
+      x: start.camX + (e.clientX - start.mx),
+      y: start.camY + (e.clientY - start.my),
+    }))
+  }, [])
+
+  const handlePanEnd = useCallback(() => {
+    panStartRef.current = null
+    setIsPanning(false)
   }, [])
 
   // ─── 拖拽回调 ───
@@ -552,7 +553,12 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     <div
       ref={viewportRef}
       className="flex-1 relative overflow-hidden canvas-grid select-none"
+      style={{ cursor: isPanning ? "grabbing" : "grab" }}
       onWheel={handleWheel}
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
     >
       {/* 画布层 */}
       <div
