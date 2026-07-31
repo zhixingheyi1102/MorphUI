@@ -966,11 +966,17 @@ export default function MapView({ data, onInteract }: Props) {
       onDragStart={stopDragPropagation}
       draggable={false}
     >
-      {/* 地图区域 */}
-      <div className="w-96 shrink-0 flex flex-col">
+      {/* 地图区域：未选景点=对折态只占一半宽（192px），选中后向外展开到整张 384px */}
+      <motion.div
+        className="shrink-0 flex flex-col overflow-hidden"
+        initial={false}
+        animate={{ width: selectedMarker ? 384 : 192 }}
+        transition={{ type: "spring", damping: 26, stiffness: 170 }}
+      >
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
-          <h3 className="flex items-center gap-1" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
-          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+          <h3 className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
+          {/* 闭合态宽度只有一半，图例会把标题挤换行，收起时隐藏 */}
+          <div className={`flex gap-3 ${selectedMarker ? "" : "hidden"}`} style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {
                 const active = data.activeDay == null || data.activeDay === d
@@ -993,7 +999,7 @@ export default function MapView({ data, onInteract }: Props) {
         <div className="flex-1 min-h-[320px] relative">
           <div
             ref={mapRef}
-            style={{ position: "absolute", inset: 0 }}
+            style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 384 }}
             onDragStart={stopDragPropagation}
             onMouseDown={stopPointerPropagation}
             onPointerDown={stopPointerPropagation}
@@ -1030,10 +1036,10 @@ export default function MapView({ data, onInteract }: Props) {
               />
             ))}
           </div>
-          {/* 折叠中缝：初始态像对折的纸质地图（深折痕），展开 POI 后只留淡淡余痕 */}
+          {/* 折叠中缝：固定在整张图中线 x=192。闭合态它正好压在右缘（折口），展开后是纸中间的余痕 */}
           <div
             className="absolute inset-y-0 pointer-events-none"
-            style={{ zIndex: 6, left: "50%", width: 72, transform: "translateX(-50%)" }}
+            style={{ zIndex: 6, left: 192 - 36, width: 72 }}
           >
             {/* 闭合态：深折痕 + 两侧纸面明暗 */}
             <div
@@ -1054,10 +1060,27 @@ export default function MapView({ data, onInteract }: Props) {
               }}
             />
           </div>
+          {/* 折口纸背边：闭合态贴在右缘的一条牛皮纸背，暗示右半页折在后面；展开时淡出 */}
+          <AnimatePresence>
+            {!selectedMarker && (
+              <motion.div
+                className="absolute inset-y-0 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.25 } }}
+                style={{
+                  left: 192 - 12, width: 12, zIndex: 7,
+                  background:
+                    "repeating-linear-gradient(0deg, rgba(122,92,58,0.06) 0 2px, transparent 2px 6px)," +
+                    "linear-gradient(90deg, rgba(43,43,43,0.10), #EAE2CB 40%, #E0D5B8)",
+                  borderLeft: "1px solid rgba(43,43,43,0.22)",
+                  boxShadow: "-6px 0 12px rgba(43,43,43,0.25)",
+                }}
+              />
+            )}
+          </AnimatePresence>
         </div>
-      </div>
-
-      {/* POI 面板 */}
+      </motion.div>
       <AnimatePresence>
         {selectedMarker && (
           <PoiPanel
