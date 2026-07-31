@@ -63,23 +63,23 @@ const scenario: Step[] = [
           activeTab: "day1",
           days: {
             day1: {
-              label: "Day 1 · 法租界漫步",
+              label: "Day 1 · 梧桐区地标线",
               spots: [
-                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
-                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
-                { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
-                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
-                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+                { id: "wukang", name: "武康大楼", time: "09:30", duration: "1.5h", desc: "诺曼底公寓，法租界最出片的地标建筑", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
+                { id: "jingan", name: "静安寺", time: "11:00", duration: "1h", desc: "闹市中的金顶古刹，香火与摩天楼同框", tag: "古刹地标", imageUrl: "https://images.unsplash.com/photo-1545048702-79362596cdc9?w=640&q=80", transport: { method: "地铁", duration: "10min", distance: "2.2km" } },
+                { id: "shikumen", name: "石库门·张园", time: "13:00", duration: "1.5h", desc: "修旧如旧的石库门里弄，午餐＋逛街", tag: "石库门", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "20min", distance: "1.6km" } },
+                { id: "xintiandi", name: "新天地", time: "14:30", duration: "1.5h", desc: "石库门改造的时尚街区，咖啡与酒吧", tag: "时尚街区", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "18min", distance: "1.7km" } },
+                { id: "tianzifang", name: "田子坊", time: "16:00", duration: "2h", desc: "石库门弄堂里的艺术区，手作与小店", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "步行", duration: "18min", distance: "1.4km" } },
               ],
             },
             day2: {
-              label: "Day 2 · 滨江文化线",
+              label: "Day 2 · 老城厢滨江线",
               spots: [
-                { id: "power", name: "上海当代艺术博物馆", time: "09:30", duration: "2h", desc: "PSA，免费开放的当代艺术殿堂", tag: "艺术展览" },
-                { id: "cool_docks", name: "老码头", time: "11:30", duration: "1h", desc: "外滩背后的创意园区", tag: "文创园区", transport: { method: "步行", duration: "12min", distance: "1km" } },
-                { id: "lunch2", name: "豫园午餐", time: "12:30", duration: "1h", desc: "南翔小笼和城隍庙小吃", tag: "美食", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
-                { id: "bund", name: "外滩", time: "14:00", duration: "1.5h", desc: "经典外滩建筑群和江景", tag: "地标", transport: { method: "地铁", duration: "10min", distance: "2km" } },
-                { id: "nanjing", name: "南京路步行街", time: "16:00", duration: "2h", desc: "逛街购物，晚餐收尾", tag: "购物", transport: { method: "步行", duration: "5min", distance: "0.5km" } },
+                { id: "yuyuan", name: "豫园九曲桥", time: "09:30", duration: "1.5h", desc: "明代园林与九曲桥，老上海的园林起点", tag: "古典园林", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80" },
+                { id: "chenghuang", name: "城隍庙", time: "11:00", duration: "1.5h", desc: "南翔小笼和城隍庙小吃，逛庙＋午餐", tag: "美食地标", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "步行", duration: "2min", distance: "0.1km" } },
+                { id: "bund", name: "外滩·海关大楼", time: "13:30", duration: "1.5h", desc: "万国建筑群，海关大楼与对岸陆家嘴", tag: "地标", imageUrl: "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=640&q=80", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
+                { id: "waibaidu", name: "外白渡桥", time: "15:00", duration: "45min", desc: "百年钢桥，苏州河汇入黄浦江的经典机位", tag: "历史地标", imageUrl: "https://images.unsplash.com/photo-1545893835-abaa50cbe628?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.75km" } },
+                { id: "postmuseum", name: "邮政博物馆", time: "16:00", duration: "1h", desc: "巴洛克式老邮政大楼，顶楼可俯瞰苏州河", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1527838832700-5059252407fa?w=640&q=80", transport: { method: "步行", duration: "6min", distance: "0.5km" } },
               ],
             },
           },
@@ -132,72 +132,72 @@ const scenario: Step[] = [
           activeDay: "day1",
           markers: [
             {
-              id: "wukang", name: "武康路", lat: 31.2152, lng: 121.4368, type: "spot", day: "day1",
-              desc: "从武康大楼出发，沿途老洋房和巴金故居，法租界最经典的一条路",
+              id: "wukang", name: "武康大楼", lat: 31.20626, lng: 121.43373, type: "spot", day: "day1",
+              desc: "诺曼底公寓，法租界最出片的地标建筑，六条马路交汇的船形转角",
               imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80",
               tags: ["历史建筑", "法租界", "网红打卡"],
               deepContent: {
                 activities: [
-                  { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
+                  { id: "arch", title: "老洋房漫步", desc: "以武康大楼为起点，沿武康路看 10 栋经典洋房", duration: "1.5h", price: 0, tag: "免费" },
                   { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
                   { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
                 ],
                 qa: [
                   { id: "q_best_time", q: "什么时候来最好？", a: "工作日上午人少，出片最佳。傍晚梧桐光影也很美，但周末下午武康大楼一带会非常拥挤。" },
-                  { id: "q_highlight", q: "必看的是什么？", a: "武康大楼（诺曼底公寓）是标志，另有巴金故居、密丹公寓等老洋房，沿街建筑本身就是看点。" },
+                  { id: "q_highlight", q: "必看的是什么？", a: "武康大楼（诺曼底公寓）是标志，站在对角人行道能拍到经典船头造型；周边巴金故居、密丹公寓也值得一看。" },
                 ],
               },
             },
             {
-              id: "anfu", name: "安福路", lat: 31.2173, lng: 121.4405, type: "spot", day: "day1",
-              desc: "独立设计师店和话剧艺术中心聚集的文艺街区",
+              id: "jingan", name: "静安寺", lat: 31.22522, lng: 121.44079, type: "spot", day: "day1",
+              desc: "闹市中的金顶古刹，香火与摩天楼同框的经典画面",
+              imageUrl: "https://images.unsplash.com/photo-1545048702-79362596cdc9?w=640&q=80",
+              tags: ["古刹地标", "金顶", "闹市禅意"],
+              deepContent: {
+                activities: [
+                  { id: "temple", title: "古刹参观", desc: "金顶大殿与静安寺塔，感受闹市中的禅意", duration: "1h", price: 50, tag: "文化" },
+                  { id: "jingan_walk", title: "周边逛街", desc: "久光、嘉里中心一带咖啡与商场，逛累了歇脚", duration: "1h", price: 0, tag: "免费" },
+                ],
+                qa: [
+                  { id: "q_ticket", q: "门票多少钱？", a: "静安寺门票约 ¥50，含香。大年初一等节庆日人流很大，平日上午最清静。" },
+                  { id: "q_photo", q: "怎么拍金顶好看？", a: "站在寺前广场或对面商场高层，能把金顶大殿和背后的摩天楼一起框进画面，反差感很强。" },
+                ],
+              },
+            },
+            {
+              id: "shikumen", name: "石库门·张园", lat: 31.23037, lng: 121.45605, type: "spot", day: "day1",
+              desc: "修旧如旧的石库门里弄，海派老建筑里逛街午餐",
               imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80",
-              tags: ["文艺街区", "设计师店", "话剧"],
+              tags: ["石库门", "海派建筑", "逛街"],
               deepContent: {
                 activities: [
-                  { id: "theater", title: "话剧体验", desc: "安福路话剧艺术中心，看一场先锋话剧", duration: "2h", price: 280, tag: "文艺" },
-                  { id: "vintage", title: "中古店淘宝", desc: "沿街 vintage 店铺，淘复古服饰和饰品", duration: "1.5h", price: 0, tag: "免费" },
-                  { id: "brunch", title: "法式 Brunch", desc: "安福路 brunch 圣地，推荐 RAC 和 Egg", duration: "1h", price: 120, tag: "美食" },
+                  { id: "lane_walk", title: "石库门漫步", desc: "走进百年张园里弄，看清水红砖与老虎窗", duration: "1h", price: 0, tag: "免费" },
+                  { id: "lunch_zy", title: "里弄午餐", desc: "张园内本帮小馆与咖啡，边逛边吃", duration: "1h", price: 120, tag: "美食" },
                 ],
                 qa: [
-                  { id: "q_theater", q: "话剧值得看吗？", a: "上海话剧艺术中心的先锋剧目口碑不错，建议提前在官网或小程序订票，热门场次常常满座。" },
-                  { id: "q_vibe", q: "这条街适合逛多久？", a: "1–1.5 小时足够。以独立设计师店和 vintage 店为主，走走停停、拍拍照，节奏很松弛。" },
+                  { id: "q_open", q: "需要预约吗？", a: "张园西区免费开放，节假日客流大时可能限流，工作日基本可直接进。" },
+                  { id: "q_around", q: "这一带还有什么？", a: "紧邻南京西路商圈，逛完张园可步行去恒隆、兴业太古汇一带继续逛。" },
                 ],
               },
             },
             {
-              id: "lunch1", name: "衡山路午餐", lat: 31.2091, lng: 121.4456, type: "spot", day: "day1",
-              desc: "推荐衡山小馆或 Alimentari，地道本帮菜与意式简餐",
-              tags: ["美食", "本帮菜"],
-              deepContent: {
-                activities: [
-                  { id: "local", title: "本帮菜体验", desc: "尝地道上海菜：红烧肉、腌笃鲜、葱油拌面", duration: "1h", price: 100, tag: "美食" },
-                  { id: "italian", title: "意式简餐", desc: "Alimentari 的手工面和提拉米苏", duration: "1h", price: 150, tag: "西餐" },
-                ],
-                qa: [
-                  { id: "q_price", q: "人均大概多少？", a: "衡山小馆人均 ¥80–120，本帮菜性价比高；Alimentari 意式简餐人均 ¥120–180。" },
-                  { id: "q_booking", q: "需要提前订位吗？", a: "午市翻台快，一般不用等太久；晚市和周末建议提前订位，尤其是热门的衡山小馆。" },
-                ],
-              },
-            },
-            {
-              id: "fuxing", name: "复兴西路", lat: 31.2108, lng: 121.4352, type: "spot", day: "day1",
-              desc: "国际礼拜堂、衡山电影院一带，感受老上海的文化底蕴",
+              id: "xintiandi", name: "新天地", lat: 31.22193, lng: 121.47044, type: "spot", day: "day1",
+              desc: "石库门改造的时尚街区，咖啡、买手店与酒吧",
               imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80",
-              tags: ["历史建筑", "教堂", "老上海"],
+              tags: ["时尚街区", "石库门", "咖啡酒吧"],
               deepContent: {
                 activities: [
-                  { id: "church", title: "教堂巡礼", desc: "国际礼拜堂 + 诸圣堂，哥特与罗马风格交汇", duration: "1h", price: 0, tag: "免费" },
-                  { id: "cinema", title: "衡山电影院", desc: "1951 年开业的老影院，看一场经典电影", duration: "2h", price: 50, tag: "文化" },
+                  { id: "cafe_xt", title: "下午茶咖啡", desc: "石库门老房子里的精品咖啡与甜品", duration: "1h", price: 80, tag: "美食" },
+                  { id: "shop_xt", title: "买手店逛街", desc: "南里北里的设计买手店与快闪展", duration: "1.5h", price: 0, tag: "免费" },
                 ],
                 qa: [
-                  { id: "q_church", q: "教堂可以进去吗？", a: "国际礼拜堂对外开放，可入内参观，注意保持安静、着装得体；遇礼拜活动时以现场指引为准。" },
-                  { id: "q_around", q: "这一带还有什么好逛？", a: "衡山电影院是 1951 年开业的老影院，周边梧桐街区适合散步，也有不少咖啡馆可以歇脚。" },
+                  { id: "q_night", q: "晚上热闹吗？", a: "新天地是上海夜生活地标，入夜后酒吧和露台餐厅很热闹，适合作为一天的收尾。" },
+                  { id: "q_museum", q: "有什么必看？", a: "一大会址纪念馆就在旁边，免费参观；新天地本身的石库门外立面也很出片。" },
                 ],
               },
             },
             {
-              id: "tianzifang", name: "田子坊", lat: 31.2104, lng: 121.4737, type: "spot", day: "day1",
+              id: "tianzifang", name: "田子坊", lat: 31.21034, lng: 121.4641, type: "spot", day: "day1",
               desc: "石库门弄堂里的艺术区，手工艺品和创意小店",
               imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80",
               tags: ["文创园区", "弄堂", "手工艺"],
@@ -213,56 +213,44 @@ const scenario: Step[] = [
                 ],
               },
             },
-            // ── Day 2 · 滨江文化线 ──
+            // ── Day 2 · 老城厢滨江线 ──
             {
-              id: "power", name: "上海当代艺术博物馆", lat: 31.2116, lng: 121.4862, type: "spot", day: "day2",
-              desc: "PSA，免费开放的当代艺术殿堂，原南市发电厂改建",
-              tags: ["艺术展览", "免费", "工业风"],
-              deepContent: {
-                activities: [
-                  { id: "psa_exhibit", title: "看当期特展", desc: "免费常设 + 当期特展，工业厂房改造空间很出片", duration: "2h", price: 0, tag: "免费" },
-                ],
-                qa: [
-                  { id: "q_free", q: "真的免费吗？", a: "常设展免费，部分当期特展可能单独售票。工业厂房改造的挑高空间很出片，建议留 2 小时。" },
-                  { id: "q_time", q: "逛多久合适？", a: "2 小时左右。若碰上大型特展可以更久；周一闭馆，出发前记得确认开放时间。" },
-                ],
-              },
-            },
-            {
-              id: "cool_docks", name: "老码头", lat: 31.2003, lng: 121.4977, type: "spot", day: "day2",
-              desc: "外滩背后的创意园区，老仓库改造的餐饮酒吧聚集地",
-              tags: ["文创园区", "江边", "酒吧"],
-              deepContent: {
-                activities: [
-                  { id: "dock_walk", title: "江边漫步", desc: "沿黄浦江散步，看老仓库改造的创意店铺", duration: "45min", price: 0, tag: "免费" },
-                ],
-                qa: [
-                  { id: "q_view_food", q: "有江景餐厅吗？", a: "老码头沿江有不少江景餐饮和酒吧，傍晚坐下来看黄浦江很惬意，人均价位偏中高。" },
-                  { id: "q_walk", q: "逛这里要多久？", a: "45 分钟到 1 小时。以老仓库改造的创意店铺和江边步道为主，适合快速逛一圈拍照。" },
-                ],
-              },
-            },
-            {
-              id: "yuyuan", name: "豫园", lat: 31.2270, lng: 121.4920, type: "spot", day: "day2",
-              desc: "南翔小笼和城隍庙小吃，老上海园林与市井烟火",
+              id: "yuyuan", name: "豫园九曲桥", lat: 31.22866, lng: 121.48742, type: "spot", day: "day2",
+              desc: "明代江南古典园林与九曲桥，老上海的园林起点",
               imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80",
-              tags: ["园林", "美食", "地标"],
+              tags: ["古典园林", "九曲桥", "地标"],
+              deepContent: {
+                activities: [
+                  { id: "garden", title: "豫园游园", desc: "明代江南古典园林，亭台楼阁移步换景", duration: "1h", price: 40, tag: "文化" },
+                  { id: "bridge", title: "九曲桥拍照", desc: "湖心亭与九曲桥，老上海最经典的园林机位", duration: "30min", price: 0, tag: "免费" },
+                ],
+                qa: [
+                  { id: "q_ticket", q: "门票多少钱？", a: "豫园园林门票约 ¥40；九曲桥、湖心亭一带免费开放，进园游览才需买票。" },
+                  { id: "q_time", q: "逛多久合适？", a: "园林本身 1 小时够，加上九曲桥拍照和周边商圈可留 1.5 小时。" },
+                ],
+              },
+            },
+            {
+              id: "chenghuang", name: "城隍庙", lat: 31.22788, lng: 121.48819, type: "spot", day: "day2",
+              desc: "南翔小笼和城隍庙小吃，逛庙加午餐的市井烟火",
+              imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80",
+              tags: ["美食地标", "老字号", "市井"],
               deepContent: {
                 activities: [
                   { id: "xlb", title: "南翔小笼", desc: "百年老字号，蟹粉小笼一定要趁热吃", duration: "1h", price: 80, tag: "美食" },
-                  { id: "garden", title: "豫园游园", desc: "明代江南古典园林，亭台楼阁移步换景", duration: "1h", price: 40, tag: "文化" },
+                  { id: "temple_ch", title: "城隍庙参观", desc: "明代道观，感受老城厢的香火与市井", duration: "45min", price: 10, tag: "文化" },
                 ],
                 qa: [
-                  { id: "q_ticket", q: "门票多少钱？", a: "豫园园林门票约 ¥40；城隍庙、小吃街本身免费，进园游览才需买票。" },
                   { id: "q_xlb", q: "小笼哪家好？", a: "南翔馒头店是百年老字号，蟹粉小笼要趁热吃。高峰期排队较长，建议错峰或线上取号。" },
+                  { id: "q_snack", q: "还有什么小吃？", a: "梨膏糖、五香豆、蟹壳黄、鸽蛋圆子都是城隍庙经典，边逛边吃很过瘾。" },
                 ],
               },
             },
             {
-              id: "bund", name: "外滩", lat: 31.2397, lng: 121.4903, type: "spot", day: "day2",
-              desc: "经典外滩建筑群和陆家嘴江景，上海最出名的地标",
+              id: "bund", name: "外滩·海关大楼", lat: 31.23864, lng: 121.48564, type: "spot", day: "day2",
+              desc: "万国建筑群，海关大楼与对岸陆家嘴江景",
               imageUrl: "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=640&q=80",
-              tags: ["地标", "江景", "夜景"],
+              tags: ["地标", "江景", "万国建筑"],
               deepContent: {
                 activities: [
                   { id: "bund_walk", title: "万国建筑巡礼", desc: "沿江看 52 幢历史建筑，对岸就是陆家嘴", duration: "1h", price: 0, tag: "免费" },
@@ -275,16 +263,34 @@ const scenario: Step[] = [
               },
             },
             {
-              id: "nanjing", name: "南京路步行街", lat: 31.2354, lng: 121.4800, type: "spot", day: "day2",
-              desc: "百年商业街，逛街购物、晚餐收尾的好去处",
-              tags: ["购物", "步行街", "美食"],
+              id: "waibaidu", name: "外白渡桥", lat: 31.24531, lng: 121.48574, type: "spot", day: "day2",
+              desc: "百年钢桥，苏州河汇入黄浦江的经典机位",
+              imageUrl: "https://images.unsplash.com/photo-1545893835-abaa50cbe628?w=640&q=80",
+              tags: ["历史地标", "钢桥", "苏州河"],
               deepContent: {
                 activities: [
-                  { id: "shopping", title: "逛街购物", desc: "老字号 + 潮牌云集，走到人民广场", duration: "2h", price: 0, tag: "免费" },
+                  { id: "bridge_walk", title: "桥上散步", desc: "走过百年钢桥，看苏州河与黄浦江交汇", duration: "30min", price: 0, tag: "免费" },
+                  { id: "photo_wb", title: "机位拍照", desc: "以外白渡桥＋陆家嘴天际线为背景取景", duration: "30min", price: 0, tag: "免费" },
                 ],
                 qa: [
-                  { id: "q_brand", q: "有什么老字号？", a: "南京路上老字号云集，第一食品商店、沈大成、真老大房都值得逛，适合买伴手礼。" },
-                  { id: "q_dinner", q: "晚上吃什么好？", a: "步行街及周边本帮菜、小吃、连锁都很齐全，一路逛到人民广场，随走随吃很方便。" },
+                  { id: "q_history", q: "这座桥有什么来头？", a: "外白渡桥是中国第一座全钢结构铆接桥，1907 年建成，是上海开埠史的活化石。" },
+                  { id: "q_view", q: "最佳拍照点在哪？", a: "从北岸黄浦公园一侧回望，能把钢桥和背后的陆家嘴天际线一起收进画面。" },
+                ],
+              },
+            },
+            {
+              id: "postmuseum", name: "邮政博物馆", lat: 31.24641, lng: 121.48075, type: "spot", day: "day2",
+              desc: "巴洛克式老邮政大楼，顶楼花园可俯瞰苏州河",
+              imageUrl: "https://images.unsplash.com/photo-1527838832700-5059252407fa?w=640&q=80",
+              tags: ["历史建筑", "博物馆", "免费"],
+              deepContent: {
+                activities: [
+                  { id: "museum_pm", title: "邮政博物馆参观", desc: "看邮政史陈列与老邮车，建筑本身就是展品", duration: "1h", price: 0, tag: "免费" },
+                  { id: "rooftop", title: "顶楼花园", desc: "登上钟楼花园，俯瞰苏州河与外白渡桥", duration: "30min", price: 0, tag: "免费" },
+                ],
+                qa: [
+                  { id: "q_free", q: "参观要钱吗？", a: "邮政博物馆免费开放，凭证件入内；周一、周二闭馆，建议周末下午来。" },
+                  { id: "q_rooftop", q: "顶楼花园开放吗？", a: "钟楼顶层花园会视情况开放，能俯瞰苏州河与外白渡桥，是隐藏的观景机位。" },
                 ],
               },
             },
@@ -577,23 +583,22 @@ const scenario: Step[] = [
           activeTab: "day2",
           days: {
             day1: {
-              label: "Day 1 · 法租界漫步",
+              label: "Day 1 · 梧桐区地标线",
               spots: [
-                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
-                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
-                { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
-                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
-                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+                { id: "wukang", name: "武康大楼", time: "09:30", duration: "1.5h", desc: "诺曼底公寓，法租界最出片的地标建筑", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
+                { id: "jingan", name: "静安寺", time: "11:00", duration: "1h", desc: "闹市中的金顶古刹，香火与摩天楼同框", tag: "古刹地标", imageUrl: "https://images.unsplash.com/photo-1545048702-79362596cdc9?w=640&q=80", transport: { method: "地铁", duration: "10min", distance: "2.2km" } },
+                { id: "shikumen", name: "石库门·张园", time: "13:00", duration: "1.5h", desc: "修旧如旧的石库门里弄，午餐＋逛街", tag: "石库门", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "20min", distance: "1.6km" } },
+                { id: "xintiandi", name: "新天地", time: "14:30", duration: "1.5h", desc: "石库门改造的时尚街区，咖啡与酒吧", tag: "时尚街区", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "18min", distance: "1.7km" } },
+                { id: "tianzifang", name: "田子坊", time: "16:00", duration: "2h", desc: "石库门弄堂里的艺术区，手作与小店", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "步行", duration: "18min", distance: "1.4km" } },
               ],
             },
             day2: {
-              label: "Day 2 · 滨江文化线",
+              label: "Day 2 · 老城厢滨江线",
               spots: [
-                { id: "power", name: "上海当代艺术博物馆", time: "09:00", duration: "1.5h", desc: "PSA，提前半小时出发多看一会儿", tag: "艺术展览" },
-                { id: "cool_docks", name: "老码头", time: "10:30", duration: "45min", desc: "外滩背后的创意园区，快速逛一圈", tag: "文创园区", transport: { method: "步行", duration: "12min", distance: "1km" } },
-                { id: "lunch2", name: "豫园午餐", time: "11:30", duration: "1h", desc: "南翔小笼和城隍庙小吃", tag: "美食", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
-                { id: "bund", name: "外滩", time: "13:00", duration: "1.5h", desc: "经典外滩建筑群和江景", tag: "地标", transport: { method: "地铁", duration: "10min", distance: "2km" } },
-                { id: "airport", name: "出发去虹桥机场", time: "15:30", duration: "—", desc: "地铁 2 号线直达虹桥，预留充足值机时间", tag: "✈️ 18:45 起飞", transport: { method: "打车", duration: "15min", distance: "3km" } },
+                { id: "yuyuan", name: "豫园九曲桥", time: "09:00", duration: "1.5h", desc: "明代园林与九曲桥，提前半小时出发", tag: "古典园林", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80" },
+                { id: "chenghuang", name: "城隍庙", time: "10:30", duration: "1h", desc: "南翔小笼和城隍庙小吃，快速逛庙＋午餐", tag: "美食地标", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "步行", duration: "2min", distance: "0.1km" } },
+                { id: "bund", name: "外滩·海关大楼", time: "12:00", duration: "1.5h", desc: "万国建筑群，海关大楼与对岸陆家嘴", tag: "地标", imageUrl: "https://images.unsplash.com/photo-1474181487882-5abf3f0ba6c2?w=640&q=80", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
+                { id: "airport", name: "出发去虹桥机场", time: "15:30", duration: "—", desc: "地铁 2 号线直达虹桥，预留充足值机时间", tag: "✈️ 18:45 起飞", transport: { method: "打车", duration: "40min", distance: "13km" } },
               ],
             },
           },

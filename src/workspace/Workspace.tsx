@@ -85,31 +85,6 @@ function rectsOverlap(
   )
 }
 
-// 在给定的"已占用矩形"之间找一个不重叠的空位放新组件。
-// 从 origin 开始按阅读顺序（先左到右、再上到下）网格扫描，返回第一个放得下的位置。
-// 这样新组件会填进当前布局的空档，而不是被追加到很远的地方；
-// 用户手动挪过的组件作为障碍物传入，新组件自然会绕开它们、贴着现有内容摆放。
-function findFreeSlot(
-  size: Size,
-  occupied: Array<{ x: number; y: number; w: number; h: number }>,
-  originX: number,
-  originY: number,
-  wrapWidth: number,
-): Position {
-  const gap = COLLISION_GAP
-  const stepX = 24
-  const stepY = 24
-  const xLimit = Math.max(wrapWidth - size.w, originX) // 至少允许在起始列放下（超宽组件也不越界扫描）
-  for (let y = originY; y < originY + 20000; y += stepY) {
-    for (let x = originX; x <= xLimit; x += stepX) {
-      const collides = occupied.some((r) =>
-        rectsOverlap(x, y, size.w, size.h, r.x, r.y, r.w, r.h, gap),
-      )
-      if (!collides) return { x, y }
-    }
-  }
-  return { x: originX, y: originY }
-}
 
 // ─── 碰撞解决：推开重叠的组件 ───
 // fixedIds 中的组件不会被推动；其余组件会被推到最近的不重叠位置
@@ -654,14 +629,12 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
     }
 
     // ── 自由模式 ──
-    // 逐个把组件放进"当前布局"的空档，而不是每次重排成一整行：
+    // 自动放置永远是"追加到最右边一列"，不换行、不排成两行：
     //   1) 先把用户手动挪过的组件登记为固定障碍（尊重你调整后的布局）；
-    //   2) 其余组件按创建顺序，依次找第一个与已放置内容不重叠的空位。
-    // 于是新生成的组件会填进现有内容旁边的空隙，已放置的组件不会因新增而位移。
+    //   2) 其余组件按创建顺序，依次摆到当前所有内容的右侧（同一行 y=originY）。
+    // 除非你自己拖动布局，否则新生成的组件只会一路往右接着放。
     const result = new Map<string, Position>()
     const currentIds = new Set(components.map((c) => c.id))
-    const viewportW = viewportRef.current?.getBoundingClientRect().width ?? window.innerWidth
-    const wrapWidth = Math.max(600, viewportW - AUTO_PLACE_ORIGIN.x * 2)
     const occupied: Array<{ x: number; y: number; w: number; h: number }> = []
 
     // 1) 手动位置先占位（作为障碍物），保证自动放置会绕开它们
@@ -672,11 +645,14 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
       occupied.push({ x: pos.x, y: pos.y, w: sz.w, h: sz.h })
     }
 
-    // 2) 未手动摆放的组件按创建顺序填入空档
+    // 2) 未手动摆放的组件按创建顺序追加到最右边（单行，不换行）
     for (const comp of components) {
       if (result.has(comp.id)) continue // 已由手动位置放置
       const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
-      const slot = findFreeSlot(sz, occupied, AUTO_PLACE_ORIGIN.x, AUTO_PLACE_ORIGIN.y, wrapWidth)
+      // x = 现有所有内容的最右缘 + 间距；y 固定在起始行
+      const rightEdge = occupied.reduce((max, r) => Math.max(max, r.x + r.w), AUTO_PLACE_ORIGIN.x - COLLISION_GAP)
+      const x = occupied.length === 0 ? AUTO_PLACE_ORIGIN.x : rightEdge + COLLISION_GAP
+      const slot = { x, y: AUTO_PLACE_ORIGIN.y }
       result.set(comp.id, slot)
       occupied.push({ x: slot.x, y: slot.y, w: sz.w, h: sz.h })
     }

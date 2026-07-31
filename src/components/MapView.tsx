@@ -408,6 +408,7 @@ function PoiPanel({
   const hasNearby = deep && deep.nearby && deep.nearby.length > 0
   const hasImages = deep && deep.images && deep.images.length > 0
   const hasQa = deep && deep.qa && deep.qa.length > 0
+  const showExplore = deep && deep.activities && deep.activities.length > 0 && !explored
   const openQa = hasQa ? deep!.qa!.find((x) => x.id === openQaId) : undefined
 
   return (
@@ -682,23 +683,20 @@ function PoiPanel({
             )}
           </AnimatePresence>
 
-          {/* 探索玩法按钮（仅景点，用于触发行程更新；未展开时显示） */}
-          {deep && deep.activities && deep.activities.length > 0 && !explored && (
-            <button
-              onClick={onExplore}
-              className="w-full mt-2 py-1.5 font-medium transition-colors flex items-center justify-center gap-1 hover:brightness-105"
-              style={{ fontSize: "var(--fs-data)", color: "var(--paper-cream)", background: "var(--stamp-red)", borderRadius: "var(--r-paper)" }}
-            >
-              探索玩法
-              <span style={{ fontSize: "var(--fs-caption)" }}>→</span>
-            </button>
-          )}
-
-          {/* 引导词：底部追问建议（蓝墨=可交互追问） */}
-          {hasQa && (
+          {/* 底部一排同级 chip：探索玩法 与 追问问题 样式一致、层级平齐 */}
+          {(showExplore || hasQa) && (
             <div className="mt-3 pt-2.5" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-              <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>你可能还想问</p>
               <div className="flex flex-wrap gap-1.5">
+                {/* 探索玩法：触发行程更新（与问题 chip 同一层级、同一样式） */}
+                {showExplore && (
+                  <button
+                    onClick={onExplore}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
+                    style={{ fontSize: "var(--fs-caption)", border: "1px solid var(--ink-blue)", color: "var(--ink-blue)", background: "rgba(255,255,255,0.4)" }}
+                  >
+                    <Lightbulb size={13} weight="fill" /> 探索玩法
+                  </button>
+                )}
                 {/* 关于本点位的问题：点击在卡片内展开答案，不发到对话框 */}
                 {hasQa && deep!.qa!.map((item) => {
                   const active = openQaId === item.id
