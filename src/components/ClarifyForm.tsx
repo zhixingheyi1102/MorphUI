@@ -67,7 +67,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
         src="/decors/clip-silver.png"
         alt=""
         className="absolute pointer-events-none select-none z-10"
-        style={{ width: 74, left: "50%", top: -26, transform: "translateX(-50%) rotate(-1.5deg)" }}
+        style={{ width: 92, left: "50%", top: -38, transform: "translateX(-50%) rotate(-1.5deg)" }}
       />
 
       <div
@@ -150,28 +150,52 @@ export default function ClarifyForm({ data, onInteract }: Props) {
             </div>
           ))}
 
-          {/* 确认区：印章式按钮 */}
-          <div className="pt-1 flex justify-center">
-            <button
-              onClick={handleConfirm}
-              disabled={!allAnswered || confirmed}
-              className="px-5 py-2 transition-transform"
-              style={{
-                fontFamily: "var(--font-cn)",
-                fontSize: "var(--fs-data)",
-                fontWeight: 800,
-                letterSpacing: "0.2em",
-                color: confirmed || allAnswered ? "var(--stamp-red)" : "var(--ink-line)",
-                background: "transparent",
-                border: `2.5px ${confirmed ? "solid" : "dashed"} ${confirmed || allAnswered ? "var(--stamp-red)" : "var(--ink-line)"}`,
-                borderRadius: 3,
-                transform: confirmed ? "rotate(-4deg) scale(1.02)" : "none",
-                opacity: confirmed ? 0.9 : 1,
-                cursor: !allAnswered || confirmed ? "default" : "pointer",
-              }}
-            >
-              {confirmed ? "已建档 FILED" : "确认建档"}
-            </button>
+          {/* 确认区：订货单式提交条 */}
+          <div className="pt-1">
+            {confirmed ? (
+              /* 已提交：一行归档记录，带手写勾 */
+              <div
+                className="flex items-center justify-center gap-2 py-2"
+                style={{
+                  borderTop: "1.5px solid color-mix(in srgb, var(--ink-blue) 45%, transparent)",
+                }}
+              >
+                <svg viewBox="0 0 14 14" width="16" height="16" style={{ overflow: "visible" }}>
+                  <path className="intake-check" d="M2.5 7.5 L5.5 10.5 L12 2" />
+                </svg>
+                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 700, color: "var(--ink-blue)" }}>
+                  已提交
+                </span>
+                <span style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.22em", color: "var(--ink-blue)" }}>
+                  FILED
+                </span>
+              </div>
+            ) : (
+              <button
+                onClick={handleConfirm}
+                disabled={!allAnswered}
+                className="w-full py-2 transition-all"
+                style={{
+                  fontFamily: "var(--font-cn)",
+                  fontSize: "var(--fs-data)",
+                  fontWeight: 700,
+                  letterSpacing: "0.3em",
+                  color: allAnswered ? "var(--paper-cream)" : "var(--postmark)",
+                  background: allAnswered ? "var(--ink-blue)" : "transparent",
+                  border: allAnswered
+                    ? "1.5px solid var(--ink-blue)"
+                    : "1.5px dashed var(--ink-line)",
+                  borderRadius: 2,
+                  cursor: allAnswered ? "pointer" : "default",
+                  boxShadow: allAnswered ? "0 2px 0 color-mix(in srgb, var(--ink-blue) 45%, transparent)" : "none",
+                }}
+              >
+                确认提交
+                <span style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.22em", marginLeft: 10 }}>
+                  SUBMIT
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
