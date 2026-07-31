@@ -39,6 +39,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
   }
 
   const handleSelect = (questionId: string, option: string) => {
+    if (confirmed) return
     setAnswers((prev) => ({ ...prev, [questionId]: option }))
 
     // 检查是否有动态追问
@@ -56,91 +57,135 @@ export default function ClarifyForm({ data, onInteract }: Props) {
   const allQuestions = [...data.questions, ...dynamicQuestions]
   const allAnswered = allQuestions.every((q) => answers[q.id])
 
+  const today = new Date()
+  const dateStr = `${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}.${today.getFullYear()}`
+
   return (
-    <div
-      className="w-80 shrink-0 overflow-hidden"
-      style={{
-        background: "var(--paper-cream)",
-        border: "1px solid var(--ink-line)",
-        borderRadius: "var(--r-sticker)",
-        boxShadow: "var(--z1)",
-        fontFamily: "var(--font-cn)",
-        color: "var(--ink)",
-      }}
-    >
-      {/* kraft 头部 */}
+    <div className="w-80 shrink-0 relative" style={{ filter: "drop-shadow(0 2px 3px rgba(24,20,14,0.25)) drop-shadow(0 8px 16px rgba(24,20,14,0.16))" }}>
+      {/* 金属夹：压在卡片顶部中间，探出上缘 */}
+      <img
+        src="/decors/clip-silver.png"
+        alt=""
+        className="absolute pointer-events-none select-none z-10"
+        style={{ width: 74, left: "50%", top: -26, transform: "translateX(-50%) rotate(-1.5deg)" }}
+      />
+
       <div
-        className="px-6 py-4"
+        className="intake-paper overflow-hidden"
         style={{
-          background: "var(--paper-kraft)",
-          borderBottom: "1px solid var(--ink-line)",
+          border: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)",
+          borderRadius: "var(--r-paper)",
+          color: "var(--ink)",
         }}
       >
-        <h3 className="font-semibold" style={{ fontSize: "var(--fs-sub)", color: "var(--ink)" }}>
-          {data.title}
-        </h3>
-      </div>
-
-      <div className="p-6 space-y-5">
-        {allQuestions.map((q, qi) => (
-          <div
-            key={q.id}
-            className="animate-fadeIn"
-            style={{ animationDelay: `${qi * 80}ms` }}
-          >
-            <p className="mb-2 font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink-soft)" }}>
-              {q.label}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {q.options.map((opt) => {
-                const selected = answers[q.id] === opt
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => handleSelect(q.id, opt)}
-                    className="px-3 py-1.5 transition-all"
-                    style={{
-                      fontSize: "var(--fs-data)",
-                      borderRadius: "var(--r-sticker)",
-                      border: `1px solid ${selected ? "var(--ink-blue)" : "var(--ink-line)"}`,
-                      background: selected ? "var(--paper-blue)" : "transparent",
-                      color: selected ? "var(--ink-blue)" : "var(--ink-soft)",
-                      fontWeight: selected ? 600 : 400,
-                    }}
-                  >
-                    {opt}
-                  </button>
-                )
-              })}
-            </div>
+        {/* 票头：印刷表头 */}
+        <div
+          className="px-5 pt-5 pb-3 text-center"
+          style={{ borderBottom: "1.5px solid color-mix(in srgb, var(--ink-blue) 55%, transparent)" }}
+        >
+          <div style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.28em", color: "var(--ink-blue)" }}>
+            TRAVELER INTAKE FORM
           </div>
-        ))}
+          <div style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-sub)", fontWeight: 800, marginTop: 2 }}>
+            {data.title}
+          </div>
+          <div className="flex justify-between mt-2" style={{ fontFamily: "var(--font-en)", fontSize: 9, color: "var(--postmark)", letterSpacing: "0.1em" }}>
+            <span>FILE NO. 0042</span>
+            <span>DATE {dateStr}</span>
+          </div>
+        </div>
 
-        <button
-          onClick={handleConfirm}
-          disabled={!allAnswered || confirmed}
-          className="w-full py-2.5 font-medium transition-all"
+        <div className="px-5 py-4 space-y-4">
+          {allQuestions.map((q, qi) => (
+            <div key={q.id} className="animate-fadeIn" style={{ animationDelay: `${qi * 80}ms` }}>
+              {/* 字段名：印刷体 + 编号 */}
+              <div className="flex items-baseline gap-2 mb-1.5">
+                <span style={{ fontFamily: "var(--font-en)", fontSize: 10, color: "var(--ink-blue)", fontWeight: 700 }}>
+                  {String(qi + 1).padStart(2, "0")}.
+                </span>
+                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 700, color: "var(--ink)" }}>
+                  {q.label}
+                </span>
+              </div>
+              {/* 勾选框选项：两列表格式 */}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 pl-5">
+                {q.options.map((opt) => {
+                  const selected = answers[q.id] === opt
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => handleSelect(q.id, opt)}
+                      className="flex items-center gap-1.5 text-left py-0.5"
+                      style={{ cursor: confirmed ? "default" : "pointer", background: "none", border: "none" }}
+                    >
+                      {/* 勾选框 */}
+                      <span
+                        className="shrink-0 flex items-center justify-center"
+                        style={{
+                          width: 14, height: 14,
+                          border: `1.5px solid ${selected ? "var(--ink-blue)" : "color-mix(in srgb, var(--ink) 40%, transparent)"}`,
+                          background: "transparent",
+                        }}
+                      >
+                        {selected && (
+                          <svg viewBox="0 0 14 14" width="16" height="16" style={{ overflow: "visible", marginTop: -3 }}>
+                            <path className="intake-check" d="M2.5 7.5 L5.5 10.5 L12 2" />
+                          </svg>
+                        )}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-cn)",
+                          fontSize: "var(--fs-data)",
+                          color: selected ? "var(--ink-blue)" : "var(--ink-soft)",
+                          fontWeight: selected ? 700 : 400,
+                        }}
+                      >
+                        {opt}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* 确认区：印章式按钮 */}
+          <div className="pt-1 flex justify-center">
+            <button
+              onClick={handleConfirm}
+              disabled={!allAnswered || confirmed}
+              className="px-5 py-2 transition-transform"
+              style={{
+                fontFamily: "var(--font-cn)",
+                fontSize: "var(--fs-data)",
+                fontWeight: 800,
+                letterSpacing: "0.2em",
+                color: confirmed || allAnswered ? "var(--stamp-red)" : "var(--ink-line)",
+                background: "transparent",
+                border: `2.5px ${confirmed ? "solid" : "dashed"} ${confirmed || allAnswered ? "var(--stamp-red)" : "var(--ink-line)"}`,
+                borderRadius: 3,
+                transform: confirmed ? "rotate(-4deg) scale(1.02)" : "none",
+                opacity: confirmed ? 0.9 : 1,
+                cursor: !allAnswered || confirmed ? "default" : "pointer",
+              }}
+            >
+              {confirmed ? "已建档 FILED" : "确认建档"}
+            </button>
+          </div>
+        </div>
+
+        {/* 底部 metadata */}
+        <div
+          className="px-5 py-2 flex justify-between"
           style={{
-            fontSize: "var(--fs-data)",
-            borderRadius: "var(--r-sticker)",
-            background: confirmed
-              ? "transparent"
-              : allAnswered
-                ? "var(--stamp-red)"
-                : "transparent",
-            color: confirmed
-              ? "var(--postmark)"
-              : allAnswered
-                ? "var(--paper-cream)"
-                : "var(--ink-line)",
-            border: `1px solid ${
-              confirmed ? "var(--ink-line)" : allAnswered ? "var(--stamp-red)" : "var(--ink-line)"
-            }`,
-            cursor: !allAnswered || confirmed ? "default" : "pointer",
+            borderTop: "1px dashed color-mix(in srgb, var(--ink-blue) 40%, transparent)",
+            fontFamily: "var(--font-en)", fontSize: 8.5, color: "var(--postmark)", letterSpacing: "0.14em",
           }}
         >
-          {confirmed ? "已确认 ✓" : "确认，开始规划"}
-        </button>
+          <span>MORPH TRAVEL CO.</span>
+          <span>FORM-08 / ARCHIVE</span>
+        </div>
       </div>
     </div>
   )
