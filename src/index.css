@@ -227,6 +227,16 @@
   user-select: none;
 }
 
+/* 机票"已选"章：盖章落下——大而透明 → 压实微回弹 */
+@keyframes stampIn {
+  0% { opacity: 0; transform: rotate(-14deg) scale(1.8); }
+  60% { opacity: 1; transform: rotate(-14deg) scale(0.92); }
+  100% { opacity: 1; transform: rotate(-14deg) scale(1); }
+}
+.stamp-in {
+  animation: stampIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
 /* 生成中占位骨架微光 */
 @keyframes shimmer {
   0% { background-position: -200px 0; }

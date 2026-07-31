@@ -1,5 +1,24 @@
 import type { Step } from "../engine/types"
 
+// ─── 周日晚上海→深圳候选航班（Step 9 展示，Step 10 按所选票动态出文案/行程/预算）───
+const SZ_FLIGHTS = [
+  { id: "f1", departTime: "17:30", arriveTime: "19:55", from: "上海虹桥", to: "深圳宝安", duration: "2h25m", tags: ["傍晚", "虹桥出发"], desc: "下午出发，晚上到深圳可以早点休息", price: 850, airline: "东方航空" },
+  { id: "f2", departTime: "18:45", arriveTime: "21:10", from: "上海虹桥", to: "深圳宝安", duration: "2h25m", tags: ["推荐", "时间宽裕"], desc: "留出充足游玩时间，到深圳不算太晚", price: 720, airline: "南方航空" },
+  { id: "f3", departTime: "20:00", arriveTime: "22:25", from: "上海浦东", to: "深圳宝安", duration: "2h25m", tags: ["晚班", "浦东出发"], desc: "白天行程不受影响，但到达较晚", price: 680, airline: "深圳航空" },
+  { id: "f4", departTime: "21:15", arriveTime: "23:35", from: "上海虹桥", to: "深圳宝安", duration: "2h20m", tags: ["末班", "最便宜"], desc: "最晚班次，价格最低但到达接近午夜", price: 620, airline: "春秋航空" },
+]
+
+function findFlight(id?: string) {
+  return SZ_FLIGHTS.find((f) => f.id === id) ?? SZ_FLIGHTS[1]
+}
+
+// 去机场出发时刻 = 起飞前 3h15m（含市内交通 + 值机安检余量）
+function airportLeaveTime(departTime: string): string {
+  const [h, m] = departTime.split(":").map(Number)
+  const t = h * 60 + m - 195
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`
+}
+
 const scenario: Step[] = [
   // ──────────────────────────────────────────────
   // Step 1: 用户发起请求 → 出现 ClarifyForm
@@ -521,94 +540,108 @@ const scenario: Step[] = [
         componentType: "flight_list",
         data: {
           title: "周日晚 · 上海→深圳航班",
-          flights: [
-            { id: "f1", departTime: "17:30", arriveTime: "19:55", from: "上海虹桥", to: "深圳宝安", duration: "2h25m", tags: ["傍晚", "虹桥出发"], desc: "下午出发，晚上到深圳可以早点休息", price: 850, airline: "东方航空" },
-            { id: "f2", departTime: "18:45", arriveTime: "21:10", from: "上海虹桥", to: "深圳宝安", duration: "2h25m", tags: ["推荐", "时间宽裕"], desc: "留出充足游玩时间，到深圳不算太晚", price: 720, airline: "南方航空" },
-            { id: "f3", departTime: "20:00", arriveTime: "22:25", from: "上海浦东", to: "深圳宝安", duration: "2h25m", tags: ["晚班", "浦东出发"], desc: "白天行程不受影响，但到达较晚", price: 680, airline: "深圳航空" },
-            { id: "f4", departTime: "21:15", arriveTime: "23:35", from: "上海虹桥", to: "深圳宝安", duration: "2h20m", tags: ["末班", "最便宜"], desc: "最晚班次，价格最低但到达接近午夜", price: 620, airline: "春秋航空" },
-          ],
+          flights: SZ_FLIGHTS,
         },
       },
     ],
   },
 
   // ──────────────────────────────────────────────
-  // Step 10: 用户选了航班 → 调整 Day2 行程 + 更新预算 + 出差清单
+  // Step 10: 用户选了航班 → 所选票即时盖章 → 调整 Day2 行程 + 更新预算 + 出差清单
+  //          → 机票组件自动收进方案文件夹（autoDock）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "component_interact", componentId: "flights" },
     aiMessage:
-      "18:45 的航班选好了 ✈️ Day 2 行程帮你调了，下午 15:30 出发去机场。另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～",
-    workspaceActions: [
-      {
-        action: "update",
-        componentId: "itinerary",
-        data: {
-          activeTab: "day2",
-          days: {
-            day1: {
-              label: "Day 1 · 法租界漫步",
-              spots: [
-                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
-                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
-                { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
-                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
-                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
-              ],
-            },
-            day2: {
-              label: "Day 2 · 滨江文化线",
-              spots: [
-                { id: "power", name: "上海当代艺术博物馆", time: "09:00", duration: "1.5h", desc: "PSA，提前半小时出发多看一会儿", tag: "艺术展览" },
-                { id: "cool_docks", name: "老码头", time: "10:30", duration: "45min", desc: "外滩背后的创意园区，快速逛一圈", tag: "文创园区", transport: { method: "步行", duration: "12min", distance: "1km" } },
-                { id: "lunch2", name: "豫园午餐", time: "11:30", duration: "1h", desc: "南翔小笼和城隍庙小吃", tag: "美食", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
-                { id: "bund", name: "外滩", time: "13:00", duration: "1.5h", desc: "经典外滩建筑群和江景", tag: "地标", transport: { method: "地铁", duration: "10min", distance: "2km" } },
-                { id: "airport", name: "出发去虹桥机场", time: "15:30", duration: "—", desc: "地铁 2 号线直达虹桥，预留充足值机时间", tag: "✈️ 18:45 起飞", transport: { method: "打车", duration: "15min", distance: "3km" } },
-              ],
-            },
-          },
-        },
-      },
-      {
-        action: "update",
-        componentId: "budget",
-        data: {
-          total: 4220,
-          items: [
-            { label: "交通", amount: 150 },
-            { label: "餐饮", amount: 400 },
-            { label: "门票", amount: 180 },
-            { label: "住宿", amount: 2200 },
-            { label: "机票", amount: 720 },
-          ],
-        },
-      },
-      {
-        action: "create",
-        componentId: "packing",
-        componentType: "checklist",
-        data: {
-          title: "深圳出差准备清单",
-          weather: {
-            city: "深圳",
-            date: "下周一至周五",
-            temp: "28-34°C",
-            condition: "多云，周三有雷阵雨",
-            tips: "带伞，室内空调冷建议备薄外套",
-          },
-          items: [
-            { id: "p1", text: "身份证", checked: false },
-            { id: "p2", text: "笔记本电脑 + 充电器", checked: false },
-            { id: "p3", text: "手机充电线 / 充电宝", checked: false },
-            { id: "p4", text: "短袖 × 3（28-34°C）", checked: false },
-            { id: "p5", text: "薄外套（室内空调冷）", checked: false },
-            { id: "p6", text: "折叠伞（周三雷阵雨）", checked: false },
-            { id: "p7", text: "公司文件 / 名片", checked: false },
-            { id: "p8", text: "洗漱用品", checked: false },
-          ],
-        },
-      },
+      "航班选好了 ✈️ 机票已经帮你收进方案里。Day 2 行程调整好了，另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～",
+    aiMessageFn: (value) => {
+      const f = findFlight(value)
+      const airport = f.from.includes("浦东") ? "浦东机场" : "虹桥机场"
+      return `${f.airline} ${f.departTime} 的航班选好了 ✈️ 机票已经帮你收进方案里。Day 2 行程也调好了，下午 ${airportLeaveTime(f.departTime)} 出发去${airport}。另外查了下周深圳的天气，给你准备了一份出差清单，照着准备就行～`
+    },
+    // 点击瞬间：所选票盖"已选"章，其余票淡出
+    immediateActionsFn: (value) => [
+      { action: "update", componentId: "flights", data: { selectedId: findFlight(value).id } },
     ],
+    // AI 确认后：机票组件自动收进方案文件夹
+    autoDock: "flights",
+    workspaceActionsFn: (value) => {
+      const f = findFlight(value)
+      const airport = f.from.includes("浦东") ? "浦东机场" : "虹桥机场"
+      const toAirport = f.from.includes("浦东")
+        ? { method: "打车", duration: "40min", distance: "30km" }
+        : { method: "打车", duration: "15min", distance: "3km" }
+      return [
+        {
+          action: "update",
+          componentId: "itinerary",
+          data: {
+            activeTab: "day2",
+            days: {
+              day1: {
+                label: "Day 1 · 法租界漫步",
+                spots: [
+                  { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
+                  { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
+                  { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
+                  { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
+                  { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+                ],
+              },
+              day2: {
+                label: "Day 2 · 滨江文化线",
+                spots: [
+                  { id: "power", name: "上海当代艺术博物馆", time: "09:00", duration: "1.5h", desc: "PSA，提前半小时出发多看一会儿", tag: "艺术展览" },
+                  { id: "cool_docks", name: "老码头", time: "10:30", duration: "45min", desc: "外滩背后的创意园区，快速逛一圈", tag: "文创园区", transport: { method: "步行", duration: "12min", distance: "1km" } },
+                  { id: "lunch2", name: "豫园午餐", time: "11:30", duration: "1h", desc: "南翔小笼和城隍庙小吃", tag: "美食", transport: { method: "步行", duration: "15min", distance: "1.2km" } },
+                  { id: "bund", name: "外滩", time: "13:00", duration: "1.5h", desc: "经典外滩建筑群和江景", tag: "地标", transport: { method: "地铁", duration: "10min", distance: "2km" } },
+                  { id: "airport", name: `出发去${airport}`, time: airportLeaveTime(f.departTime), duration: "—", desc: `${f.airline}，预留充足值机时间`, tag: `✈️ ${f.departTime} 起飞`, transport: toAirport },
+                ],
+              },
+            },
+          },
+        },
+        {
+          action: "update",
+          componentId: "budget",
+          data: {
+            total: 2930 + f.price,
+            items: [
+              { label: "交通", amount: 150 },
+              { label: "餐饮", amount: 400 },
+              { label: "门票", amount: 180 },
+              { label: "住宿", amount: 2200 },
+              { label: "机票", amount: f.price },
+            ],
+          },
+        },
+        {
+          action: "create",
+          componentId: "packing",
+          componentType: "checklist",
+          data: {
+            title: "深圳出差准备清单",
+            weather: {
+              city: "深圳",
+              date: "下周一至周五",
+              temp: "28-34°C",
+              condition: "多云，周三有雷阵雨",
+              tips: "带伞，室内空调冷建议备薄外套",
+            },
+            items: [
+              { id: "p1", text: "身份证", checked: false },
+              { id: "p2", text: "笔记本电脑 + 充电器", checked: false },
+              { id: "p3", text: "手机充电线 / 充电宝", checked: false },
+              { id: "p4", text: "短袖 × 3（28-34°C）", checked: false },
+              { id: "p5", text: "薄外套（室内空调冷）", checked: false },
+              { id: "p6", text: "折叠伞（周三雷阵雨）", checked: false },
+              { id: "p7", text: "公司文件 / 名片", checked: false },
+              { id: "p8", text: "洗漱用品", checked: false },
+            ],
+          },
+        },
+      ]
+    },
   },
 ]
 

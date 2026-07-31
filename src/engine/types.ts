@@ -19,6 +19,13 @@ export type Step = {
   workspaceActions?: WorkspaceAction[]
   hints?: Array<{ label: string; actions: WorkspaceAction[] }>
   suggestions?: string[]
+  // 按交互值动态生成（如机票选了哪一张）：提供时优先于静态字段
+  aiMessageFn?: (value?: string) => string
+  workspaceActionsFn?: (value?: string) => WorkspaceAction[]
+  // 点击瞬间立刻执行的动作（如给所选票盖章），不等 AI 消息打完
+  immediateActionsFn?: (value?: string) => WorkspaceAction[]
+  // 动作执行后延迟一拍，把该组件自动收进方案文件夹（"已收进方案"心智）
+  autoDock?: string
 }
 
 // 聊天消息

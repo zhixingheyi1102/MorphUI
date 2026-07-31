@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import type { ChatMessage, ComponentInstance, Step, WorkspaceAction } from "./types"
 import { streamChat, SYSTEM_PROMPT } from "./api"
 import { COMPONENT_CATEGORIES } from "../components/registry"
@@ -140,6 +140,33 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     []
   )
 
+  // ─── 收纳 / 取出：dockedIds 存在方案组件 data 上（AI 也可经 update_component 操作）───
+  const dockComponent = useCallback((componentId: string) => {
+    setComponents((prev) => {
+      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      if (!plan || plan.id === componentId) return prev
+      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
+      if (docked.includes(componentId)) return prev
+      return prev.map((c) =>
+        c.id === plan.id ? { ...c, data: { ...c.data, dockedIds: [...docked, componentId] } } : c
+      )
+    })
+  }, [])
+
+  const undockComponent = useCallback((componentId: string) => {
+    setComponents((prev) => {
+      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+      if (!plan) return prev
+      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
+      if (!docked.includes(componentId)) return prev
+      return prev.map((c) =>
+        c.id === plan.id
+          ? { ...c, data: { ...c.data, dockedIds: docked.filter((id) => id !== componentId) } }
+          : c
+      )
+    })
+  }, [])
+
   // ─── 剧本模式：走预设的 Step ───
   const advanceScript = useCallback(
     (trigger: { type: "user_send" } | { type: "component_interact"; componentId: string; value?: string }) => {
@@ -157,6 +184,14 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
         if (step.trigger.value !== undefined && step.trigger.value !== trigger.value) return false
       }
 
+      // 交互值（如选了哪张机票），供动态文案/动作使用
+      const interactValue = trigger.type === "component_interact" ? trigger.value : undefined
+      const aiMessage = step.aiMessageFn?.(interactValue) ?? step.aiMessage
+      const workspaceActions = step.workspaceActionsFn?.(interactValue) ?? step.workspaceActions
+
+      // 点击瞬间立刻执行的动作（如给所选票盖章），不等 AI 消息打完
+      if (step.immediateActionsFn) applyActions(step.immediateActionsFn(interactValue))
+
       // 加用户消息
       if (step.userMessage) {
         setChatMessages((prev) => [...prev, { id: nextId(), role: "user", text: step.userMessage! }])
@@ -164,9 +199,15 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
       }
 
       // 逐字打出 AI 消息 → 执行工作区动作 → 添加 hints → 推进 index
-      typeText(step.aiMessage, (msgId) => {
-        if (step.workspaceActions) applyActions(step.workspaceActions)
-        historyRef.current.push({ role: "assistant", content: step.aiMessage })
+      typeText(aiMessage, (msgId) => {
+        if (workspaceActions) applyActions(workspaceActions)
+        historyRef.current.push({ role: "assistant", content: aiMessage })
+
+        // 动作落地后停一拍，把组件自动收进方案文件夹（"已收进方案"心智）
+        if (step.autoDock) {
+          const dockId = step.autoDock
+          setTimeout(() => dockComponent(dockId), 900)
+        }
 
         // 如果 step 有 hints，写入消息并注册动作
         if (step.hints && step.hints.length > 0) {
@@ -185,7 +226,7 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
 
       return true
     },
-    [scenario, scriptIndex, isTyping, typeText, applyActions]
+    [scenario, scriptIndex, isTyping, typeText, applyActions, dockComponent]
   )
 
   // ─── 解析模型把 tool call 当文本输出的情况 ───
@@ -361,51 +402,31 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     [isTyping, advanceScript, callAI]
   )
 
-  // ─── 收纳 / 取出：dockedIds 存在方案组件 data 上（AI 也可经 update_component 操作）───
-  const dockComponent = useCallback((componentId: string) => {
-    setComponents((prev) => {
-      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
-      if (!plan || plan.id === componentId) return prev
-      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
-      if (docked.includes(componentId)) return prev
-      return prev.map((c) =>
-        c.id === plan.id ? { ...c, data: { ...c.data, dockedIds: [...docked, componentId] } } : c
-      )
-    })
-  }, [])
-
-  const undockComponent = useCallback((componentId: string) => {
-    setComponents((prev) => {
-      const plan = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
-      if (!plan) return prev
-      const docked = (plan.data.dockedIds as string[] | undefined) ?? []
-      if (!docked.includes(componentId)) return prev
-      return prev.map((c) =>
-        c.id === plan.id
-          ? { ...c, data: { ...c.data, dockedIds: docked.filter((id) => id !== componentId) } }
-          : c
-      )
-    })
-  }, [])
-
   // ─── 组件交互 ───
+  // 打字期间的点击缓存一枚（保留最后一次），打字结束后自动执行，不再静默丢弃
+  const pendingInteractRef = useRef<{ componentId: string; value?: string } | null>(null)
+
   const handleComponentInteract = useCallback(
     (componentId: string, value?: string) => {
-      if (isTyping) return
-
-      // 点方案里的景点卡 → 引用到输入框，不发消息
-      if (value && value.startsWith("quote:")) {
-        setQuotedSpot(value.slice(6))
-        return
-      }
-
-      // 文件夹收纳 / 取出（不触发对话）
+      // 文件夹收纳 / 取出（纯状态操作，不触发对话，也不受打字中缓存影响——
+      // 整理动画会连续逐张 dock，若走缓存只会留下最后一张）
       if (value && value.startsWith("dock:")) {
         dockComponent(value.slice(5))
         return
       }
       if (value && value.startsWith("undock:")) {
         undockComponent(value.slice(7))
+        return
+      }
+
+      if (isTyping) {
+        pendingInteractRef.current = { componentId, value }
+        return
+      }
+
+      // 点方案里的景点卡 → 引用到输入框，不发消息
+      if (value && value.startsWith("quote:")) {
+        setQuotedSpot(value.slice(6))
         return
       }
 
@@ -476,6 +497,14 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
     },
     [isTyping, advanceScript, components, callAI, typeText, applyActions, sendMessage, dockComponent, undockComponent]
   )
+
+  // 打字结束 → 执行缓存的那次点击
+  useEffect(() => {
+    if (isTyping || !pendingInteractRef.current) return
+    const p = pendingInteractRef.current
+    pendingInteractRef.current = null
+    handleComponentInteract(p.componentId, p.value)
+  }, [isTyping, handleComponentInteract])
 
   // ─── 手动关闭组件 ───
   const closeComponent = useCallback((componentId: string) => {

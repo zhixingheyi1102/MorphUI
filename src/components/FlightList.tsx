@@ -25,6 +25,8 @@ type Props = {
     // 往返：segments（去程/回程各一段）；单程：直接 flights
     segments?: Segment[]
     flights?: Flight[]
+    // 已选航班：选中票盖章，其余票淡出且不可再点
+    selectedId?: string
   }
   onInteract: (flightId: string) => void
 }
@@ -87,7 +89,13 @@ export default function FlightList({ data, onInteract }: Props) {
 
           {seg.flights.map((flight, i) => (
             <div key={flight.id}>
-              <TicketCard flight={flight} ink={TICKET_INKS[i % TICKET_INKS.length]} onInteract={onInteract} />
+              <TicketCard
+                flight={flight}
+                ink={TICKET_INKS[i % TICKET_INKS.length]}
+                onInteract={onInteract}
+                selected={data.selectedId === flight.id}
+                dimmed={!!data.selectedId && data.selectedId !== flight.id}
+              />
               {i < seg.flights.length - 1 && (() => {
                 const interval = getInterval(flight.departTime, seg.flights[i + 1].departTime)
                 return (
@@ -105,15 +113,37 @@ export default function FlightList({ data, onInteract }: Props) {
   )
 }
 
-function TicketCard({ flight, ink, onInteract }: { flight: Flight; ink: string; onInteract: (id: string) => void }) {
+function TicketCard({
+  flight,
+  ink,
+  onInteract,
+  selected,
+  dimmed,
+}: {
+  flight: Flight
+  ink: string
+  onInteract: (id: string) => void
+  selected?: boolean
+  dimmed?: boolean
+}) {
   const fromCode = airportCode(flight.from)
   const toCode = airportCode(flight.to)
   const recommended = flight.tags.some((t) => t.includes("推荐"))
+  const locked = selected || dimmed // 已做出选择后整组票不可再点
 
   return (
-    <button onClick={() => onInteract(flight.id)} className="w-full text-left group block">
+    <button
+      onClick={() => !locked && onInteract(flight.id)}
+      disabled={locked}
+      className="w-full text-left group block transition-opacity duration-500"
+      style={{
+        opacity: dimmed ? 0.32 : 1,
+        filter: dimmed ? "saturate(0.4)" : undefined,
+        cursor: locked ? "default" : "pointer",
+      }}
+    >
       <div
-        className="relative flex overflow-hidden transition-transform group-hover:-translate-y-0.5"
+        className={`relative flex overflow-hidden transition-transform ${locked ? "" : "group-hover:-translate-y-0.5"}`}
         style={{ background: ink, borderRadius: "var(--r-sticker)", boxShadow: "var(--z1)", color: CREAM }}
       >
         {/* 撕票孔：上下两个半圆缺口（用外层纸色抠洞） */}
@@ -196,7 +226,7 @@ function TicketCard({ flight, ink, onInteract }: { flight: Flight; ink: string; 
         </div>
 
         {/* 推荐章 */}
-        {recommended && (
+        {recommended && !selected && (
           <span
             className="absolute px-2 py-0.5 rounded-full"
             style={{
@@ -211,6 +241,30 @@ function TicketCard({ flight, ink, onInteract }: { flight: Flight; ink: string; 
             }}
           >
             ✦ PICK
+          </span>
+        )}
+
+        {/* 已选章：盖在票面右侧，像检票员的橡皮章 */}
+        {selected && (
+          <span
+            className="absolute flex items-center justify-center rounded-full stamp-in"
+            style={{
+              width: 52,
+              height: 52,
+              right: 88,
+              top: "50%",
+              marginTop: -26,
+              border: `2px double ${CREAM}`,
+              color: CREAM,
+              fontFamily: "var(--font-cn)",
+              fontSize: "var(--fs-caption)",
+              letterSpacing: "0.15em",
+              transform: "rotate(-14deg)",
+              background: `${ink}CC`,
+              boxShadow: `0 0 0 3px ${ink}`,
+            }}
+          >
+            已选 ✓
           </span>
         )}
       </div>
