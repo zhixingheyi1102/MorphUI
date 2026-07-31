@@ -67,17 +67,24 @@ function recomputeDaySpots(
   return spots.map((s, i) => {
     const next: Record<string, unknown> = { ...s }
     if (i === 0) {
+      // 第一条上方没有交通连接
       delete next.transport
     } else {
+      // 交通连接件永远存在于两点之间：能取到坐标就重算方式/耗时，
+      // 取不到坐标则沿用该条原有 transport；两者都没有时补一个通用连接件，
+      // 保证拖拽/重排后连接件绝不消失（只是数值可能待下次有坐标时再准）
       const prev = coordOf(spots[i - 1].id as string)
       const cur = coordOf(s.id as string)
+      let t: { method?: string; duration?: string; distance?: string } | undefined
       if (prev && cur) {
-        const t = estimateTransport(prev, cur)
-        next.transport = t
-        if (cursor != null) cursor += parseDurationMin(t.duration)
+        t = estimateTransport(prev, cur)
       } else if (next.transport) {
-        if (cursor != null) cursor += parseDurationMin((next.transport as { duration?: string }).duration)
+        t = next.transport as { method?: string; duration?: string; distance?: string }
+      } else {
+        t = { method: "步行", duration: "10min" }
       }
+      next.transport = t
+      if (cursor != null) cursor += parseDurationMin(t.duration)
     }
     if (cursor != null) {
       next.time = formatMin(cursor)
@@ -85,6 +92,31 @@ function recomputeDaySpots(
     }
     return next
   })
+}
+
+// 把一笔花费加到预算清单对应类目上；类目不存在则新增一行。返回新的 items（不改原数组）
+type BudgetItem = { label: string; amount: number }
+function addToBudget(items: BudgetItem[], label: string, amount: number): BudgetItem[] {
+  if (!amount) return items
+  const idx = items.findIndex((it) => it.label === label)
+  if (idx >= 0) {
+    return items.map((it, i) => (i === idx ? { ...it, amount: it.amount + amount } : it))
+  }
+  return [...items, { label, amount }]
+}
+// 按地图标记类型归类到预算类目
+function budgetCategory(type?: string): string {
+  if (type === "restaurant") return "餐饮"
+  if (type === "hotel") return "住宿"
+  return "门票"
+}
+// 从"人均 ¥120-180" / "¥680/晚" / "¥2800/晚" 这类文案里估个金额（取区间中值）
+function parsePriceRange(text?: string): number {
+  if (!text) return 0
+  const nums = text.match(/\d+/g)?.map(Number) ?? []
+  if (nums.length === 0) return 0
+  if (nums.length === 1) return nums[0]
+  return Math.round((nums[0] + nums[1]) / 2)
 }
 
 // 合并组件 data：默认浅合并，但对 days（行程按天）做逐天合并，
@@ -469,10 +501,11 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
         const oldSpots = daysData?.[dayKey]?.spots
         if (!daysData || !oldSpots) return
 
-        // 地图标记按 id 建索引，供取经纬度
+        // 地图标记按 id 建索引，供取经纬度（含 extraMarkers：加进来的餐厅/酒店也能算交通）
         const mapComp = components.find((c) => c.id === "map")
         const mapMarkers = (mapComp?.data.markers as Array<Record<string, unknown>>) ?? []
-        const markerById = new Map(mapMarkers.map((m) => [m.id as string, m]))
+        const extraMarkers = (mapComp?.data.extraMarkers as Array<Record<string, unknown>>) ?? []
+        const markerById = new Map([...mapMarkers, ...extraMarkers].map((m) => [m.id as string, m]))
         const coordOf = (id: string) => {
           const mk = markerById.get(id)
           const s = oldSpots.find((x) => x.id === id)
@@ -585,19 +618,34 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
         const name = (mk?.name as string) ?? markerId
         const type = (mk?.type as string) ?? "spot"
         const desc = (mk?.desc as string) ?? ""
+        // 加入行程时的即时副作用（清 offRoute + 计入预算），合并成一批更新
+        const sideActions: WorkspaceAction[] = []
         // 若该点之前被移出路线（offRoute），重新加入时清掉该标记
         if (mapComp) {
           const baseMarkers = (mapComp.data.markers as Array<Record<string, unknown>>) ?? []
           if (baseMarkers.some((m) => m.id === markerId && m.offRoute)) {
-            applyActions([
-              {
-                action: "update",
-                componentId: "map",
-                data: { markers: baseMarkers.map((m) => (m.id === markerId ? { ...m, offRoute: false } : m)) },
-              },
-            ])
+            sideActions.push({
+              action: "update",
+              componentId: "map",
+              data: { markers: baseMarkers.map((m) => (m.id === markerId ? { ...m, offRoute: false } : m)) },
+            })
           }
         }
+        // 预算：从标记的 priceRange 估个金额，按类型归类计入（餐厅→餐饮/酒店→住宿/其它→门票）
+        const budgetComp = components.find((c) => c.id === "budget")
+        if (budgetComp) {
+          const priceRange = (mk?.deepContent as { priceRange?: string } | undefined)?.priceRange
+          const amount = parsePriceRange(priceRange)
+          if (amount > 0) {
+            const items = (budgetComp.data.items as BudgetItem[]) ?? []
+            sideActions.push({
+              action: "update",
+              componentId: "budget",
+              data: { items: addToBudget(items, budgetCategory(type), amount) },
+            })
+          }
+        }
+        if (sideActions.length > 0) applyActions(sideActions)
         setAiSuggestions([])
         setChatMessages((prev) => [...prev, { id: nextId(), role: "user", text: `把「${name}」加入行程` }])
         historyRef.current.push({
@@ -632,9 +680,9 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
             const act = acts?.find((a) => a.id === value)
             if (act) {
               const price = act.price as number
-              const priceText = price === 0 ? "免费的，预算没变化 👍" : `预计 ¥${price}，记得留出预算～`
+              const priceText = price === 0 ? "免费的，预算没变化 👍" : `预计 ¥${price}，已计入预算～`
               typeText(`「${act.title}」已加入「${m.name}」的行程！${priceText}`, () => {
-                applyActions([
+                const actions: WorkspaceAction[] = [
                   {
                     action: "update",
                     componentId: "itinerary",
@@ -645,7 +693,19 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
                       },
                     },
                   },
-                ])
+                ]
+                // 有价格 → 计入预算（玩法/门票类归到"门票"，餐饮玩法归"餐饮"）
+                const budgetComp = components.find((c) => c.id === "budget")
+                if (price > 0 && budgetComp) {
+                  const items = (budgetComp.data.items as BudgetItem[]) ?? []
+                  const cat = act.tag === "美食" || act.tag === "西餐" ? "餐饮" : "门票"
+                  actions.push({
+                    action: "update",
+                    componentId: "budget",
+                    data: { items: addToBudget(items, cat, price) },
+                  })
+                }
+                applyActions(actions)
               })
               return
             }

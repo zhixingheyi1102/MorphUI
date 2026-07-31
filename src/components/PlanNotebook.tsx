@@ -70,8 +70,10 @@ function SpotItem({
       className="relative"
       style={{ opacity: isDragging ? 0.4 : 1, transition: "opacity 0.15s" }}
     >
-      {/* 交通连接（第一个景点上方不显示） */}
-      {spot.transport && <TransportCard transport={spot.transport} />}
+      {/* 交通连接件永远存在于相邻两点之间（第一个景点上方不显示）。
+          拖拽中某条可能暂时没有 transport 数据 → 用占位连接件占位，
+          避免出现"交通消失"的空档；松手后由 recompute 填回真实数值 */}
+      {!isFirst && <TransportCard transport={spot.transport ?? { method: "步行" }} />}
 
       <div className="relative flex items-start">
         {/* 拖拽手柄 —— 阻止冒泡到画布，避免触发整块画布平移 */}

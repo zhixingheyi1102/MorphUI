@@ -10,7 +10,6 @@ const MIN_SCALE = 0.3
 const MAX_SCALE = 1.5
 const SNAP_THRESHOLD = 6          // 对齐吸附阈值（画布像素）
 const COLLISION_GAP = 8           // 碰撞后组件之间的最小间距
-const AUTO_PLACE_GAP = 8          // 自动放置组件间距
 const AUTO_PLACE_ORIGIN = { x: 40, y: 40 }
 const BINDER_GRID_GAP = 24        // 整理模式右侧组件网格间距
 const TIDY_COL_GAP = 40           // 方案与右侧网格之间的间距
@@ -84,6 +83,32 @@ function rectsOverlap(
     ay < by + bh + gap &&
     ay + ah + gap > by
   )
+}
+
+// 在给定的"已占用矩形"之间找一个不重叠的空位放新组件。
+// 从 origin 开始按阅读顺序（先左到右、再上到下）网格扫描，返回第一个放得下的位置。
+// 这样新组件会填进当前布局的空档，而不是被追加到很远的地方；
+// 用户手动挪过的组件作为障碍物传入，新组件自然会绕开它们、贴着现有内容摆放。
+function findFreeSlot(
+  size: Size,
+  occupied: Array<{ x: number; y: number; w: number; h: number }>,
+  originX: number,
+  originY: number,
+  wrapWidth: number,
+): Position {
+  const gap = COLLISION_GAP
+  const stepX = 24
+  const stepY = 24
+  const xLimit = Math.max(wrapWidth - size.w, originX) // 至少允许在起始列放下（超宽组件也不越界扫描）
+  for (let y = originY; y < originY + 20000; y += stepY) {
+    for (let x = originX; x <= xLimit; x += stepX) {
+      const collides = occupied.some((r) =>
+        rectsOverlap(x, y, size.w, size.h, r.x, r.y, r.w, r.h, gap),
+      )
+      if (!collides) return { x, y }
+    }
+  }
+  return { x: originX, y: originY }
 }
 
 // ─── 碰撞解决：推开重叠的组件 ───
@@ -629,20 +654,33 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
     }
 
     // ── 自由模式 ──
+    // 逐个把组件放进"当前布局"的空档，而不是每次重排成一整行：
+    //   1) 先把用户手动挪过的组件登记为固定障碍（尊重你调整后的布局）；
+    //   2) 其余组件按创建顺序，依次找第一个与已放置内容不重叠的空位。
+    // 于是新生成的组件会填进现有内容旁边的空隙，已放置的组件不会因新增而位移。
     const result = new Map<string, Position>()
-    let cursorX = AUTO_PLACE_ORIGIN.x
-    for (const comp of components) {
-      const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
-      const dragged = draggedPositions.get(comp.id)
-      if (dragged) {
-        result.set(comp.id, dragged)
-      } else {
-        result.set(comp.id, { x: cursorX, y: AUTO_PLACE_ORIGIN.y })
-      }
-      cursorX += sz.w + AUTO_PLACE_GAP + 24
+    const currentIds = new Set(components.map((c) => c.id))
+    const viewportW = viewportRef.current?.getBoundingClientRect().width ?? window.innerWidth
+    const wrapWidth = Math.max(600, viewportW - AUTO_PLACE_ORIGIN.x * 2)
+    const occupied: Array<{ x: number; y: number; w: number; h: number }> = []
+
+    // 1) 手动位置先占位（作为障碍物），保证自动放置会绕开它们
+    for (const [id, pos] of draggedPositions) {
+      if (!currentIds.has(id)) continue
+      const sz = visualSizes.get(id) ?? { w: 384, h: 300 }
+      result.set(id, pos)
+      occupied.push({ x: pos.x, y: pos.y, w: sz.w, h: sz.h })
     }
-    const fixedIds = new Set(draggedPositions.keys())
-    return resolveCollisions(result, fixedIds, visualSizes)
+
+    // 2) 未手动摆放的组件按创建顺序填入空档
+    for (const comp of components) {
+      if (result.has(comp.id)) continue // 已由手动位置放置
+      const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
+      const slot = findFreeSlot(sz, occupied, AUTO_PLACE_ORIGIN.x, AUTO_PLACE_ORIGIN.y, wrapWidth)
+      result.set(comp.id, slot)
+      occupied.push({ x: slot.x, y: slot.y, w: sz.w, h: sz.h })
+    }
+    return result
   }, [components, draggedPositions, measureVersion, organized, scales])
 
   // ─── 画布缩放 & 平移 ───
