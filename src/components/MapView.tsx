@@ -231,17 +231,17 @@ type BuildingPoi = {
 }
 
 const BUILDING_POIS: BuildingPoi[] = [
-  // —— 聚合态（缩小看全城时）——
-  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5023, 31.2372], img: "/buildings/lujiazui-cluster.png", baseH: 200, minZoom: 0, maxZoom: LOD_SPLIT },
-  { id: "b-bund-rep", name: "外滩", lngLat: [121.4858, 31.2392], img: "/buildings/customs-house.png", baseH: 120, minZoom: 0, maxZoom: LOD_SPLIT },
-  // —— 单体态（放大看街区时）——
-  { id: "b-pearl", name: "东方明珠", lngLat: [121.4998, 31.2397], img: "/buildings/oriental-pearl.png", baseH: 92, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-shtower", name: "上海中心", lngLat: [121.5055, 31.2336], img: "/buildings/shanghai-tower.png", baseH: 100, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.5015, 31.2367], img: "/buildings/jinmao.png", baseH: 84, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-swfc", name: "环球金融中心", lngLat: [121.5024, 31.2350], img: "/buildings/swfc.png", baseH: 88, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-customs", name: "海关大楼", lngLat: [121.4844, 31.2373], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-peace", name: "和平饭店", lngLat: [121.4872, 31.2410], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.4907, 31.2440], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
+  // —— 聚合态（缩小看全城时）——真实 POI 质心
+  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5002, 31.2379], img: "/buildings/lujiazui-cluster.png", baseH: 200, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-bund-rep", name: "外滩", lngLat: [121.4856, 31.2386], img: "/buildings/customs-house.png", baseH: 120, minZoom: 0, maxZoom: LOD_SPLIT },
+  // —— 单体态（放大看街区时）——坐标来自 OSM Nominatim 真实 POI
+  { id: "b-pearl", name: "东方明珠", lngLat: [121.49526, 31.24195], img: "/buildings/oriental-pearl.png", baseH: 92, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shtower", name: "上海中心", lngLat: [121.50125, 31.23564], img: "/buildings/shanghai-tower.png", baseH: 100, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.50142, 31.23725], img: "/buildings/jinmao.png", baseH: 84, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-swfc", name: "环球金融中心", lngLat: [121.50304, 31.23658], img: "/buildings/swfc.png", baseH: 88, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
 // 建筑随 zoom 纯等比例缩放：与地图缩放严格同步（每级 zoom 尺寸 ×2），zoom=14 为 baseH
@@ -272,13 +272,13 @@ function handDrawnPath(pts: [number, number][], segs = 10, amp = 0.00022): [numb
 
 // 试点路线：外滩一路走到陆家嘴三高楼
 const BRUSH_ROUTE: [number, number][] = [
-  [121.4844, 31.2373], // 海关大楼
-  [121.4872, 31.2410], // 和平饭店
-  [121.4907, 31.2440], // 外白渡桥
-  [121.4998, 31.2397], // 东方明珠
-  [121.5015, 31.2367], // 金茂
-  [121.5024, 31.2350], // 环球金融
-  [121.5055, 31.2336], // 上海中心
+  [121.48564, 31.23864], // 海关大楼
+  [121.48461, 31.24113], // 和平饭店
+  [121.48574, 31.24531], // 外白渡桥
+  [121.49526, 31.24195], // 东方明珠
+  [121.50142, 31.23725], // 金茂
+  [121.50304, 31.23658], // 环球金融
+  [121.50125, 31.23564], // 上海中心
 ]
 const BRUSH_INK = "#32476B" // 复古海军蓝墨
 
