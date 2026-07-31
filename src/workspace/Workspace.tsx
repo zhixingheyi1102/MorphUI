@@ -1280,7 +1280,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
         <div className="text-center" style={{ color: "var(--paper-sage)" }}>
           <div className="text-5xl mb-4 opacity-60">✦</div>
           <p className="text-lg font-light">这里是你的工作台</p>
-          <p className="text-sm mt-1 opacity-70">在左侧说出需求，方案与组件将在这里生成；也可以直接把图片、链接、文字粘贴到这里</p>
+          <p className="text-sm mt-1 opacity-70">你将直接在这里与实时生成的组件进行互动</p>
         </div>
         {toolbar}
       </div>

@@ -57,7 +57,7 @@ export default function ChatPanel({ messages, isTyping, isThinking, suggestions,
           </div>
           <div>
             <h2 style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>MorphUI 助手</h2>
-            <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>随时帮你规划</p>
+            <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>随时帮你构建和演化</p>
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function ChatPanel({ messages, isTyping, isThinking, suggestions,
         {messages.length === 0 && (
           <div className="text-center mt-20" style={{ color: "var(--ink-soft)" }}>
             <p className="flex items-center justify-center gap-1.5 mb-1" style={{ fontSize: "var(--fs-sub)" }}><HandWaving size={20} weight="fill" /> 你好！</p>
-            <p style={{ fontSize: "var(--fs-data)" }}>说说你想做什么——规划、整理、对比都行，我在右侧生成给你</p>
+            <p style={{ fontSize: "var(--fs-data)" }}>说说你想要完成的复杂任务——规划一场旅行、策划一次活动、筹备一场婚礼、张罗装修搬家，都可以交给我</p>
           </div>
         )}
         {messages.map((msg) => {
