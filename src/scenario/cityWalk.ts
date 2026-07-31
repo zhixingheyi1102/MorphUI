@@ -699,3 +699,7 @@ const scenario: Step[] = [
 ]
 
 export default scenario
+
+// 预览模式（?preview=1）专用：剧本直接定位到"选航班 → 询问 → 确认收纳"两步，
+// 让预览种子里的 flights 组件也能走完整交互链路
+export const previewFlightSteps: Step[] = scenario.slice(-2)

@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 import { useChat } from "./engine/useChat"
-import scenario from "./scenario/cityWalk"
+import scenario, { previewFlightSteps } from "./scenario/cityWalk"
 import previewSeed from "./scenario/previewSeed"
 import ChatPanel from "./chat/ChatPanel"
 import Workspace from "./workspace/Workspace"
@@ -12,7 +12,7 @@ export default function App() {
   const {
     chatMessages, components, isTyping, isThinking, suggestions, quotedSpot, clearQuote,
     sendMessage, handleComponentInteract, addComponent, closeComponent, organizeWorkspace, handleHintClick,
-  } = useChat(scenario, isPreview ? previewSeed : [])
+  } = useChat(isPreview ? previewFlightSteps : scenario, isPreview ? previewSeed : [])
 
   const handleSend = useCallback(
     (text: string, scripted = false) => sendMessage(text, scripted),
