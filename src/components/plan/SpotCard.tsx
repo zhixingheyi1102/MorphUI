@@ -28,6 +28,18 @@ type Props = {
   onOpenDetail?: (spotId: string) => void
 }
 
+// 由开始时间 + 时长推算结束时间："09:30"+"1.5h" → "11:00"；解析不了返回 null
+function endTimeOf(time: string, duration?: string): string | null {
+  const t = /^(\d{1,2}):(\d{2})$/.exec(time)
+  if (!t || !duration) return null
+  const h = /([\d.]+)\s*h/.exec(duration)
+  const m = /(\d+)\s*m(?:in)?$/.exec(duration)
+  const mins = (h ? parseFloat(h[1]) * 60 : 0) + (m ? parseInt(m[1]) : 0)
+  if (!mins) return null
+  const total = parseInt(t[1]) * 60 + parseInt(t[2]) + Math.round(mins)
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`
+}
+
 export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
   return (
     <div className="relative flex gap-4 group/spot" style={{ fontFamily: "var(--font-cn)" }}>
@@ -67,15 +79,19 @@ export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
         <div className="flex gap-3">
           {/* 左侧：时间 + 名称 + 介绍（flyer 式排版） */}
           <div className="flex-1 min-w-0 flex flex-col">
-            {/* 左上角时间行：09:30 — 1.5h */}
+            {/* 左上角时间行：09:30 — 11:00（结束时间由时长推算） */}
             {spot.time && (
               <p
                 className="mb-0.5 flex items-center gap-1.5"
                 style={{ fontFamily: "var(--font-en)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-soft)" }}
               >
                 {spot.time}
-                {spot.duration && <span style={{ display: "inline-block", width: 14, height: 1, background: "var(--ink-line)" }} />}
-                {spot.duration && <span style={{ fontSize: 10 }}>{spot.duration}</span>}
+                {(() => {
+                  const end = endTimeOf(spot.time, spot.duration)
+                  if (end) return <><span style={{ display: "inline-block", width: 14, height: 1, background: "var(--ink-line)" }} />{end}</>
+                  if (spot.duration) return <><span style={{ display: "inline-block", width: 14, height: 1, background: "var(--ink-line)" }} /><span style={{ fontSize: 10 }}>{spot.duration}</span></>
+                  return null
+                })()}
               </p>
             )}
             <h4 className="leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
