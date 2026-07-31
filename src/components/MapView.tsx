@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo, type CSSProperties } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { renderToStaticMarkup } from "react-dom/server"
 import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb, Plus, Minus } from "@phosphor-icons/react"

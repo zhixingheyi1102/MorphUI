@@ -333,7 +333,6 @@ function CanvasCard({
   baseSize,
   isDragging,
   dragCurrentPos,
-  organized,
   onClose,
   onInteract,
   onDragStart,
@@ -351,7 +350,6 @@ function CanvasCard({
   baseSize: Size | undefined
   isDragging: boolean
   dragCurrentPos: Position | null
-  organized: boolean
   onClose: (id: string) => void
   onInteract: (id: string, value?: string) => void
   onDragStart: (id: string) => void
@@ -1139,7 +1137,6 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
                 baseSize={sizesRef.current.get(comp.id)}
                 isDragging={isDragging}
                 dragCurrentPos={isDragging ? dragInfo.currentPos : null}
-                organized={organized}
                 onClose={onClose}
                 onInteract={onInteract}
                 onDragStart={handleDragStart}
