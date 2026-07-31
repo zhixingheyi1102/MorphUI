@@ -48,7 +48,7 @@ export default function FlightList({ data, onInteract }: Props) {
       }}
     >
       <h3
-        className="text-center font-medium mb-5 pb-3"
+        className="text-center mb-5 pb-3"
         style={{ fontSize: "var(--fs-data)", color: "var(--ink)", borderBottom: "1px dashed var(--ink-line)" }}
       >
         {data.title}
@@ -60,7 +60,7 @@ export default function FlightList({ data, onInteract }: Props) {
           {seg.direction && (
             <div className="flex items-center gap-2 mb-3">
               <span
-                className="px-2 py-0.5 font-medium"
+                className="px-2 py-0.5"
                 style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", background: "var(--metal-brass)", color: "var(--paper-receipt)" }}
               >
                 {seg.direction}
@@ -101,7 +101,7 @@ function SegmentFlights({ flights, onInteract }: { flights: Flight[]; onInteract
               <div className="flex-1 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold" style={{ fontSize: "var(--fs-sub)", color: "var(--ink)", fontFamily: "var(--font-en)" }}>{flight.departTime}</span>
-                  <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
+                  <span style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
                     {flight.from} → {flight.to}
                   </span>
                 </div>

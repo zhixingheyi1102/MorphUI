@@ -72,7 +72,7 @@ export default function CheckList({ data }: Props) {
         color: "var(--ink)",
       }}
     >
-      <h3 className="flex items-center gap-1.5 font-medium mb-3" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><ClipboardText size={16} weight="fill" /> {data.title}</h3>
+      <h3 className="flex items-center gap-1.5 mb-3" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><ClipboardText size={16} weight="fill" /> {data.title}</h3>
 
       {/* 天气提示（蓝纸） */}
       {data.weather && (
@@ -81,7 +81,7 @@ export default function CheckList({ data }: Props) {
           style={{ background: "var(--paper-blue)", borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="inline-flex items-center gap-1.5">
               <CloudSun size={15} weight="fill" /> {data.weather.city} · {data.weather.date}
             </span>
             <span>{data.weather.temp}</span>

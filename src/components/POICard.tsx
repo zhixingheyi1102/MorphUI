@@ -135,7 +135,7 @@ export default function POICard({ data, onInteract }: Props) {
       <div className="px-4 pb-4">
         {/* 头部：名称 + 评分 */}
         <div className="flex items-baseline justify-between mb-1">
-          <h3 className="font-semibold leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{data.name}</h3>
+          <h3 className="leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{data.name}</h3>
           {data.rating != null && (
             <span className="shrink-0 ml-2" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {data.rating}</span>
           )}
@@ -172,7 +172,7 @@ export default function POICard({ data, onInteract }: Props) {
         {/* 价格 + 距离（餐厅/酒店） */}
         {(data.priceRange || data.distance) && (
           <div className="flex items-center gap-3 mb-2.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
-            {data.priceRange && <span className="font-medium" style={{ color: "var(--ink)" }}>{data.priceRange}</span>}
+            {data.priceRange && <span style={{ color: "var(--ink)" }}>{data.priceRange}</span>}
             {data.priceRange && data.distance && <span style={{ color: "var(--ink-line)" }}>|</span>}
             {data.distance && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {data.distance}</span>}
           </div>
@@ -181,7 +181,7 @@ export default function POICard({ data, onInteract }: Props) {
         {/* 酒店亮点 */}
         {data.type === "hotel" && data.highlights && (
           <div className="mb-3 pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-            <p className="font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>亮点</p>
+            <p className="mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>亮点</p>
             <div className="space-y-1">
               {data.highlights.map((h) => (
                 <div key={h} className="flex items-center gap-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
@@ -196,12 +196,12 @@ export default function POICard({ data, onInteract }: Props) {
         {/* 餐厅评价 */}
         {data.type === "restaurant" && data.reviews && (
           <div className="mb-3 pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-            <p className="font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
+            <p className="mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
             <div className="space-y-2">
               {data.reviews.map((r) => (
                 <div key={r.user} className="p-2" style={{ background: "rgba(255,255,255,0.45)", borderRadius: "var(--r-paper)" }}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
+                    <span style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
                     <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>{"★".repeat(r.score)}</span>
                   </div>
                   <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{r.text}</p>
@@ -222,7 +222,7 @@ export default function POICard({ data, onInteract }: Props) {
               className="overflow-hidden"
             >
               <div className="pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-                <p className="flex items-center gap-1 font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
+                <p className="flex items-center gap-1 mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                 <div className="space-y-2">
                   {data.activities.map((act) => (
                     <button
@@ -232,7 +232,7 @@ export default function POICard({ data, onInteract }: Props) {
                       style={{ borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
+                        <span style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
                           {act.title}
                         </span>
                         <span className="px-1.5 py-0.5 rounded-full" style={{ fontSize: "10px", background: "var(--paper-oat)", color: "var(--ink-soft)" }}>
@@ -256,7 +256,7 @@ export default function POICard({ data, onInteract }: Props) {
         {!hasDeepContent && (
           <button
             onClick={() => onInteract("explore")}
-            className="w-full mt-2 py-2 font-medium transition-colors flex items-center justify-center gap-1 hover:brightness-105"
+            className="w-full mt-2 py-2 transition-colors flex items-center justify-center gap-1 hover:brightness-105"
             style={{ fontSize: "var(--fs-data)", color: "var(--paper-cream)", background: "var(--stamp-red)", borderRadius: "var(--r-paper)" }}
           >
             {data.type === "spot" ? "探索玩法" : data.type === "restaurant" ? "查看评价" : "查看详情"}

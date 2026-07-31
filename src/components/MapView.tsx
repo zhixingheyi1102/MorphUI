@@ -389,7 +389,7 @@ function PoiPanel({
               <p style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.24em", color: "var(--ink-soft)" }}>
                 {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "CITY WALK"}
               </p>
-              <h4 className="font-semibold leading-snug mt-1.5" style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ink)" }}>{marker.name}</h4>
+              <h4 className="leading-snug mt-1.5" style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ink)" }}>{marker.name}</h4>
               {marker.rating != null && (
                 <span className="mt-1" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
               )}
@@ -467,7 +467,7 @@ function PoiPanel({
           {/* 价格 + 距离 */}
           {deep && (deep.priceRange || deep.distance) && (
             <div className="flex items-center gap-2 mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
-              {deep.priceRange && <span className="font-medium" style={{ color: "var(--ink)" }}>{deep.priceRange}</span>}
+              {deep.priceRange && <span style={{ color: "var(--ink)" }}>{deep.priceRange}</span>}
               {deep.priceRange && deep.distance && <span style={{ color: "var(--ink-line)" }}>|</span>}
               {deep.distance && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {deep.distance}</span>}
             </div>
@@ -479,7 +479,7 @@ function PoiPanel({
               {deep!.nearby!.map((n) => (
                 <div key={n.label} className="flex items-center justify-between" style={{ fontSize: "var(--fs-caption)" }}>
                   <span style={{ color: "var(--ink-soft)" }}>{n.label}</span>
-                  <span className="font-medium" style={{ color: "var(--ink)" }}>{n.value}</span>
+                  <span style={{ color: "var(--ink)" }}>{n.value}</span>
                 </div>
               ))}
             </div>
@@ -546,12 +546,12 @@ function PoiPanel({
                 className="overflow-hidden"
               >
                 <div className="pt-2 mb-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-                  <p className="font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
+                  <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
                   <div className="space-y-1.5">
                     {deep!.reviews!.map((r) => (
                       <div key={r.user} className="p-1.5 rounded" style={{ background: "rgba(255,255,255,0.45)" }}>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
+                          <span style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
                           <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>{"★".repeat(r.score)}</span>
                         </div>
                         <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{r.text}</p>
@@ -574,7 +574,7 @@ function PoiPanel({
                 className="overflow-hidden"
               >
                 <div className="pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-                  <p className="flex items-center gap-1 font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                   <div className="space-y-1.5">
                     {deep!.activities!.map((act) => (
                       <button
@@ -584,7 +584,7 @@ function PoiPanel({
                         style={{ borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", background: "rgba(255,255,255,0.4)" }}
                       >
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
+                          <span style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
                             {act.title}
                           </span>
                           <span className="px-1 py-0.5 rounded-full" style={{ fontSize: "9px", background: "var(--paper-oat)", color: "var(--ink-soft)" }}>
@@ -608,7 +608,7 @@ function PoiPanel({
           {deep && deep.activities && deep.activities.length > 0 && !explored && (
             <button
               onClick={onExplore}
-              className="w-full mt-2 py-1.5 font-medium transition-colors flex items-center justify-center gap-1 hover:brightness-105"
+              className="w-full mt-2 py-1.5 transition-colors flex items-center justify-center gap-1 hover:brightness-105"
               style={{ fontSize: "var(--fs-data)", color: "var(--paper-cream)", background: "var(--stamp-red)", borderRadius: "var(--r-paper)" }}
             >
               探索玩法
@@ -944,7 +944,7 @@ export default function MapView({ data, onInteract }: Props) {
       {/* 地图区域 */}
       <div className="w-96 shrink-0 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
-          <h3 className="flex items-center gap-1 font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
+          <h3 className="flex items-center gap-1" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
           <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {

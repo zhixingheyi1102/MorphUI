@@ -66,7 +66,7 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
         <div className="flex gap-3">
           {/* 左侧：名称 + 介绍（flyer 式排版） */}
           <div className="flex-1 min-w-0 flex flex-col">
-            <h4 className="font-semibold leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
+            <h4 className="leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
             <span
               className="self-start px-1.5 py-0.5 mb-1.5"
               style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
@@ -127,7 +127,7 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
               className="mt-3 pt-3"
               style={{ borderTop: "1px solid var(--ink-line)" }}
             >
-              <p className="mb-1.5 font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>已加入玩法</p>
+              <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>已加入玩法</p>
               <div className="space-y-1.5">
                 {spot.selectedActivities.map((act) => (
                   <div
@@ -141,7 +141,7 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Target size={13} weight="fill" style={{ color: "var(--ink-blue)" }} />
-                      <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>{act.title}</span>
+                      <span style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>{act.title}</span>
                       {act.tag && (
                         <span
                           className="px-1 py-0.5"
