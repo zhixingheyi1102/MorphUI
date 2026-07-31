@@ -129,9 +129,12 @@ export default function CheckList({ data }: Props) {
               <span className="inline-flex items-center gap-1.5">
                 <CloudSun size={14} weight="fill" /> {data.weather.city} · {data.weather.date}
               </span>
-              <span style={{ fontFamily: "var(--font-en)" }}>{data.weather.temp}</span>
+              <span className="inline-flex items-baseline" style={{ fontFamily: "var(--font-en)", letterSpacing: "0.02em" }}>
+                {data.weather.temp.replace(/\s*°?C$/i, "").replace(/-/g, "–")}
+                <span style={{ fontSize: "0.78em", marginLeft: 1 }}>°C</span>
+              </span>
             </div>
-            <p className="mt-0.5" style={{ paddingRight: 44 }}>{data.weather.condition}</p>
+            <p className="mt-0.5" style={{ paddingRight: 44, paddingLeft: 20 }}>{data.weather.condition}</p>
             <p className="mt-0.5 flex items-center gap-1.5" style={{ paddingRight: 44 }}>
               <Lightbulb size={13} weight="fill" /> {data.weather.tips}
             </p>
