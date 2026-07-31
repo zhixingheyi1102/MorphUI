@@ -333,6 +333,7 @@ function CanvasCard({
   dragCurrentPos,
   organized,
   dockedComponents,
+  dockableCount,
   onClose,
   onInteract,
   onDragStart,
@@ -352,6 +353,7 @@ function CanvasCard({
   dragCurrentPos: Position | null
   organized: boolean
   dockedComponents: ComponentInstance[]
+  dockableCount: number
   onClose: (id: string) => void
   onInteract: (id: string, value?: string) => void
   onDragStart: (id: string) => void
@@ -536,6 +538,7 @@ function CanvasCard({
               planId={comp.id}
               data={comp.data}
               dockedComponents={dockedComponents}
+              dockableCount={dockableCount}
               organized={organized}
               onInteract={onInteract}
             />
@@ -626,6 +629,16 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       dockedComponents: components.filter((c) => docked.has(c.id)),
     }
   }, [components])
+
+  // 画布上还能被收纳的组件数（auxiliary/process），驱动合拢态标签的 "+n" 引导
+  const dockableCount = useMemo(
+    () =>
+      visibleComponents.filter((c) => {
+        const cat = COMPONENT_CATEGORIES[c.type]
+        return cat === "auxiliary" || cat === "process"
+      }).length,
+    [visibleComponents]
+  )
 
   // ─── 计算所有组件位置 ───
   // 自由模式：按创建顺序从左到右排列；整理模式：方案在左，其余在右侧网格聚拢
@@ -983,6 +996,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
                 dragCurrentPos={isDragging ? dragInfo.currentPos : null}
                 organized={organized}
                 dockedComponents={dockedComponents}
+                dockableCount={dockableCount}
                 onClose={onClose}
                 onInteract={onInteract}
                 onDragStart={handleDragStart}

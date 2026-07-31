@@ -42,9 +42,11 @@ type Props = {
     selectedActivity?: { spotId: string; activity: Activity }
   }
   onInteract: (value?: string) => void
+  // 嵌入文件夹展开态时：贴书脊一侧改直角，接缝不露圆角缺口
+  embedded?: boolean
 }
 
-export default function PlanNotebook({ data, onInteract }: Props) {
+export default function PlanNotebook({ data, onInteract, embedded }: Props) {
   const dayKeys = Object.keys(data.days)
   const [activeTab, setActiveTab] = useState(data.activeTab ?? dayKeys[0])
 
@@ -131,6 +133,7 @@ export default function PlanNotebook({ data, onInteract }: Props) {
           border: "1px solid var(--ink-line)",
           borderRadius: "var(--r-sticker)",
           borderTopLeftRadius: 0,
+          ...(embedded ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}),
           boxShadow: "var(--z2)",
         }}
       >
