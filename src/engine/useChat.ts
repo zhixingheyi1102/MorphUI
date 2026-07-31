@@ -25,9 +25,9 @@ function mergeData(prev: CompData, patch: CompData): CompData {
   return merged
 }
 
-export function useChat(scenario?: Step[]) {
+export function useChat(scenario?: Step[], initialComponents: ComponentInstance[] = []) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [components, setComponents] = useState<ComponentInstance[]>([])
+  const [components, setComponents] = useState<ComponentInstance[]>(initialComponents)
   const [isTyping, setIsTyping] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
   const [scriptIndex, setScriptIndex] = useState(0)
