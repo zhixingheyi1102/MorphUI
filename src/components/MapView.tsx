@@ -390,75 +390,95 @@ function PoiPanel({
       className="shrink-0 overflow-hidden"
       style={{ borderLeft: "1px solid var(--ink-line)", background: POI_PAPER[marker.type] ?? POI_PAPER.spot, fontFamily: "var(--font-cn)", color: "var(--ink)" }}
     >
-      <div className="w-[280px] h-full overflow-y-auto">
-        {/* 关闭按钮 */}
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
-          style={{ background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
-        >
-          ✕
-        </button>
-
-        {/* 概览图 */}
-        <div className="relative h-32 overflow-hidden">
-          {marker.imageUrl ? (
-            <img
-              src={marker.imageUrl}
-              alt={marker.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = "none"
-                const p = e.currentTarget.parentElement
-                if (p) p.style.background = IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot
-              }}
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
-            >
-              {marker.type === "spot" ? <Bank size={32} weight="duotone" /> : marker.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />}
-            </div>
-          )}
-          <span
-            className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 font-medium rounded-full"
-            style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.9)", color: "var(--ink-soft)", boxShadow: "var(--z1)" }}
+      <div className="w-[340px] h-full overflow-y-auto">
+        {/* 明信片抬头：关闭 + POST CARD + 邮资票 + 邮戳 */}
+        <div className="relative flex items-start gap-2 px-4 pt-3 mb-1">
+          <button
+            onClick={onClose}
+            className="shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
+            style={{ background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
           >
-            {(() => {
-              const { Icon, label } = TYPE_META[marker.type] ?? TYPE_META.spot
-              return <><Icon size={13} weight="fill" /> {label}</>
-            })()}
-          </span>
+            ✕
+          </button>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <p style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.32em", color: "var(--ink-soft)" }}>POST CARD</p>
+            <div className="mt-1.5" style={{ width: "72%", borderTop: "1px solid var(--ink-line)" }} />
+            <p className="mt-1.5" style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink-soft)", opacity: 0.75 }}>
+              {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "PAR AVION"}
+            </p>
+          </div>
+          {/* 邮资票：类型作图案，评分作面值 */}
+          <div
+            className="shrink-0"
+            style={{ ...perfStyle(paper, 2), padding: 5, transform: "rotate(2.5deg)", boxShadow: "0 1px 3px rgba(43,43,43,0.2)" }}
+          >
+            <div
+              className="relative flex flex-col items-center justify-center"
+              style={{ width: 40, height: 46, background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, border: "1px solid rgba(43,43,43,0.1)" }}
+            >
+              <TypeIcon size={16} weight="duotone" color="var(--ink-soft)" />
+              <span style={{ fontSize: 9, color: "var(--ink-soft)", marginTop: 2 }}>{typeLabel}</span>
+              {marker.rating != null && (
+                <span style={{ position: "absolute", top: 1, right: 3, fontFamily: "var(--font-en)", fontSize: 8, color: "var(--ink-soft)" }}>{marker.rating}</span>
+              )}
+            </div>
+          </div>
+          {/* 邮戳压在邮资票左下 */}
+          <div className="absolute pointer-events-none" style={{ right: 62, top: 30, transform: "rotate(-8deg)", opacity: 0.85 }}>
+            <Postmark />
+          </div>
+        </div>
+
+        {/* 齿孔照片框 */}
+        <div className="px-4 mb-3">
+          <div style={{ transform: "rotate(-1.3deg)" }}>
+            <div style={{ ...perfStyle(paper, 3), padding: 9, boxShadow: "0 2px 6px rgba(43,43,43,0.18)" }}>
+              <div
+                className="relative h-40 overflow-hidden flex items-center justify-center"
+                style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
+              >
+                {marker.imageUrl ? (
+                  <img
+                    src={marker.imageUrl}
+                    alt={marker.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none" }}
+                  />
+                ) : (
+                  marker.type === "spot" ? <Bank size={32} weight="duotone" /> : marker.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 内容区 */}
-        <div className="p-3">
+        <div className="px-4 pb-4">
           {/* 名称 + 评分 */}
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <h4 className="font-semibold leading-snug" style={{ fontSize: "var(--fs-body)", color: "var(--ink)" }}>{marker.name}</h4>
-              {marker.stars != null && (
-                <div className="mt-0.5 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
-                  {"★".repeat(marker.stars)}
-                  <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
-                </div>
-              )}
-            </div>
+          <div className="flex items-baseline justify-between mb-1">
+            <h4 className="font-semibold leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{marker.name}</h4>
             {marker.rating != null && (
-              <div
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 ml-2"
-                style={{ background: "rgba(255,255,255,0.5)", border: "1px solid var(--ink-line)" }}
-              >
-                <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★</span>
-                <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>{marker.rating}</span>
-              </div>
+              <span className="shrink-0 ml-2" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
             )}
           </div>
+          {marker.stars != null && (
+            <div className="mb-1 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
+              {"★".repeat(marker.stars)}
+              <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
+            </div>
+          )}
 
-          {/* 简介 */}
+          {/* 简介：明信片书写线 */}
           {marker.desc && (
-            <p className="leading-relaxed mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{marker.desc}</p>
+            <p
+              className="mb-2.5"
+              style={{
+                fontSize: "var(--fs-caption)", color: "var(--ink-soft)", lineHeight: "20px",
+                backgroundImage: "repeating-linear-gradient(transparent 0 19px, color-mix(in srgb, var(--ink-line) 55%, transparent) 19px 20px)",
+              }}
+            >
+              {marker.desc}
+            </p>
           )}
 
           {/* 标签 */}
@@ -467,8 +487,8 @@ function PoiPanel({
               {marker.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-1.5 py-0.5 rounded-full"
-                  style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.45)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)" }}
+                  className="px-1.5 py-0.5"
+                  style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.45)", color: "var(--ink-soft)", border: "1px dashed var(--ink-soft)", borderRadius: "var(--r-paper)" }}
                 >
                   {tag}
                 </span>
@@ -557,7 +577,7 @@ function PoiPanel({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="pt-2 mb-2" style={{ borderTop: "1px solid var(--ink-line)" }}>
+                <div className="pt-2 mb-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
                   <p className="font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
                   <div className="space-y-1.5">
                     {deep!.reviews!.map((r) => (
@@ -585,7 +605,7 @@ function PoiPanel({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="pt-2" style={{ borderTop: "1px solid var(--ink-line)" }}>
+                <div className="pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
                   <p className="flex items-center gap-1 font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                   <div className="space-y-1.5">
                     {deep!.activities!.map((act) => (
@@ -630,7 +650,7 @@ function PoiPanel({
 
           {/* 引导词：底部追问建议（蓝墨=可交互追问） */}
           {hasSuggestions && (
-            <div className="mt-3 pt-2.5" style={{ borderTop: "1px solid var(--ink-line)" }}>
+            <div className="mt-3 pt-2.5" style={{ borderTop: "1px dashed var(--ink-line)" }}>
               <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>你可能还想问</p>
               <div className="flex flex-wrap gap-1.5">
                 {deep!.suggestions!.map((s) => (
