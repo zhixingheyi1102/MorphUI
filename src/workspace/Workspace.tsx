@@ -272,16 +272,17 @@ function buildVisualSizes(base: SizeCache, scales: Map<string, Scale>): SizeCach
 }
 
 // ─── 8 个缩放把手：hit 为透明命中区（贴边/贴角），nub 为鼠标靠近该区时才浮现的小把手 ───
-// 命中区偏向卡片外侧（外 8px + 内 2px），避免盖住贴边的卡内可点内容（如地图边缘的建筑）
+// 命中区最多向卡外伸 4px（相邻卡间距 8px 的一半），避免两张贴近的卡把手区重叠导致抓错卡；
+// 其余命中范围向卡内收（角落几乎无可点内容，边缘留 4px 外伸兼顾贴边可点内容如地图建筑）
 const RESIZE_HANDLES: Array<{ dir: ResizeDir; hit: string; nub: string; cursor: string }> = [
-  { dir: "n", hit: "top-0 left-0 right-0 h-2.5 -translate-y-[8px]", nub: "w-8 h-1.5", cursor: "ns-resize" },
-  { dir: "s", hit: "bottom-0 left-0 right-0 h-2.5 translate-y-[8px]", nub: "w-8 h-1.5", cursor: "ns-resize" },
-  { dir: "e", hit: "right-0 top-0 bottom-0 w-2.5 translate-x-[8px]", nub: "w-1.5 h-8", cursor: "ew-resize" },
-  { dir: "w", hit: "left-0 top-0 bottom-0 w-2.5 -translate-x-[8px]", nub: "w-1.5 h-8", cursor: "ew-resize" },
-  { dir: "nw", hit: "top-0 left-0 w-5 h-5 -translate-x-[16px] -translate-y-[16px]", nub: "w-3 h-3", cursor: "nwse-resize" },
-  { dir: "ne", hit: "top-0 right-0 w-5 h-5 translate-x-[16px] -translate-y-[16px]", nub: "w-3 h-3", cursor: "nesw-resize" },
-  { dir: "sw", hit: "bottom-0 left-0 w-5 h-5 -translate-x-[16px] translate-y-[16px]", nub: "w-3 h-3", cursor: "nesw-resize" },
-  { dir: "se", hit: "bottom-0 right-0 w-5 h-5 translate-x-[16px] translate-y-[16px]", nub: "w-3 h-3", cursor: "nwse-resize" },
+  { dir: "n", hit: "top-0 left-0 right-0 h-2.5 -translate-y-[4px]", nub: "w-8 h-1.5", cursor: "ns-resize" },
+  { dir: "s", hit: "bottom-0 left-0 right-0 h-2.5 translate-y-[4px]", nub: "w-8 h-1.5", cursor: "ns-resize" },
+  { dir: "e", hit: "right-0 top-0 bottom-0 w-2.5 translate-x-[4px]", nub: "w-1.5 h-8", cursor: "ew-resize" },
+  { dir: "w", hit: "left-0 top-0 bottom-0 w-2.5 -translate-x-[4px]", nub: "w-1.5 h-8", cursor: "ew-resize" },
+  { dir: "nw", hit: "top-0 left-0 w-5 h-5 -translate-x-[4px] -translate-y-[4px]", nub: "w-3 h-3", cursor: "nwse-resize" },
+  { dir: "ne", hit: "top-0 right-0 w-5 h-5 translate-x-[4px] -translate-y-[4px]", nub: "w-3 h-3", cursor: "nesw-resize" },
+  { dir: "sw", hit: "bottom-0 left-0 w-5 h-5 -translate-x-[4px] translate-y-[4px]", nub: "w-3 h-3", cursor: "nesw-resize" },
+  { dir: "se", hit: "bottom-0 right-0 w-5 h-5 translate-x-[4px] translate-y-[4px]", nub: "w-3 h-3", cursor: "nwse-resize" },
 ]
 
 // 单个缩放把手（内部用 useDrag；抽成组件以免在 map 里调用 Hook）
