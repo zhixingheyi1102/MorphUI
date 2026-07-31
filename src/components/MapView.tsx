@@ -262,10 +262,9 @@ const BUILDING_POIS: BuildingPoi[] = [
   { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
-// 所有建筑统一视觉框，随 zoom 线性变大。
-// 之前 baseH*2^(z-14) 在 z<13.5 全被 40px 下限钳住，缩放地图看不到大小变化
-function buildingHeight(zoom: number) {
-  return Math.min(Math.max(52 + (zoom - 11) * 16, 52), 150)
+// 所有建筑统一视觉框，且不随 zoom 缩放（和普通地图 pin 一样恒定屏幕尺寸）
+function buildingHeight(_zoom: number) {
+  return 68
 }
 
 // 手绘路线：在锚点间插值 + 垂直方向确定性抖动，模拟钢笔运笔
