@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { MapPin, ForkKnife, Buildings, Bank, Target, Timer } from "@phosphor-icons/react"
+import { perfStyle, Postmark } from "./postcard"
 
 type Review = {
   user: string
@@ -61,11 +62,15 @@ export default function POICard({ data, onInteract }: Props) {
     (data.reviews && data.reviews.length > 0) ||
     (data.highlights && data.highlights.length > 0)
 
+  const { Icon: TypeIcon, label: typeLabel } = TYPE_META[data.type] ?? TYPE_META.spot
+  const paper = POI_PAPER[data.type] ?? POI_PAPER.spot
+  const gradient = IMAGE_GRADIENTS[data.type] ?? IMAGE_GRADIENTS.spot
+
   return (
     <div
       className="w-80 shrink-0 overflow-hidden"
       style={{
-        background: POI_PAPER[data.type] ?? POI_PAPER.spot,
+        background: paper,
         border: "1px solid var(--ink-line)",
         borderRadius: "var(--r-sticker)",
         boxShadow: "var(--z1)",
@@ -73,70 +78,90 @@ export default function POICard({ data, onInteract }: Props) {
         color: "var(--ink)",
       }}
     >
-      {/* 概览图 */}
-      <div className="relative h-36 overflow-hidden">
-        {data.imageUrl ? (
-          <img
-            src={data.imageUrl}
-            alt={data.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // 图片加载失败时显示渐变占位
-              const div = e.currentTarget.parentElement
-              if (div) {
-                e.currentTarget.style.display = "none"
-                div.style.background = IMAGE_GRADIENTS[data.type] ?? IMAGE_GRADIENTS.spot
-              }
-            }}
-          />
-        ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: IMAGE_GRADIENTS[data.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
-          >
-            {data.type === "spot" ? <Bank size={40} weight="duotone" /> : data.type === "restaurant" ? <ForkKnife size={40} weight="duotone" /> : <Buildings size={40} weight="duotone" />}
-          </div>
-        )}
-        {/* 类型标签 */}
-        <span
-          className="absolute top-3 left-3 flex items-center gap-1 px-2 py-0.5 font-medium rounded-full"
-          style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.9)", color: "var(--ink-soft)", boxShadow: "var(--z1)" }}
+      {/* 明信片抬头：POST CARD + 邮资票 + 邮戳 */}
+      <div className="relative flex items-start gap-2 px-4 pt-3 mb-1">
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.32em", color: "var(--ink-soft)" }}>POST CARD</p>
+          <div className="mt-1.5" style={{ width: "72%", borderTop: "1px solid var(--ink-line)" }} />
+          <p className="mt-1.5" style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink-soft)", opacity: 0.75 }}>
+            PAR AVION
+          </p>
+        </div>
+        {/* 邮资票：类型作图案，评分作面值 */}
+        <div
+          className="shrink-0"
+          style={{ ...perfStyle(paper, 2), padding: 5, transform: "rotate(2.5deg)", boxShadow: "0 1px 3px rgba(43,43,43,0.2)" }}
         >
-          {(() => {
-            const { Icon, label } = TYPE_META[data.type] ?? TYPE_META.spot
-            return <><Icon size={13} weight="fill" /> {label}</>
-          })()}
-        </span>
+          <div
+            className="relative flex flex-col items-center justify-center"
+            style={{ width: 40, height: 46, background: gradient, border: "1px solid rgba(43,43,43,0.1)" }}
+          >
+            <TypeIcon size={16} weight="duotone" color="var(--ink-soft)" />
+            <span style={{ fontSize: 9, color: "var(--ink-soft)", marginTop: 2 }}>{typeLabel}</span>
+            {data.rating != null && (
+              <span style={{ position: "absolute", top: 1, right: 3, fontFamily: "var(--font-en)", fontSize: 8, color: "var(--ink-soft)" }}>{data.rating}</span>
+            )}
+          </div>
+        </div>
+        {/* 邮戳压在邮资票左下 */}
+        <div className="absolute pointer-events-none" style={{ right: 62, top: 24, transform: "rotate(-8deg)", opacity: 0.85 }}>
+          <Postmark />
+        </div>
       </div>
 
-      <div className="p-4">
-        {/* 头部：名称 + 评分 */}
-        <div className="flex items-start justify-between mb-1.5">
-          <h3 className="font-semibold leading-snug" style={{ fontSize: "var(--fs-sub)", color: "var(--ink)" }}>{data.name}</h3>
-          {data.rating != null && (
+      {/* 齿孔照片框 */}
+      <div className="px-4 mb-3">
+        <div style={{ transform: "rotate(-1.3deg)" }}>
+          <div style={{ ...perfStyle(paper, 3), padding: 9, boxShadow: "0 2px 6px rgba(43,43,43,0.18)" }}>
             <div
-              className="flex items-center gap-1 px-2 py-0.5 rounded shrink-0 ml-2"
-              style={{ background: "rgba(255,255,255,0.5)", border: "1px solid var(--ink-line)" }}
+              className="relative h-36 overflow-hidden flex items-center justify-center"
+              style={{ background: gradient, color: "var(--ink-soft)" }}
             >
-              <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★</span>
-              <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>{data.rating}</span>
+              {data.imageUrl ? (
+                <img
+                  src={data.imageUrl}
+                  alt={data.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = "none" }}
+                />
+              ) : (
+                data.type === "spot" ? <Bank size={32} weight="duotone" /> : data.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />
+              )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4">
+        {/* 头部：名称 + 评分 */}
+        <div className="flex items-baseline justify-between mb-1">
+          <h3 className="font-semibold leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{data.name}</h3>
+          {data.rating != null && (
+            <span className="shrink-0 ml-2" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {data.rating}</span>
           )}
         </div>
 
-        {/* 简介 */}
+        {/* 简介：明信片书写线 */}
         {data.desc && (
-          <p className="leading-relaxed mb-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{data.desc}</p>
+          <p
+            className="mb-2.5"
+            style={{
+              fontSize: "var(--fs-caption)", color: "var(--ink-soft)", lineHeight: "20px",
+              backgroundImage: "repeating-linear-gradient(transparent 0 19px, color-mix(in srgb, var(--ink-line) 55%, transparent) 19px 20px)",
+            }}
+          >
+            {data.desc}
+          </p>
         )}
 
         {/* 标签 */}
         {data.tags && data.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-1 mb-2.5">
             {data.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 rounded-full"
-                style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.45)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)" }}
+                className="px-1.5 py-0.5"
+                style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.45)", color: "var(--ink-soft)", border: "1px dashed var(--ink-soft)", borderRadius: "var(--r-paper)" }}
               >
                 {tag}
               </span>
@@ -146,8 +171,8 @@ export default function POICard({ data, onInteract }: Props) {
 
         {/* 价格 + 距离（餐厅/酒店） */}
         {(data.priceRange || data.distance) && (
-          <div className="flex items-center gap-3 mb-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
-            {data.priceRange && <span>{data.priceRange}</span>}
+          <div className="flex items-center gap-3 mb-2.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+            {data.priceRange && <span className="font-medium" style={{ color: "var(--ink)" }}>{data.priceRange}</span>}
             {data.priceRange && data.distance && <span style={{ color: "var(--ink-line)" }}>|</span>}
             {data.distance && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {data.distance}</span>}
           </div>
@@ -155,7 +180,7 @@ export default function POICard({ data, onInteract }: Props) {
 
         {/* 酒店亮点 */}
         {data.type === "hotel" && data.highlights && (
-          <div className="mb-3">
+          <div className="mb-3 pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
             <p className="font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>亮点</p>
             <div className="space-y-1">
               {data.highlights.map((h) => (
@@ -170,11 +195,11 @@ export default function POICard({ data, onInteract }: Props) {
 
         {/* 餐厅评价 */}
         {data.type === "restaurant" && data.reviews && (
-          <div className="mb-3">
+          <div className="mb-3 pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
             <p className="font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
             <div className="space-y-2">
               {data.reviews.map((r) => (
-                <div key={r.user} className="p-2 rounded" style={{ background: "rgba(255,255,255,0.45)" }}>
+                <div key={r.user} className="p-2" style={{ background: "rgba(255,255,255,0.45)", borderRadius: "var(--r-paper)" }}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
                     <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>{"★".repeat(r.score)}</span>
@@ -196,7 +221,7 @@ export default function POICard({ data, onInteract }: Props) {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="overflow-hidden"
             >
-              <div className="pt-2" style={{ borderTop: "1px solid var(--ink-line)" }}>
+              <div className="pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
                 <p className="flex items-center gap-1 font-medium mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                 <div className="space-y-2">
                   {data.activities.map((act) => (
@@ -204,7 +229,7 @@ export default function POICard({ data, onInteract }: Props) {
                       key={act.id}
                       onClick={() => onInteract(act.id)}
                       className="w-full text-left p-3 transition-all hover:brightness-105"
-                      style={{ borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", background: "rgba(255,255,255,0.4)" }}
+                      style={{ borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
