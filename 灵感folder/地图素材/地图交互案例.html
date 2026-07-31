@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LANDUSE · 上海 SHANGHAI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.12.0/maplibre-gl.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.12.0/maplibre-gl.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --pink-title: #F45B8F;
+    --pink-soft: #F8CBD3;
+    --pink-deep: #E75FA0;
+    --paper: #FFFFFF;
+    --ink: #2B2B2B;
+    --line: #EADDE0;
+    --font: 'Outfit', 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: var(--font); background: var(--paper); }
+
+  #frame {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    gap: 10px;
+  }
+  #map {
+    flex: 1;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  /* ---- 顶部标题条(海报式) ---- */
+  #masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+  }
+  #masthead h1 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--pink-title);
+    line-height: 1;
+  }
+  #masthead h1 span {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    color: #C99AAB;
+    margin-top: 5px;
+  }
+  #compass {
+    width: 40px; height: 40px;
+    border: 2.5px solid var(--pink-title);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: transform .3s ease;
+  }
+  #compass::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 6px;
+    width: 2.5px; height: 13px;
+    background: var(--pink-title);
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+  #compass:hover { transform: rotate(-12deg); }
+
+  /* ---- 图例 ---- */
+  #legend {
+    background: var(--paper);
+    padding: 8px 4px 2px;
+  }
+  #legend h2 {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  #legend h2 small {
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: #B7A8AD;
+  }
+  #chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px 14px;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #4A4448;
+    cursor: pointer;
+    padding: 2px 3px;
+    border-radius: 3px;
+    user-select: none;
+    transition: opacity .15s ease, background .15s ease;
+  }
+  .chip:hover { background: #FBF3F5; }
+  .chip.off { opacity: 0.32; }
+  .chip i {
+    width: 15px; height: 15px;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  /* ---- MapLibre 控件 & 弹窗 ---- */
+  .maplibregl-popup-content {
+    font-family: var(--font);
+    border-radius: 6px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 18px rgba(180, 90, 120, .18);
+    border: 1px solid var(--line);
+  }
+  .popup-cat {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--ink);
+  }
+  .popup-cat i { width: 12px; height: 12px; border-radius: 2px; }
+  .popup-sub { font-size: 11px; color: #A8979D; margin-top: 3px; letter-spacing: .04em; }
+  .maplibregl-ctrl-group { border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .maplibregl-ctrl-scale {
+    font-family: var(--font);
+    border: none;
+    border-bottom: 3px solid var(--pink-title);
+    background: transparent;
+    color: #C97E9B;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    #frame { padding: 10px; }
+    #masthead h1 { font-size: 24px; }
+    #chips { grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="masthead">
+    <h1>LANDUSE<span>上海 · SHANGHAI</span></h1>
+    <button id="compass" title="回正方向并回到上海中心"></button>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="legend">
+    <h2>LEGEND <small>点击图例可显示 / 隐藏图层</small></h2>
+    <div id="chips"></div>
+  </div>
+</div>
+
+<script>
+/* ================= 配色(取自 LANDUSE 海报) ================= */
+const C = {
+  park:        '#69A83F',
+  garden:      '#8FC97A',
+  greenery:    '#CFE7BA',
+  wood:        '#52805F',
+  water:       '#4295CC',
+  wetland:     '#6BA893',
+  residential: '#EAE2DC',
+  commercial:  '#F8CBD3',
+  industrial:  '#E5D3EE',
+  farmland:    '#B3A82C',
+  infra:       '#EDEBE8',
+  public:      '#E75FA0',
+  religious:   '#F09CB0',
+  recreation:  '#9BCB86',
+  special:     '#C9D0CF',
+  building:    '#F3AEBE',
+  buildingLine:'#E890A6',
+  road:        '#FFFFFF',
+  roadCasing:  '#E6DDD6',
+  rail:        '#D9CFC9',
+  label:       '#6B5E63',
+  paper:       '#F7F4F1'
+};
+
+/* ================= 自定义 MapLibre 样式 ================= */
+const style = {
+  version: 8,
+  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  sources: {
+    openmaptiles: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' }
+  },
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': C.paper } },
+
+    { id: 'residential', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['residential', 'suburb', 'neighbourhood'], true, false],
+      paint: { 'fill-color': C.residential } },
+
+    { id: 'farmland', type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+      filter: ['match', ['get', 'class'], ['farmland'], true, false],
+      paint: { 'fill-color': C.farmland, 'fill-opacity': 0.55 } },
+
+    { id: 'commercial', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['commercial', 'retail'], true, false],
+      paint: { 'fill-color': C.commercial, 'fill-opacity': 0.9 } },
+
+    { id: 'industrial', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['industrial', 'garages', 'quarry'], true, false],
+      paint: { 'fill-color': C.industrial, 'fill-opacity': 0.85 } },
+
+    { id: 'infra', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['railway'], true, false],
+      paint: { 'fill-color': C.infra } },
+
+    { id: 'special', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['military'], true, false],
+      paint: { 'fill-color': C.special, 'fill-opacity': 0.8 } },
+
+    { id: 'public', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['hospital'], true, false],
+      paint: { 'fill-color': C.public, 'fill-opacity': 0.65 } },
+
+    { id: 'religious-edu', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['school', 'college', 'university', 'kindergarten'], true, false],
+      paint: { 'fill-color': C.religious, 'fill-opacity': 0.55 } },
+
+    { id: 'recreation', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['stadium', 'pitch', 'track', 'playground', 'theme_park', 'zoo'], true, false],
+      paint: { 'fill-color': C.recreation, 'fill-opacity': 0.85 } },
+
+    { id: 'cemetery', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+      filter: ['match', ['get', 'class'], ['cemetery'], true, false],
+      paint: { 'fill-color': C.garden, 'fill-opacity': 0.7 } },
+
+    { id: 'greenery', type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+      filter: ['match', ['get', 'class'], ['grass'], true, false],
+      paint: { 'fill-color': C.greenery, 'fill-opacity': 0.85 } },
+
+    { id: 'wood', type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+      filter: ['match', ['get', 'class'], ['wood'], true, false],
+      paint: { 'fill-color': C.wood, 'fill-opacity': 0.85 } },
+
+    { id: 'wetland', type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+      filter: ['match', ['get', 'class'], ['wetland'], true, false],
+      paint: { 'fill-color': C.wetland, 'fill-opacity': 0.8 } },
+
+    { id: 'park', type: 'fill', source: 'openmaptiles', 'source-layer': 'park',
+      paint: { 'fill-color': C.park, 'fill-opacity': 0.75 } },
+
+    { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water',
+      paint: { 'fill-color': C.water } },
+
+    { id: 'waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway',
+      paint: { 'line-color': C.water,
+               'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.8, 16, 3.5] } },
+
+    { id: 'building', type: 'fill', source: 'openmaptiles', 'source-layer': 'building', minzoom: 13,
+      paint: { 'fill-color': C.building, 'fill-outline-color': C.buildingLine,
+               'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.35, 15, 0.95] } },
+
+    { id: 'road-casing', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation',
+      filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], true, false],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': C.roadCasing,
+               'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 10, 2.4, 16, 14] } },
+
+    { id: 'road-minor', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation',
+      filter: ['match', ['get', 'class'], ['tertiary', 'minor', 'service', 'street', 'residential'], true, false],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': C.road,
+               'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 11, 0.6, 16, 5] } },
+
+    { id: 'road-major', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation',
+      filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], true, false],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': C.road,
+               'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 10, 1.6, 16, 11] } },
+
+    { id: 'rail', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation',
+      filter: ['match', ['get', 'class'], ['rail', 'transit'], true, false],
+      paint: { 'line-color': C.rail, 'line-dasharray': [3, 2],
+               'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 16, 2.2] } },
+
+    { id: 'boundary', type: 'line', source: 'openmaptiles', 'source-layer': 'boundary',
+      filter: ['<=', ['get', 'admin_level'], 6],
+      paint: { 'line-color': '#CBB6BE', 'line-dasharray': [4, 3], 'line-width': 1 } },
+
+    { id: 'place-label', type: 'symbol', source: 'openmaptiles', 'source-layer': 'place',
+      filter: ['match', ['get', 'class'], ['city', 'town', 'suburb'], true, false],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:zh'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 10, 11, 14, 14]
+      },
+      paint: { 'text-color': C.label, 'text-halo-color': '#FFFFFF', 'text-halo-width': 1.4 } }
+  ]
+};
+
+/* ================= 初始化地图(上海) ================= */
+const SHANGHAI = [121.478, 31.235];
+const map = new maplibregl.Map({
+  container: 'map',
+  style,
+  center: SHANGHAI,
+  zoom: 12.6,
+  minZoom: 9,
+  maxZoom: 17.5,
+  attributionControl: { compact: true }
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+/* 加载失败时给出可见提示(而不是静默空白) */
+let tileErrorShown = false;
+map.on('error', e => {
+  if (tileErrorShown) return;
+  tileErrorShown = true;
+  const tip = document.createElement('div');
+  tip.style.cssText = 'position:absolute;inset:auto 12px 12px 12px;z-index:9;background:#FFF3F6;border:1px solid #F4B8C8;border-radius:8px;padding:10px 14px;font-size:12px;color:#B34A73;line-height:1.6';
+  tip.textContent = '地图数据加载失败:如果你在 Claude 预览中打开,沙箱会拦截地图瓦片请求 — 请下载本文件后用浏览器直接打开;若本地打开仍失败,请检查网络能否访问 tiles.openfreemap.org。';
+  document.getElementById('map').appendChild(tip);
+  console.warn('Map load error:', e && e.error);
+});
+map.addControl(new maplibregl.ScaleControl({ maxWidth: 120 }), 'bottom-right');
+
+document.getElementById('compass').addEventListener('click', () => {
+  map.easeTo({ center: SHANGHAI, zoom: 12.6, bearing: 0, pitch: 0, duration: 900 });
+});
+
+/* ================= 图例(可点击开关图层) ================= */
+const LEGEND = [
+  { name: 'park 公园',            color: C.park,        layers: ['park'] },
+  { name: 'garden 绿地',          color: C.garden,      layers: ['cemetery'] },
+  { name: 'other greenery 草地',  color: C.greenery,    layers: ['greenery'] },
+  { name: 'wood 林地',            color: C.wood,        layers: ['wood'] },
+  { name: 'water 水域',           color: C.water,       layers: ['water', 'waterway'] },
+  { name: 'wetland 湿地',         color: C.wetland,     layers: ['wetland'] },
+  { name: 'residential 居住区',   color: C.residential, layers: ['residential'] },
+  { name: 'commercial 商业服务',  color: C.commercial,  layers: ['commercial'] },
+  { name: 'production 生产技术',  color: C.industrial,  layers: ['industrial'] },
+  { name: 'agricultural 农业',    color: C.farmland,    layers: ['farmland'] },
+  { name: 'infrastructure 设施',  color: C.infra,       layers: ['infra', 'rail'] },
+  { name: 'public 公共服务',      color: C.public,      layers: ['public', 'religious-edu'] },
+  { name: 'recreational 文体',    color: C.recreation,  layers: ['recreation'] },
+  { name: 'special use 特殊用地', color: C.special,     layers: ['special'] },
+  { name: 'buildings 建筑',       color: C.building,    layers: ['building'] },
+  { name: 'roads 道路',           color: '#E8E0DA',     layers: ['road-casing', 'road-minor', 'road-major'] }
+];
+
+const chipsEl = document.getElementById('chips');
+LEGEND.forEach(item => {
+  const el = document.createElement('div');
+  el.className = 'chip';
+  el.innerHTML = `<i style="background:${item.color}"></i>${item.name}`;
+  el.addEventListener('click', () => {
+    const off = el.classList.toggle('off');
+    item.layers.forEach(id =>
+      map.setLayoutProperty(id, 'visibility', off ? 'none' : 'visible'));
+  });
+  chipsEl.appendChild(el);
+});
+
+/* ================= 点击查询:识别所在用地类别 ================= */
+const CAT_BY_LAYER = {
+  park: ['公园 Park', C.park], cemetery: ['绿地 Garden', C.garden],
+  greenery: ['草地 Greenery', C.greenery], wood: ['林地 Wood', C.wood],
+  water: ['水域 Water', C.water], wetland: ['湿地 Wetland', C.wetland],
+  residential: ['居住区 Residential', C.residential],
+  commercial: ['商业服务 Commercial', C.commercial],
+  industrial: ['生产技术 Production', C.industrial],
+  farmland: ['农业用地 Agricultural', C.farmland],
+  infra: ['基础设施 Infrastructure', C.infra],
+  public: ['公共服务 Public', C.public],
+  'religious-edu': ['教育/宗教 Institution', C.religious],
+  recreation: ['文体休闲 Recreational', C.recreation],
+  special: ['特殊用地 Special use', C.special],
+  building: ['建筑 Building', C.building]
+};
+const QUERY_LAYERS = Object.keys(CAT_BY_LAYER);
+const popup = new maplibregl.Popup({ closeButton: false, offset: 8 });
+
+map.on('click', e => {
+  const feats = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
+  if (!feats.length) { popup.remove(); return; }
+  const f = feats[0];
+  const [label, color] = CAT_BY_LAYER[f.layer.id];
+  const cls = f.properties.class || f.sourceLayer;
+  popup.setLngLat(e.lngLat)
+    .setHTML(`<div class="popup-cat"><i style="background:${color}"></i>${label}</div>
+              <div class="popup-sub">OSM class · ${cls}</div>`)
+    .addTo(map);
+});
+
+map.on('mousemove', e => {
+  const feats = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
+  map.getCanvas().style.cursor = feats.length ? 'pointer' : '';
+});
+</script>
+</body>
+</html>
