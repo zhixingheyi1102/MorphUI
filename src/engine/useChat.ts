@@ -83,7 +83,7 @@ export function useChat(scenario?: Step[]) {
 
   // ─── 剧本模式：走预设的 Step ───
   const advanceScript = useCallback(
-    (trigger: { type: "user_send" } | { type: "component_interact"; componentId: string }) => {
+    (trigger: { type: "user_send" } | { type: "component_interact"; componentId: string; value?: string }) => {
       const step = scenario?.[scriptIndex]
       if (!step || isTyping) return false
 
@@ -91,9 +91,12 @@ export function useChat(scenario?: Step[]) {
       if (step.trigger.type !== trigger.type) return false
       if (
         step.trigger.type === "component_interact" &&
-        trigger.type === "component_interact" &&
-        step.trigger.componentId !== trigger.componentId
-      ) return false
+        trigger.type === "component_interact"
+      ) {
+        if (step.trigger.componentId !== trigger.componentId) return false
+        // 如果剧本 trigger 指定了 value，则必须精确匹配
+        if (step.trigger.value !== undefined && step.trigger.value !== trigger.value) return false
+      }
 
       // 加用户消息
       if (step.userMessage) {
@@ -259,12 +262,46 @@ export function useChat(scenario?: Step[]) {
     (componentId: string, value?: string) => {
       if (isTyping) return
 
-      // 先尝试走剧本
-      const stepped = advanceScript({ type: "component_interact", componentId })
+      // ── 即时 POI 创建：点击地图标记 → 直接从标记数据生成 POI 卡片 ──
+      const comp = components.find((c) => c.id === componentId)
+      if (comp?.type === "map_view" && value) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapData = comp.data as any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allMarkers = [...(mapData.markers ?? []), ...(mapData.extraMarkers ?? [])] as any[]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const marker = allMarkers.find((m: any) => m.id === value)
+
+        if (marker) {
+          // 立即创建 POI 卡片
+          applyActions([{
+            action: "create",
+            componentId: "poi",
+            componentType: "poi_card",
+            data: {
+              type: marker.type ?? "spot",
+              name: marker.name,
+              desc: marker.desc,
+              imageUrl: marker.imageUrl,
+              tags: marker.tags,
+              rating: marker.rating,
+            },
+          }])
+
+          // 打出简短消息
+          const msg = `这是${marker.name}的详情 ✨ 点击「探索玩法」了解更多～`
+          typeText(msg, () => {
+            historyRef.current.push({ role: "assistant", content: msg })
+          })
+          return
+        }
+      }
+
+      // ── 先尝试走剧本 ──
+      const stepped = advanceScript({ type: "component_interact", componentId, value })
       if (stepped) return
 
-      // 剧本没匹配上 → 走 AI
-      const comp = components.find((c) => c.id === componentId)
+      // ── 剧本没匹配上 → 走 AI ──
       const compName = comp?.type ?? componentId
       const message = value
         ? `[用户在「${compName}」组件上选择了: ${value}]`
@@ -273,7 +310,7 @@ export function useChat(scenario?: Step[]) {
       historyRef.current.push({ role: "user", content: message })
       callAI(historyRef.current)
     },
-    [isTyping, advanceScript, components, callAI]
+    [isTyping, components, applyActions, typeText, advanceScript, callAI]
   )
 
   // ─── 手动关闭组件 ───

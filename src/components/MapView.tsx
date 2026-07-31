@@ -10,6 +10,9 @@ type Marker = {
   type: "spot" | "restaurant" | "hotel"
   rating?: number
   stars?: number
+  desc?: string
+  imageUrl?: string
+  tags?: string[]
 }
 
 type Props = {
