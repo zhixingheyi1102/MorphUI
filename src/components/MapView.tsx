@@ -1030,15 +1030,6 @@ export default function MapView({ data, onInteract }: Props) {
               />
             ))}
           </div>
-          {/* 中缝淡折痕：整张地图对折过的纸质余痕（地图本身面积不折叠） */}
-          <div
-            className="absolute inset-y-0 pointer-events-none"
-            style={{
-              zIndex: 6, left: "50%", width: 72, transform: "translateX(-50%)",
-              background:
-                "linear-gradient(90deg, transparent 32%, rgba(43,43,43,0.09) 49%, rgba(43,43,43,0.11) 50%, rgba(255,255,255,0.16) 53%, transparent 68%)",
-            }}
-          />
         </div>
       </div>
       {/* 折在背面的详情页：未选景点时只露出一条纸边+折角，暗示背面还有一页；
