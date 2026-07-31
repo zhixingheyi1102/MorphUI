@@ -262,11 +262,10 @@ const BUILDING_POIS: BuildingPoi[] = [
   { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
-// 建筑随 zoom 等比例缩放（每级 zoom 尺寸 ×2，zoom=14 为 baseH）；
-// 但锚定 POI 点大小作为下限：缩小到再远也保持和 POI 圆点（28~36px）同级的可见尺寸
-const BUILDING_MIN_H = 40
-function buildingHeight(baseH: number, zoom: number) {
-  return Math.max(baseH * Math.pow(2, zoom - 14), BUILDING_MIN_H)
+// 所有建筑统一视觉框，随 zoom 线性变大。
+// 之前 baseH*2^(z-14) 在 z<13.5 全被 40px 下限钳住，缩放地图看不到大小变化
+function buildingHeight(zoom: number) {
+  return Math.min(Math.max(52 + (zoom - 11) * 16, 52), 150)
 }
 
 // 手绘路线：在锚点间插值 + 垂直方向确定性抖动，模拟钢笔运笔
@@ -375,51 +374,43 @@ function PoiPanel({
       style={{ borderLeft: "1px solid var(--ink-line)", background: POI_PAPER[marker.type] ?? POI_PAPER.spot, fontFamily: "var(--font-cn)", color: "var(--ink)" }}
     >
       <div className="w-[340px] h-full overflow-y-auto">
-        {/* 明信片抬头：关闭 + POST CARD + 邮资票 + 邮戳 */}
-        <div className="relative flex items-start gap-2 px-4 pt-3 mb-1">
+        {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
+        <div className="relative px-4 pt-3 mb-2">
           <button
             onClick={onClose}
-            className="shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
-            style={{ background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
+            className="absolute z-10 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
+            style={{ left: 10, top: 8, background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
           >
             ✕
           </button>
-          <div className="flex-1 min-w-0 pt-0.5">
-            <p style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.32em", color: "var(--ink-soft)" }}>POST CARD</p>
-            <div className="mt-1.5" style={{ width: "72%", borderTop: "1px solid var(--ink-line)" }} />
-            <p className="mt-1.5" style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink-soft)", opacity: 0.75 }}>
-              {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "PAR AVION"}
-            </p>
-          </div>
-          {/* 邮资票：类型作图案，评分作面值 */}
-          <div
-            className="shrink-0"
-            style={{ ...perfStyle(paper, 2), padding: 5, transform: "rotate(2.5deg)", boxShadow: "0 1px 3px rgba(43,43,43,0.2)" }}
-          >
-            <div
-              className="relative flex flex-col items-center justify-center"
-              style={{ width: 40, height: 46, background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, border: "1px solid rgba(43,43,43,0.1)" }}
-            >
-              <TypeIcon size={16} weight="duotone" color="var(--ink-soft)" />
-              <span style={{ fontSize: 9, color: "var(--ink-soft)", marginTop: 2 }}>{typeLabel}</span>
+          <div className="flex gap-2.5 items-stretch pt-6">
+            {/* 左列：DAY/类型 + 名称 + 星级 */}
+            <div className="flex-1 min-w-0 flex flex-col pt-1">
+              <p style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.24em", color: "var(--ink-soft)" }}>
+                {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "CITY WALK"}
+              </p>
+              <h4 className="font-semibold leading-snug mt-1.5" style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ink)" }}>{marker.name}</h4>
               {marker.rating != null && (
-                <span style={{ position: "absolute", top: 1, right: 3, fontFamily: "var(--font-en)", fontSize: 8, color: "var(--ink-soft)" }}>{marker.rating}</span>
+                <span className="mt-1" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
               )}
+              {marker.stars != null && (
+                <div className="mt-0.5 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
+                  {"★".repeat(marker.stars)}
+                  <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
+                </div>
+              )}
+              <span
+                className="self-start px-1.5 py-0.5 mt-auto mb-1 inline-flex items-center gap-1"
+                style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
+              >
+                <TypeIcon size={12} weight="duotone" /> {typeLabel}
+              </span>
             </div>
-          </div>
-          {/* 邮戳压在邮资票左下 */}
-          <div className="absolute pointer-events-none" style={{ right: 62, top: 30, transform: "rotate(-8deg)", opacity: 0.85 }}>
-            <Postmark />
-          </div>
-        </div>
-
-        {/* 齿孔照片框 */}
-        <div className="px-4 mb-3">
-          <div style={{ transform: "rotate(-1.3deg)" }}>
-            <div style={{ ...perfStyle(paper, 3), padding: 9, boxShadow: "0 2px 6px rgba(43,43,43,0.18)" }}>
+            {/* 右列：邮票齿孔框大图 */}
+            <div className="relative shrink-0" style={{ width: 150, height: 190 }}>
               <div
-                className="relative h-40 overflow-hidden flex items-center justify-center"
-                style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
+                className="absolute overflow-hidden flex items-center justify-center"
+                style={{ inset: "8.5%", background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
               >
                 {marker.imageUrl ? (
                   <img
@@ -432,25 +423,18 @@ function PoiPanel({
                   marker.type === "spot" ? <Bank size={32} weight="duotone" /> : marker.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />
                 )}
               </div>
+              <img
+                src="/decors/frame-stamp-perf.png"
+                alt=""
+                className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                style={{ objectFit: "fill" }}
+              />
             </div>
           </div>
         </div>
 
         {/* 内容区 */}
         <div className="px-4 pb-4">
-          {/* 名称 + 评分 */}
-          <div className="flex items-baseline justify-between mb-1">
-            <h4 className="font-semibold leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{marker.name}</h4>
-            {marker.rating != null && (
-              <span className="shrink-0 ml-2" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
-            )}
-          </div>
-          {marker.stars != null && (
-            <div className="mb-1 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
-              {"★".repeat(marker.stars)}
-              <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
-            </div>
-          )}
 
           {/* 简介：明信片书写线 */}
           {marker.desc && (
@@ -788,9 +772,8 @@ export default function MapView({ data, onInteract }: Props) {
       const z = map.getZoom()
       for (const { poi, img } of buildingMarkers.current) {
         const visible = z >= poi.minZoom && z < poi.maxZoom
-        // 统一视觉框：baseH 是目标框边长，按素材长边归一（宽图对齐宽、高图对齐高），
-        // 消除素材宽高比差异导致的"图标大小不一"
-        const box = buildingHeight(poi.baseH, z)
+        // 统一视觉框（所有建筑同尺寸），按素材长边归一，消除宽高比差异
+        const box = buildingHeight(z)
         const { naturalWidth: nw, naturalHeight: nh } = img
         const k = nw > 0 && nh > 0 ? nh / Math.max(nw, nh) : 1
         img.style.height = `${Math.round(box * k)}px`
