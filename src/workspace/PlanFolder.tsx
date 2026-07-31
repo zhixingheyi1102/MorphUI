@@ -75,8 +75,11 @@ export default function PlanFolder({ planId, data, dockedComponents, organized, 
         className="relative shrink-0 flex flex-col items-center justify-evenly py-10"
         style={{
           width: SPINE_W,
-          background:
+          backgroundColor: "var(--paper-cream)",
+          backgroundImage:
             "linear-gradient(90deg, rgba(24,20,14,0.10) 0%, rgba(24,20,14,0.03) 30%, rgba(24,20,14,0.03) 70%, rgba(24,20,14,0.12) 100%)",
+          borderTop: "1px solid var(--ink-line)",
+          borderBottom: "1px solid var(--ink-line)",
         }}
       >
         {Array.from({ length: 6 }, (_, i) => (
