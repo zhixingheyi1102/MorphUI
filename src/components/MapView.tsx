@@ -214,6 +214,74 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   ],
 }
 
+// ═══════════════════════════════════════════════
+//  上海地标建筑素材（试点：外滩 + 陆家嘴）
+//  LOD 规则：z < LOD_SPLIT 显示聚合态（建筑群合集图），z ≥ LOD_SPLIT 拆成单体
+// ═══════════════════════════════════════════════
+const LOD_SPLIT = 13
+
+type BuildingPoi = {
+  id: string
+  name: string
+  lngLat: [number, number] // [lng, lat]
+  img: string
+  baseH: number // zoom=14 时的显示高度 px
+  minZoom: number
+  maxZoom: number
+}
+
+const BUILDING_POIS: BuildingPoi[] = [
+  // —— 聚合态（缩小看全城时）——
+  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5023, 31.2372], img: "/buildings/lujiazui-cluster.png", baseH: 200, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-bund-rep", name: "外滩", lngLat: [121.4858, 31.2392], img: "/buildings/customs-house.png", baseH: 120, minZoom: 0, maxZoom: LOD_SPLIT },
+  // —— 单体态（放大看街区时）——
+  { id: "b-pearl", name: "东方明珠", lngLat: [121.4998, 31.2397], img: "/buildings/oriental-pearl.png", baseH: 92, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shtower", name: "上海中心", lngLat: [121.5055, 31.2336], img: "/buildings/shanghai-tower.png", baseH: 100, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.5015, 31.2367], img: "/buildings/jinmao.png", baseH: 84, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-swfc", name: "环球金融中心", lngLat: [121.5024, 31.2350], img: "/buildings/swfc.png", baseH: 88, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-customs", name: "海关大楼", lngLat: [121.4844, 31.2373], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-peace", name: "和平饭店", lngLat: [121.4872, 31.2410], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.4907, 31.2440], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
+]
+
+// 建筑随 zoom 纯等比例缩放：与地图缩放严格同步（每级 zoom 尺寸 ×2），zoom=14 为 baseH
+function buildingHeight(baseH: number, zoom: number) {
+  return baseH * Math.pow(2, zoom - 14)
+}
+
+// 手绘路线：在锚点间插值 + 垂直方向确定性抖动，模拟钢笔运笔
+function handDrawnPath(pts: [number, number][], segs = 10, amp = 0.00022): [number, number][] {
+  const out: [number, number][] = []
+  let seed = 7
+  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280) - 0.5
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i]
+    const [x2, y2] = pts[i + 1]
+    const dx = x2 - x1, dy = y2 - y1
+    const len = Math.hypot(dx, dy) || 1
+    for (let j = 0; j < segs; j++) {
+      const t = j / segs
+      const ease = Math.sin(Math.PI * t) // 两端钉死在锚点上
+      const off = rnd() * 2 * amp * ease
+      out.push([x1 + dx * t + (-dy / len) * off, y1 + dy * t + (dx / len) * off])
+    }
+  }
+  out.push(pts[pts.length - 1])
+  return out
+}
+
+// 试点路线：外滩一路走到陆家嘴三高楼
+const BRUSH_ROUTE: [number, number][] = [
+  [121.4844, 31.2373], // 海关大楼
+  [121.4872, 31.2410], // 和平饭店
+  [121.4907, 31.2440], // 外白渡桥
+  [121.4998, 31.2397], // 东方明珠
+  [121.5015, 31.2367], // 金茂
+  [121.5024, 31.2350], // 环球金融
+  [121.5055, 31.2336], // 上海中心
+]
+const BRUSH_INK = "#32476B" // 复古海军蓝墨
+
 // ─── 标记 DOM 元素（MapLibre 用 HTMLElement 作为 marker） ───
 function createMarkerEl(
   type: string,
@@ -549,6 +617,7 @@ export default function MapView({ data, onInteract }: Props) {
   const mapInstance = useRef<maplibregl.Map | null>(null)
   const mapReady = useRef(false)
   const markerObjs = useRef<maplibregl.Marker[]>([])
+  const buildingMarkers = useRef<{ poi: BuildingPoi; marker: maplibregl.Marker; img: HTMLImageElement }[]>([])
   const routeSourceIds = useRef<string[]>([])
   const prevMarkerIds = useRef<Set<string> | null>(null)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
@@ -607,6 +676,74 @@ export default function MapView({ data, onInteract }: Props) {
       mapReady.current = false
     }
   }, [])
+
+  // ─── 建筑素材挂载 + 手绘路线（试点：外滩+陆家嘴）───
+  useEffect(() => {
+    const map = mapInstance.current
+    if (!map || !mapReady.current) return
+
+    // 手绘笔触路线：水彩晕染底 + 钢笔墨线两层
+    const routeData: GeoJSON.Feature = {
+      type: "Feature", properties: {},
+      geometry: { type: "LineString", coordinates: handDrawnPath(BRUSH_ROUTE) },
+    }
+    if (!map.getSource("brush-route")) {
+      map.addSource("brush-route", { type: "geojson", data: routeData })
+      map.addLayer({
+        id: "brush-route-halo", type: "line", source: "brush-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": BRUSH_INK, "line-opacity": 0.13,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 16, 15],
+        },
+      })
+      map.addLayer({
+        id: "brush-route-ink", type: "line", source: "brush-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": BRUSH_INK, "line-opacity": 0.72,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.6, 16, 3.4],
+        },
+      })
+    }
+
+    // 建筑 marker：图片底部对齐坐标点，随 zoom 连续缩放 + LOD 显隐
+    if (buildingMarkers.current.length === 0) {
+      for (const poi of BUILDING_POIS) {
+        const el = document.createElement("div")
+        el.style.cssText = "pointer-events:none;"
+        const img = document.createElement("img")
+        img.src = poi.img
+        img.alt = poi.name
+        img.draggable = false
+        img.style.cssText = `
+          display:block;
+          filter: drop-shadow(0 3px 4px rgba(43,43,43,0.22));
+          transition: opacity .35s ease, transform .35s ease;
+          transform-origin: bottom center;
+        `
+        el.appendChild(img)
+        const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+          .setLngLat(poi.lngLat)
+          .addTo(map)
+        buildingMarkers.current.push({ poi, marker, img })
+      }
+    }
+
+    const applyLod = () => {
+      const z = map.getZoom()
+      for (const { poi, img } of buildingMarkers.current) {
+        const visible = z >= poi.minZoom && z < poi.maxZoom
+        img.style.height = `${Math.round(buildingHeight(poi.baseH, z))}px`
+        img.style.width = "auto"
+        img.style.opacity = visible ? "1" : "0"
+        img.style.transform = visible ? "scale(1)" : "scale(0.82)"
+      }
+    }
+    applyLod()
+    map.on("zoom", applyLod)
+    return () => { map.off("zoom", applyLod) }
+  }, [styleVersion])
 
   // 更新标记和路线
   useEffect(() => {
@@ -760,14 +897,47 @@ export default function MapView({ data, onInteract }: Props) {
             )}
           </div>
         </div>
-        <div
-          ref={mapRef}
-          className="flex-1 min-h-[320px]"
-          onDragStart={stopDragPropagation}
-          onMouseDown={stopPointerPropagation}
-          onPointerDown={stopPointerPropagation}
-          draggable={false}
-        />
+        <div className="flex-1 min-h-[320px] relative">
+          <div
+            ref={mapRef}
+            style={{ position: "absolute", inset: 0 }}
+            onDragStart={stopDragPropagation}
+            onMouseDown={stopPointerPropagation}
+            onPointerDown={stopPointerPropagation}
+            draggable={false}
+          />
+          {/* 老地图边框：内双细线 + 四角墨线 + 纸质晕影，不挡交互 */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              zIndex: 5,
+              boxShadow: "inset 0 0 0 1px rgba(50,71,107,0.28), inset 0 0 46px rgba(122,92,58,0.14)",
+            }}
+          >
+            <div
+              className="absolute"
+              style={{ inset: 7, border: "1px solid rgba(50,71,107,0.22)" }}
+            />
+            {(["lt", "rt", "lb", "rb"] as const).map((c) => (
+              <span
+                key={c}
+                className="absolute"
+                style={{
+                  width: 14, height: 14,
+                  top: c[1] === "t" ? 4 : undefined,
+                  bottom: c[1] === "b" ? 4 : undefined,
+                  left: c[0] === "l" ? 4 : undefined,
+                  right: c[0] === "r" ? 4 : undefined,
+                  borderTop: c[1] === "t" ? `2px solid ${"#32476B"}` : undefined,
+                  borderBottom: c[1] === "b" ? `2px solid ${"#32476B"}` : undefined,
+                  borderLeft: c[0] === "l" ? `2px solid ${"#32476B"}` : undefined,
+                  borderRight: c[0] === "r" ? `2px solid ${"#32476B"}` : undefined,
+                  opacity: 0.55,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* POI 面板 */}
