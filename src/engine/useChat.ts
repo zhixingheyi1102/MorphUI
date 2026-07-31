@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import type { ChatMessage, ComponentInstance, Step, WorkspaceAction } from "./types"
 import { streamChat, SYSTEM_PROMPT } from "./api"
 import { COMPONENT_CATEGORIES } from "../components/registry"
+import { mergeData, type CompData } from "./mergeData"
 
 let msgCounter = 0
 function nextId() {
@@ -119,22 +120,6 @@ function parsePriceRange(text?: string): number {
   return Math.round((nums[0] + nums[1]) / 2)
 }
 
-// 合并组件 data：默认浅合并，但对 days（行程按天）做逐天合并，
-// 避免只更新 day2 时把 day1 整个覆盖丢失
-type CompData = Record<string, unknown>
-function mergeData(prev: CompData, patch: CompData): CompData {
-  const merged: CompData = { ...prev, ...patch }
-  if (
-    patch.days && typeof patch.days === "object" &&
-    prev.days && typeof prev.days === "object"
-  ) {
-    merged.days = {
-      ...(prev.days as Record<string, unknown>),
-      ...(patch.days as Record<string, unknown>),
-    }
-  }
-  return merged
-}
 
 export function useChat(scenario?: Step[], initialComponents: ComponentInstance[] = []) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
@@ -642,19 +627,6 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
           actions.push({ action: "update", componentId: "map", data: { markers: newMarkers } })
         }
         if (actions.length > 0) applyActions(actions)
-        return
-      }
-
-      // 点方案里的 POI 条卡 → 打开二级 POST CARD：地图卡飞到该点并抽出详情便签。
-      // 纯 UI 联动，不走 AI；用时间戳保证重复点击同一景点也能重新触发。
-      if (value && value.startsWith("opendetail:")) {
-        const markerId = value.slice("opendetail:".length)
-        const mapComp = components.find((c) => c.id === "map")
-        if (mapComp) {
-          applyActions([
-            { action: "update", componentId: "map", data: { focusMarker: { id: markerId, ts: Date.now() } } },
-          ])
-        }
         return
       }
 
