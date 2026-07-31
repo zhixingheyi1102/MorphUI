@@ -80,14 +80,14 @@ const MARKER_COLORS: Record<string, string> = {
   hotel: "#10b981",
 }
 
-// 每天一个颜色，用于区分不同天的景点与路线
+// 每天一个颜色，用于区分不同天的景点与路线——取设计系统"笔迹色"（钢笔墨），非现代高饱和
 const DAY_COLORS: Record<string, string> = {
-  day1: "#6366f1", // 靛蓝
-  day2: "#ec4899", // 玫红
-  day3: "#0ea5e9", // 天蓝
-  day4: "#f97316", // 橙
+  day1: "#2B4EA8", // 钴蓝笔迹
+  day2: "#D6338A", // 洋红笔迹
+  day3: "#4E8F6E", // 深松绿笔迹
+  day4: "#A6633C", // 赭石笔迹
 }
-const DIM_COLOR = "#c7cbd1" // 非当前天置灰色
+const DIM_COLOR = "#9C9C9C" // 非当前天：铅笔灰细线
 
 const DAY_LABELS: Record<string, string> = {
   day1: "Day 1", day2: "Day 2", day3: "Day 3", day4: "Day 4",
@@ -1026,21 +1026,44 @@ export default function MapView({ data, onInteract }: Props) {
     // 先加路线（在标记 DOM 之下），再加标记
     // offRoute 的点位图钉保留但不参与连线（已从行程移出）
     const spotMarkers = (data.markers ?? []).filter((m) => m.type === "spot" && !m.offRoute)
-    const addRoute = (id: string, coords: [number, number][], color: string, width: number, opacity: number) => {
+    // 手绘笔触路线：锚点间抖动插值模拟运笔，水彩晕染 halo + 钢笔墨线双层（同建筑素材画风）
+    const addRoute = (id: string, coords: [number, number][], color: string, active: boolean) => {
       map.addSource(id, {
         type: "geojson",
-        data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } },
+        data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: handDrawnPath(coords) } },
       })
+      if (active) {
+        map.addLayer({
+          id: `${id}-halo`, type: "line", source: id,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": color, "line-opacity": 0.16,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 11, 6, 16, 15],
+          },
+        })
+        routeSourceIds.current.push(`${id}-halo`)
+      }
       map.addLayer({
-        id, type: "line", source: id,
+        id: `${id}-ink`, type: "line", source: id,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": color, "line-width": width, "line-opacity": opacity, "line-dasharray": [2, 2] },
+        paint: active
+          ? {
+              "line-color": color, "line-opacity": 0.85,
+              "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.2, 16, 4.5],
+            }
+          : {
+              // 非当前天：铅笔灰细虚线，退为背景参考
+              "line-color": color, "line-opacity": 0.45,
+              "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.4, 16, 2.4],
+              "line-dasharray": [2, 2.4],
+            },
       })
+      routeSourceIds.current.push(`${id}-ink`)
       routeSourceIds.current.push(id)
     }
 
-    // 每日路线虚线仍隐藏；餐厅/酒店 pin 以复古纸质圆章样式展示
-    const SHOW_DAY_ROUTES = false
+    // 每日路线：手绘墨线连出当天相对位置；餐厅/酒店 pin 以复古纸质圆章样式展示
+    const SHOW_DAY_ROUTES = true
     const SHOW_POI_PINS = true
 
     if (SHOW_DAY_ROUTES && hasDays) {
@@ -1060,17 +1083,12 @@ export default function MapView({ data, onInteract }: Props) {
         if (spots.length < 2) continue
         const isActive = activeDay == null || d === activeDay
         const coords = spots.map((m) => [m.lng, m.lat] as [number, number])
-        // 当前天用本天颜色高亮，其它天统一置灰（切换 Day 时旧路线变灰）
-        addRoute(
-          `route-${d}`, coords,
-          isActive ? dayColor(d) : DIM_COLOR,
-          isActive ? 4.5 : 2.5,
-          isActive ? 0.9 : 0.35,
-        )
+        // 当前天用本天墨色高亮，其它天统一铅笔灰（切换 Day 时旧路线变灰）
+        addRoute(`route-${d}`, coords, isActive ? dayColor(d) : DIM_COLOR, isActive)
       }
     } else if (SHOW_DAY_ROUTES && spotMarkers.length > 1) {
       const coords = spotMarkers.map((m) => [m.lng, m.lat] as [number, number])
-      addRoute("route-all", coords, data.routeColor ?? "#6366f1", 3, 0.6)
+      addRoute("route-all", coords, data.routeColor ?? BRUSH_INK, true)
     }
 
     // 标记：景点（spot）不再画圆点 pin——建筑素材即景点标识；餐厅/酒店等保留 pin
