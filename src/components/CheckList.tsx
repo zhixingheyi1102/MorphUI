@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react"
-import { ClipboardText, CloudSun, Lightbulb } from "@phosphor-icons/react"
+import { CloudSun, Lightbulb } from "@phosphor-icons/react"
 
 type TodoItem = {
   id: string
@@ -25,6 +25,8 @@ type Props = {
 }
 
 let itemCounter = 100
+
+const RULE = "color-mix(in srgb, var(--ink) 16%, transparent)"
 
 export default function CheckList({ data }: Props) {
   const [items, setItems] = useState<TodoItem[]>(data.items)
@@ -62,9 +64,8 @@ export default function CheckList({ data }: Props) {
 
   return (
     <div
-      className="p-5 w-80 shrink-0"
+      className="w-80 shrink-0 overflow-hidden"
       style={{
-        background: "var(--paper-manila)",
         border: "1px solid var(--ink-line)",
         borderRadius: "var(--r-sticker)",
         boxShadow: "var(--z1)",
@@ -72,53 +73,105 @@ export default function CheckList({ data }: Props) {
         color: "var(--ink)",
       }}
     >
-      <h3 className="flex items-center gap-1.5 mb-3" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><ClipboardText size={16} weight="fill" /> {data.title}</h3>
-
-      {/* 天气提示（蓝纸） */}
-      {data.weather && (
-        <div
-          className="mb-4 p-3"
-          style={{ background: "var(--paper-blue)", borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="inline-flex items-center gap-1.5">
-              <CloudSun size={15} weight="fill" /> {data.weather.city} · {data.weather.date}
-            </span>
-            <span>{data.weather.temp}</span>
+      {/* 牛皮纸表头带 */}
+      <div
+        className="px-4 pt-3 pb-2.5"
+        style={{ background: "var(--paper-kraft)", borderBottom: "1.5px solid var(--ink)" }}
+      >
+        <div className="flex items-start justify-between">
+          <span
+            className="px-2 py-0.5"
+            style={{
+              border: "1.5px solid var(--ink)",
+              fontSize: "var(--fs-data)",
+              fontWeight: 400,
+              background: "color-mix(in srgb, #fff 22%, transparent)",
+            }}
+          >
+            {data.title}
+          </span>
+          <div className="text-right" style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink)" }}>
+            <div>NO.00090</div>
+            <div className="mt-0.5" style={{ color: "color-mix(in srgb, var(--ink) 72%, transparent)" }}>
+              {doneCount}/{items.length} PACKED
+            </div>
           </div>
-          <p>{data.weather.condition}</p>
-          <p className="mt-1 flex items-center gap-1.5"><Lightbulb size={14} weight="fill" /> {data.weather.tips}</p>
         </div>
-      )}
-
-      {/* 进度 */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.08)" }}>
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%`, background: "var(--ink)" }}
-          />
+        <div className="mt-1.5" style={{ fontFamily: "var(--font-en)", fontSize: 8, letterSpacing: "0.3em", color: "color-mix(in srgb, var(--ink) 65%, transparent)" }}>
+          PACKING LIST · MORPH TRAVEL CO.
         </div>
-        <span className="shrink-0" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)", fontFamily: "var(--font-en)" }}>
-          {doneCount}/{items.length}
-        </span>
       </div>
 
-      {/* 清单列表 */}
-      <div className="space-y-1.5 mb-3">
+      {/* 便签本主体：奶油纸 + 真实纸纹 */}
+      <div
+        className="relative"
+        style={{
+          background: "linear-gradient(rgba(246,241,223,0.9), rgba(246,241,223,0.9)), url('/textures/paper-crumpled.jpg') center/420px auto",
+        }}
+      >
+        {/* 右侧 check 细竖纹栏 */}
+        <div
+          className="absolute inset-y-0 right-0 pointer-events-none"
+          style={{
+            width: 44,
+            borderLeft: `1px solid ${RULE}`,
+            backgroundImage: "repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 7%, transparent) 0 1px, transparent 1px 5px)",
+          }}
+        />
+
+        {/* 天气：蓝墨手记行 */}
+        {data.weather && (
+          <div
+            className="px-4 py-2.5"
+            style={{ borderBottom: `1px dashed ${RULE}`, fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}
+          >
+            <div className="flex items-center justify-between" style={{ paddingRight: 44 }}>
+              <span className="inline-flex items-center gap-1.5">
+                <CloudSun size={14} weight="fill" /> {data.weather.city} · {data.weather.date}
+              </span>
+              <span style={{ fontFamily: "var(--font-en)" }}>{data.weather.temp}</span>
+            </div>
+            <p className="mt-0.5" style={{ paddingRight: 44 }}>{data.weather.condition}</p>
+            <p className="mt-0.5 flex items-center gap-1.5" style={{ paddingRight: 44 }}>
+              <Lightbulb size={13} weight="fill" /> {data.weather.tips}
+            </p>
+          </div>
+        )}
+
+        {/* 栏头：ITEM / CHECK */}
+        <div className="flex items-center" style={{ borderBottom: `1px solid ${RULE}` }}>
+          <span className="flex-1 px-4 py-1" style={{ fontFamily: "var(--font-en)", fontSize: 8, letterSpacing: "0.24em", color: "var(--postmark)" }}>
+            ITEM
+          </span>
+          <span className="text-center" style={{ width: 44, fontFamily: "var(--font-en)", fontSize: 8, letterSpacing: "0.14em", color: "var(--postmark)" }}>
+            CHECK
+          </span>
+        </div>
+
+        {/* 横线清单 */}
         {items.map((item) => (
           <label
             key={item.id}
-            className="flex items-start gap-2.5 py-1 px-1 cursor-pointer group transition-colors hover:brightness-95"
-            style={{ borderRadius: "var(--r-paper)" }}
+            className="flex items-center cursor-pointer group"
+            style={{ borderBottom: `1px solid ${RULE}`, minHeight: 32 }}
           >
-            <div className="mt-0.5 shrink-0">
-              <div
-                className="w-4 h-4 flex items-center justify-center transition-all"
+            <span
+              className="flex-1 px-4 leading-snug transition-all"
+              style={{
+                fontSize: "var(--fs-data)",
+                fontWeight: 400,
+                color: item.checked ? "var(--postmark)" : "var(--ink)",
+                textDecoration: item.checked ? "line-through" : "none",
+              }}
+            >
+              {item.text}
+            </span>
+            <span className="flex items-center justify-center shrink-0" style={{ width: 44 }}>
+              <span
+                className="w-[15px] h-[15px] flex items-center justify-center transition-all"
                 style={{
-                  borderRadius: "var(--r-paper)",
-                  border: `2px solid ${item.checked ? "var(--ink-blue)" : "var(--ink-line)"}`,
-                  background: item.checked ? "var(--ink-blue)" : "transparent",
+                  border: `1.5px solid ${item.checked ? "var(--ink-blue)" : "color-mix(in srgb, var(--ink) 45%, transparent)"}`,
+                  background: "transparent",
                 }}
                 onClick={(e) => {
                   e.preventDefault()
@@ -126,57 +179,42 @@ export default function CheckList({ data }: Props) {
                 }}
               >
                 {item.checked && (
-                  <svg className="w-2.5 h-2.5" style={{ color: "var(--paper-cream)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  <svg viewBox="0 0 14 14" width="17" height="17" style={{ overflow: "visible", marginTop: -3 }}>
+                    <path
+                      d="M2.5 7.5 L5.5 10.5 L12 2"
+                      fill="none"
+                      stroke="var(--ink-blue)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 )}
-              </div>
-            </div>
-            <span
-              className="leading-snug transition-all"
-              style={{
-                fontSize: "var(--fs-data)",
-                color: item.checked ? "var(--postmark)" : "var(--ink)",
-                textDecoration: item.checked ? "line-through" : "none",
-              }}
-            >
-              {item.text}
+              </span>
             </span>
           </label>
         ))}
-      </div>
 
-      {/* 添加新项 */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="添加新项目…"
-          className="flex-1 px-3 py-1.5 focus:outline-none transition-colors"
-          style={{
-            fontSize: "var(--fs-data)",
-            borderRadius: "var(--r-paper)",
-            border: "1px solid var(--ink-line)",
-            background: "rgba(255,255,255,0.4)",
-            color: "var(--ink)",
-          }}
-        />
-        <button
-          onClick={addItem}
-          disabled={!inputValue.trim()}
-          className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105"
-          style={{
-            fontSize: "var(--fs-data)",
-            borderRadius: "var(--r-paper)",
-            background: "var(--paper-kraft)",
-            border: "1px solid var(--ink)",
-            color: "var(--ink)",
-          }}
-        >
-          添加
-        </button>
+        {/* 添加新项：留白横线上直接手写 */}
+        <div className="flex items-center" style={{ minHeight: 32 }}>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="添加新项目…"
+            className="flex-1 px-4 bg-transparent focus:outline-none"
+            style={{ fontSize: "var(--fs-data)", fontWeight: 400, color: "var(--ink)" }}
+          />
+          <button
+            onClick={addItem}
+            disabled={!inputValue.trim()}
+            className="flex items-center justify-center shrink-0 disabled:opacity-35 transition-opacity"
+            style={{ width: 44, height: 32, color: "var(--ink-blue)", fontFamily: "var(--font-en)", fontSize: 15 }}
+          >
+            +
+          </button>
+        </div>
       </div>
     </div>
   )

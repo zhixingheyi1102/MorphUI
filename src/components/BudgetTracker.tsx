@@ -37,63 +37,111 @@ export default function BudgetTracker({ data }: Props) {
   const today = new Date()
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`
 
+  const dashed = { borderTop: "1.5px dashed color-mix(in srgb, var(--ink) 45%, transparent)" }
+
   return (
-    <div className="w-64 shrink-0" style={{ filter: "drop-shadow(0 2px 3px rgba(24,20,14,0.28)) drop-shadow(0 8px 14px rgba(24,20,14,0.18))" }}>
+    <div
+      className="w-64 shrink-0"
+      style={{
+        filter: "drop-shadow(0 2px 3px rgba(24,20,14,0.28)) drop-shadow(0 8px 14px rgba(24,20,14,0.18))",
+        transform: "rotate(0.6deg)",
+      }}
+    >
       {/* 上锯齿撕边 */}
       <div className="receipt-zigzag-top" />
 
       <div
-        className="receipt-paper relative px-5 pt-4 pb-5"
+        className="receipt-paper relative px-5 pt-4 pb-5 overflow-hidden"
         style={{ color: "var(--ink)", fontFamily: "var(--font-en)" }}
       >
-        {/* 票头 */}
-        <div className="text-center">
-          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.18em" }}>
-            * RECEIPT *
+        {/* 做旧账单撕纸肌理（透明 PNG 叠加） */}
+        <img
+          src="/textures/receipt-distress.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          style={{ mixBlendMode: "multiply", opacity: 0.28 }}
+        />
+
+        {/* 订书钉 */}
+        <span
+          className="absolute pointer-events-none"
+          style={{
+            top: 8, left: "50%", width: 26, height: 7,
+            transform: "translateX(-50%) rotate(-3deg)",
+            border: "2px solid #9A937F",
+            borderRadius: 2,
+            boxShadow: "0 1px 1px rgba(24,20,14,0.35)",
+            background: "linear-gradient(180deg, #D8D2C0, #B7B09B)",
+          }}
+        />
+
+        {/* 票头：品牌小字 → CASH RECEIPT 大字 → 地址行 */}
+        <div className="text-center pt-3">
+          <div style={{ fontSize: 9, letterSpacing: "0.3em", color: "var(--ink-soft)" }}>
+            MORPH TRAVEL CO.
           </div>
-          <div style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", color: "var(--ink-soft)", marginTop: 2 }}>
-            旅行预算清单
+          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "0.24em", marginTop: 3 }}>
+            CASH RECEIPT
           </div>
-          <div style={{ fontSize: 10, color: "var(--postmark)", letterSpacing: "0.08em", marginTop: 4 }}>
-            NO.0042 · {dateStr} · MORPH TRAVEL CO.
+          <div style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-caption)", fontWeight: 400, color: "var(--ink-soft)", marginTop: 3, letterSpacing: "0.2em" }}>
+            旅 行 预 算 清 单
           </div>
         </div>
 
-        {/* 双虚线分隔 */}
-        <div className="my-3" style={{ borderTop: "1px dashed var(--ink-soft)", borderBottom: "1px dashed var(--ink-soft)", height: 4, opacity: 0.6 }} />
+        <div className="mt-3" style={dashed} />
 
-        {/* 明细：label ..... amount */}
-        <div className="space-y-2" style={{ fontSize: "var(--fs-data)" }}>
+        {/* Date / No. 行 */}
+        <div className="flex justify-between pt-2" style={{ fontSize: 10, color: "var(--ink-soft)", letterSpacing: "0.08em" }}>
+          <span>DATE: {dateStr}</span>
+          <span>NO. 0042</span>
+        </div>
+
+        <div className="mt-2" style={dashed} />
+
+        {/* 明细：label 左对齐，金额右对齐（无点线引导） */}
+        <div className="space-y-2 pt-3 pb-1" style={{ fontSize: "var(--fs-data)" }}>
           {data.items.map((item) => (
-            <div key={item.label} className="flex items-end">
-              <span style={{ fontFamily: "var(--font-cn)", color: "var(--ink)" }}>{item.label}</span>
-              <span className="receipt-leader" />
-              <span style={{ fontWeight: 700 }}>¥{item.amount.toLocaleString()}</span>
+            <div key={item.label} className="flex items-baseline justify-between">
+              <span style={{ fontFamily: "var(--font-cn)", fontWeight: 400, color: "var(--ink)" }}>{item.label}</span>
+              <span style={{ letterSpacing: "0.04em" }}>{item.amount.toLocaleString()}</span>
             </div>
           ))}
         </div>
 
-        {/* 合计：双线 */}
-        <div className="mt-3 pt-2" style={{ borderTop: "3px double var(--ink-soft)" }}>
-          <div className="flex items-end" style={{ fontSize: "var(--fs-body)" }}>
-            <span style={{ fontWeight: 700, letterSpacing: "0.1em" }}>TOTAL</span>
-            <span className="receipt-leader" />
-            <span style={{ fontWeight: 900, fontSize: "var(--fs-sub)" }}>¥{animatedSpent.toLocaleString()}</span>
+        <div className="mt-2" style={dashed} />
+
+        {/* Total 大字 */}
+        <div className="flex items-baseline justify-between pt-2.5 pb-2">
+          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.16em" }}>TOTAL</span>
+          <span style={{ fontSize: 21, fontWeight: 700, letterSpacing: "0.02em" }}>
+            ¥{animatedSpent.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Budget / Balance 小字行 */}
+        <div className="space-y-1 pb-1" style={{ fontSize: 10, color: "var(--ink-soft)", letterSpacing: "0.08em" }}>
+          <div className="flex justify-between">
+            <span>BUDGET</span>
+            <span>¥{data.total.toLocaleString()}</span>
           </div>
-          <div className="flex items-end mt-1" style={{ fontSize: 10, color: "var(--postmark)" }}>
-            <span style={{ letterSpacing: "0.08em" }}>BUDGET ¥{data.total.toLocaleString()}</span>
-            <span className="receipt-leader" style={{ borderBottomColor: "transparent" }} />
-            <span style={{ color: remaining >= 0 ? "var(--postmark)" : "var(--stamp-red)" }}>
-              {remaining >= 0 ? `余 ¥${remaining.toLocaleString()}` : `超 ¥${Math.abs(remaining).toLocaleString()}`}
+          <div className="flex justify-between">
+            <span>BALANCE</span>
+            <span style={{ color: remaining >= 0 ? "var(--ink-soft)" : "var(--stamp-red)" }}>
+              {remaining >= 0 ? `¥${remaining.toLocaleString()}` : `-¥${Math.abs(remaining).toLocaleString()}`}
             </span>
           </div>
         </div>
 
-        {/* 底部：条码 + 致谢 */}
-        <div className="mt-4">
-          <div className="receipt-barcode" />
-          <div className="text-center mt-2" style={{ fontSize: 9, color: "var(--postmark)", letterSpacing: "0.3em" }}>
-            THANK YOU · BON VOYAGE
+        <div className="mt-2" style={dashed} />
+
+        {/* 底部：致谢 + 条码 */}
+        <div className="mt-3">
+          <div className="text-center mb-2.5" style={{ fontSize: 10, letterSpacing: "0.32em", color: "var(--ink)" }}>
+            THANK YOU
+          </div>
+          <div className="receipt-barcode mx-6" />
+          <div className="text-center mt-1.5" style={{ fontSize: 8, color: "var(--postmark)", letterSpacing: "0.24em" }}>
+            BON VOYAGE
           </div>
         </div>
 
@@ -105,8 +153,8 @@ export default function BudgetTracker({ data }: Props) {
           style={{
             width: 84,
             right: -6,
-            bottom: 44,
-            opacity: 0.5,
+            bottom: 52,
+            opacity: 0.38,
             transform: "rotate(-12deg)",
             mixBlendMode: "multiply",
           }}

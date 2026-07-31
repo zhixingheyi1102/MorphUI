@@ -259,17 +259,19 @@
 }
 
 /* ── 收据（Receipt）─────────────────────────── */
-/* 收据纸：淡柠檬底 + 微弱纸张颗粒 */
+/* 收据纸：近白米色 + 真实揉皱纸纹（multiply 让褶皱透出来） */
 .receipt-paper {
-  background-color: #F4EFD3;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-color: #F7F4E9;
+  background-image: url("/textures/paper-crumpled.jpg");
+  background-size: 420px auto;
+  background-blend-mode: multiply;
 }
 
 /* 锯齿撕边（上/下），颜色与收据纸一致 */
 .receipt-zigzag-top,
 .receipt-zigzag-bottom {
   height: 7px;
-  background-color: #F4EFD3;
+  background-color: #EFEBDC;
 }
 .receipt-zigzag-top {
   clip-path: polygon(0 100%, 100% 100%, 100% 55%,
