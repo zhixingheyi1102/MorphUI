@@ -763,25 +763,36 @@ export default function MapView({ data, onInteract }: Props) {
     // 建筑 marker：图片底部对齐坐标点，随 zoom 连续缩放 + LOD 显隐
     // 建筑即景点标识：可点击，点击打开最近的行程 POI 面板
     if (buildingMarkers.current.length === 0) {
-      for (const poi of BUILDING_POIS) {
+      for (const [i, poi] of BUILDING_POIS.entries()) {
+        // 结构：el（hover 目标 + LOD 显隐）> shadow（地面软影）+ float（呼吸浮动）> hover（上浮放大）> img
         const el = document.createElement("div")
-        el.style.cssText = "cursor:pointer;"
+        el.className = "building-marker"
         el.title = poi.name
         el.addEventListener("click", (ev) => {
           ev.stopPropagation()
           buildingClickRef.current(poi)
         })
+        const shadow = document.createElement("div")
+        shadow.className = "building-shadow"
+        shadow.style.animationDelay = `${i * 0.45}s`
+        const float = document.createElement("div")
+        float.className = "building-float"
+        float.style.animationDelay = `${i * 0.45}s`
+        const hover = document.createElement("div")
+        hover.className = "building-hover"
         const img = document.createElement("img")
         img.src = poi.img
         img.alt = poi.name
         img.draggable = false
         img.style.cssText = `
           display:block;
-          filter: drop-shadow(0 3px 4px rgba(43,43,43,0.22));
-          transition: opacity .35s ease, transform .35s ease;
+          transition: transform .35s ease;
           transform-origin: bottom center;
         `
-        el.appendChild(img)
+        hover.appendChild(img)
+        float.appendChild(hover)
+        el.appendChild(shadow)
+        el.appendChild(float)
         const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
           .setLngLat(poi.lngLat)
           .addTo(map)
@@ -791,7 +802,7 @@ export default function MapView({ data, onInteract }: Props) {
 
     const applyLod = () => {
       const z = map.getZoom()
-      for (const { poi, img } of buildingMarkers.current) {
+      for (const { poi, marker, img } of buildingMarkers.current) {
         const visible = z >= poi.minZoom && z < poi.maxZoom
         // 统一视觉框（所有建筑同尺寸），按素材长边归一，消除宽高比差异
         const box = buildingHeight(z)
@@ -799,8 +810,11 @@ export default function MapView({ data, onInteract }: Props) {
         const k = nw > 0 && nh > 0 ? nh / Math.max(nw, nh) : 1
         img.style.height = `${Math.round(box * k)}px`
         img.style.width = "auto"
-        img.style.opacity = visible ? "1" : "0"
         img.style.transform = visible ? "scale(1)" : "scale(0.82)"
+        // LOD 显隐作用在整个 marker（含软影），隐藏时不拦截点击
+        const el = marker.getElement()
+        el.style.opacity = visible ? "1" : "0"
+        el.style.pointerEvents = visible ? "auto" : "none"
       }
     }
     // 素材首次加载完成后才拿得到 naturalWidth，加载完再归一一次

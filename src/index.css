@@ -177,6 +177,51 @@
   animation: snapPulse 1s ease-in-out infinite;
 }
 
+/* 建筑图标：可点击提示动效（呼吸浮动 + 地面软影 + hover 上浮） */
+@keyframes buildingFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes buildingShadowPulse {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.32; }
+  50% { transform: translateX(-50%) scaleX(0.82); opacity: 0.18; }
+}
+
+.building-marker {
+  position: relative;
+  cursor: pointer;
+  transition: opacity 0.35s ease;
+}
+
+.building-float {
+  animation: buildingFloat 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.building-hover {
+  filter: drop-shadow(0 3px 4px rgba(43, 43, 43, 0.22));
+  transition: transform 0.25s ease, filter 0.25s ease;
+  transform-origin: bottom center;
+}
+
+.building-marker:hover .building-hover {
+  transform: translateY(-2px) scale(1.06);
+  filter: drop-shadow(0 7px 10px rgba(43, 43, 43, 0.3));
+}
+
+.building-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 34px;
+  height: 7px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(43, 43, 43, 0.4) 0%, rgba(43, 43, 43, 0) 70%);
+  animation: buildingShadowPulse 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
 /* 拖拽时禁止选中文字 */
 .dragging * {
   user-select: none;
