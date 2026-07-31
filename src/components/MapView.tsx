@@ -304,7 +304,11 @@ const BRUSH_ROUTE: [number, number][] = [
 const BRUSH_INK = "#32476B" // 复古海军蓝墨
 
 // ─── 标记 DOM 元素（MapLibre 用 HTMLElement 作为 marker） ───
-// 复古纸质圆章：POI 纸色底 + 海军蓝墨线框 + 白描边外圈 + 线条图标（餐厅叉勺/住宿床铺）
+// 餐厅/酒店用手绘插画贴纸（和建筑素材同一套视觉语言）；其余类型回退复古纸质圆章
+const PIN_IMAGES: Record<string, { src: string; w: number; h: number }> = {
+  restaurant: { src: "/markers/restaurant.png", w: 43, h: 32 },
+  hotel: { src: "/markers/hotel.png", w: 37, h: 32 },
+}
 const PIN_PAPER: Record<string, string> = {
   restaurant: "var(--paper-sage)",
   hotel: "var(--paper-blue)",
@@ -316,6 +320,27 @@ function createMarkerEl(
   colorOverride?: string,
   dimmed = false,
 ): HTMLElement {
+  // 插画贴纸类型：img 标记，选中/高亮时放大加深投影（贴纸被按实的感觉）
+  const pic = PIN_IMAGES[type]
+  if (pic) {
+    const k = highlight || selected ? 1.3 : 1
+    const el = document.createElement("div")
+    el.style.cssText = `
+      width:${Math.round(pic.w * k)}px; height:${Math.round(pic.h * k)}px;
+      opacity:${dimmed ? 0.4 : 1};
+      cursor:pointer;
+      transform: rotate(${type === "restaurant" ? -4 : 4}deg);
+      filter: drop-shadow(0 0 1.5px rgba(255,255,255,0.95)) drop-shadow(0 ${selected ? 4 : 2}px ${selected ? 8 : 5}px rgba(43,43,43,${selected ? 0.4 : 0.3}));
+      ${highlight && !selected ? "animation: pulse 1.5s infinite;" : ""}
+      transition: all 0.2s ease;
+    `
+    const img = document.createElement("img")
+    img.src = pic.src
+    img.draggable = false
+    img.style.cssText = "width:100%; height:100%; object-fit:contain; pointer-events:none; user-select:none;"
+    el.appendChild(img)
+    return el
+  }
   const paper = colorOverride ?? PIN_PAPER[type] ?? "var(--paper-cream)"
   const Icon = MARKER_ICONS[type] ?? MapPin
   const size = highlight || selected ? 34 : 27
