@@ -62,13 +62,51 @@ export default function ClarifyForm({ data, onInteract }: Props) {
 
   return (
     <div className="w-80 shrink-0 relative" style={{ filter: "drop-shadow(0 2px 3px rgba(24,20,14,0.25)) drop-shadow(0 8px 16px rgba(24,20,14,0.16))" }}>
-      {/* 金属夹：压在卡片顶部中间，探出上缘 */}
-      <img
-        src="/decors/clip-silver.png"
-        alt=""
+      {/* 金属夹：纯 SVG 绘制，压在卡片顶部中间，探出上缘 */}
+      <svg
+        viewBox="0 0 74 54"
+        width="74"
+        height="54"
         className="absolute pointer-events-none select-none z-10"
-        style={{ width: 74, left: "50%", top: -26, transform: "translateX(-50%) rotate(-1.5deg)" }}
-      />
+        style={{ left: "50%", top: -26, transform: "translateX(-50%) rotate(-1.5deg)" }}
+      >
+        <defs>
+          <linearGradient id="clipMetal" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#8F8F8F" />
+            <stop offset="0.18" stopColor="#D9D9D9" />
+            <stop offset="0.42" stopColor="#F2F2F2" />
+            <stop offset="0.6" stopColor="#BFBFBF" />
+            <stop offset="0.82" stopColor="#E6E6E6" />
+            <stop offset="1" stopColor="#909090" />
+          </linearGradient>
+          <linearGradient id="clipMetalV" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#CFCFCF" />
+            <stop offset="0.5" stopColor="#9A9A9A" />
+            <stop offset="1" stopColor="#7C7C7C" />
+          </linearGradient>
+        </defs>
+        {/* 夹身：上宽下略收的梯形铁皮 */}
+        <path
+          d="M12 6 Q12 2 16 2 L58 2 Q62 2 62 6 L59 30 Q58.6 33 55.5 33 L18.5 33 Q15.4 33 15 30 Z"
+          fill="url(#clipMetal)"
+          stroke="#6E6E6E"
+          strokeWidth="1"
+        />
+        {/* 夹身下缘卷边高光 */}
+        <path d="M15.6 29 L58.4 29 Q58 32 55.5 32 L18.5 32 Q16 32 15.6 29 Z" fill="url(#clipMetalV)" opacity="0.85" />
+        {/* 铆点 */}
+        <circle cx="24" cy="12" r="1.6" fill="#7A7A7A" />
+        <circle cx="50" cy="12" r="1.6" fill="#7A7A7A" />
+        {/* 两条钢丝提手 */}
+        <path
+          d="M22 30 L18 47 Q17.5 50 20.5 50 Q23.5 50 24 47 L26.5 33"
+          fill="none" stroke="url(#clipMetalV)" strokeWidth="2.6" strokeLinecap="round"
+        />
+        <path
+          d="M52 30 L56 47 Q56.5 50 53.5 50 Q50.5 50 50 47 L47.5 33"
+          fill="none" stroke="url(#clipMetalV)" strokeWidth="2.6" strokeLinecap="round"
+        />
+      </svg>
 
       <div
         className="intake-paper overflow-hidden"
