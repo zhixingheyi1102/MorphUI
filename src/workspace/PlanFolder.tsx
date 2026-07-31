@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useLayoutEffect } from "react"
+import type { CSSProperties } from "react"
 import { motion } from "framer-motion"
 import type { ComponentInstance } from "../engine/types"
 import registry from "../components/registry"
@@ -34,11 +35,12 @@ type Props = {
   data: any
   dockedComponents: ComponentInstance[]
   dockableCount: number
+  dropHint: "none" | "ready" | "over"
   organized: boolean
   onInteract: (componentId: string, value?: string) => void
 }
 
-export default function PlanFolder({ planId, data, dockedComponents, dockableCount, organized, onInteract }: Props) {
+export default function PlanFolder({ planId, data, dockedComponents, dockableCount, dropHint, organized, onInteract }: Props) {
   const [unfolded, setUnfolded] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const leftRef = useRef<HTMLDivElement | null>(null)
@@ -69,12 +71,23 @@ export default function PlanFolder({ planId, data, dockedComponents, dockableCou
   // 方案组件自身的交互（Day 切换、景点引用）透传
   const onPlanInteract = (value?: string) => onInteract(planId, value)
 
+  // 拖拽投放提示描边：ready 虚线牛皮色，over 加亮加粗
+  const hintOutline: CSSProperties =
+    dropHint === "none"
+      ? {}
+      : {
+          outline: dropHint === "over" ? "3px dashed var(--stamp-red)" : "2px dashed var(--paper-kraft)",
+          outlineOffset: 8,
+          borderRadius: "var(--r-sticker)",
+        }
+
   if (!unfolded) {
     return (
       <ClosedFolder
         data={data}
         dockedCount={dockedComponents.length}
         dockableCount={dockableCount}
+        hintOutline={hintOutline}
         onPlanInteract={onPlanInteract}
         onUnfold={() => setUnfolded(true)}
       />
@@ -82,7 +95,10 @@ export default function PlanFolder({ planId, data, dockedComponents, dockableCou
   }
 
   return (
-    <div className="relative flex items-stretch" style={{ width: NOTEBOOK_W + SPINE_W + RIGHT_W, fontFamily: "var(--font-cn)" }}>
+    <div
+      className="relative flex items-stretch"
+      style={{ width: NOTEBOOK_W + SPINE_W + RIGHT_W, fontFamily: "var(--font-cn)", ...hintOutline }}
+    >
       {/* 左页：行程笔记本（embedded：贴书脊一侧直角） */}
       <div ref={leftRef} className="shrink-0" style={{ width: NOTEBOOK_W }}>
         <PlanNotebook data={data} onInteract={onPlanInteract} embedded />
@@ -204,6 +220,7 @@ function ClosedFolder({
   data,
   dockedCount,
   dockableCount,
+  hintOutline,
   onPlanInteract,
   onUnfold,
 }: {
@@ -211,13 +228,14 @@ function ClosedFolder({
   data: any
   dockedCount: number
   dockableCount: number
+  hintOutline: CSSProperties
   onPlanInteract: (value?: string) => void
   onUnfold: () => void
 }) {
   const [peek, setPeek] = useState(false)
 
   return (
-    <div className="relative" style={{ width: CLOSED_W, fontFamily: "var(--font-cn)" }}>
+    <div className="relative" style={{ width: CLOSED_W, fontFamily: "var(--font-cn)", ...hintOutline }}>
       {/* 右缘露出的内页纸边（多层错位，暗示"里面还有一页"） */}
       <div
         className="absolute top-12 bottom-2 rounded-r-md transition-transform duration-300"

@@ -334,6 +334,7 @@ function CanvasCard({
   organized,
   dockedComponents,
   dockableCount,
+  dropHint,
   onClose,
   onInteract,
   onDragStart,
@@ -354,6 +355,7 @@ function CanvasCard({
   organized: boolean
   dockedComponents: ComponentInstance[]
   dockableCount: number
+  dropHint: "none" | "ready" | "over"
   onClose: (id: string) => void
   onInteract: (id: string, value?: string) => void
   onDragStart: (id: string) => void
@@ -539,6 +541,7 @@ function CanvasCard({
               data={comp.data}
               dockedComponents={dockedComponents}
               dockableCount={dockableCount}
+              dropHint={dropHint}
               organized={organized}
               onInteract={onInteract}
             />
@@ -678,6 +681,28 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     return resolveCollisions(result, fixedIds, visualSizes)
   }, [visibleComponents, draggedPositions, measureVersion, organized, scales])
 
+  // 拖拽提示：拖着可收纳组件时文件夹描边提示（ready），压上去时加亮（over）
+  const dropHint = useMemo<"none" | "ready" | "over">(() => {
+    if (!dragInfo) return "none"
+    const comp = visibleComponents.find((c) => c.id === dragInfo.componentId)
+    const cat = comp ? COMPONENT_CATEGORIES[comp.type] : undefined
+    if (cat !== "auxiliary" && cat !== "process") return "none"
+    const plan = visibleComponents.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+    const planPos = plan ? positions.get(plan.id) : undefined
+    if (!plan || !planPos) return "none"
+    const sizes = buildVisualSizes(sizesRef.current, scales)
+    const planSize = sizes.get(plan.id)
+    const dragSize = sizes.get(dragInfo.componentId)
+    if (!planSize || !dragSize) return "ready"
+    return rectsOverlap(
+      dragInfo.currentPos.x, dragInfo.currentPos.y, dragSize.w, dragSize.h,
+      planPos.x, planPos.y, planSize.w, planSize.h,
+      0,
+    )
+      ? "over"
+      : "ready"
+  }, [dragInfo, visibleComponents, positions, scales])
+
   // ─── 画布缩放 & 平移 ───
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (isDraggingRef.current) return
@@ -778,6 +803,37 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       const droppedId = dragInfo.componentId
       const droppedPos = dragInfo.currentPos
 
+      // ─── 拖入文件夹判定：auxiliary/process 组件压在方案文件夹上松手 → 收纳 ───
+      const droppedComp = visibleComponents.find((c) => c.id === droppedId)
+      const droppedCat = droppedComp ? COMPONENT_CATEGORIES[droppedComp.type] : undefined
+      if (droppedCat === "auxiliary" || droppedCat === "process") {
+        const plan = visibleComponents.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+        const planPos = plan ? positions.get(plan.id) : undefined
+        if (plan && planPos) {
+          const sizes = buildVisualSizes(sizesRef.current, scales)
+          const planSize = sizes.get(plan.id)
+          const dropSize = sizes.get(droppedId)
+          if (
+            planSize && dropSize &&
+            rectsOverlap(
+              droppedPos.x, droppedPos.y, dropSize.w, dropSize.h,
+              planPos.x, planPos.y, planSize.w, planSize.h,
+              0,
+            )
+          ) {
+            onInteract(droppedId, `dock:${droppedId}`)
+            // 不写落点位置：将来取出时回自动布局，而不是留在文件夹上
+            setDraggedPositions((prev) => {
+              const next = new Map(prev)
+              next.delete(droppedId)
+              return next
+            })
+            setDragInfo(null)
+            return
+          }
+        }
+      }
+
       // 计算落点后的完整位置表，然后解决碰撞
       const allPos = new Map(positions)
       allPos.set(droppedId, droppedPos)
@@ -798,7 +854,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       })
     }
     setDragInfo(null)
-  }, [dragInfo, positions, scales])
+  }, [dragInfo, positions, scales, visibleComponents, onInteract])
 
   // ─── 组件缩放回调（拖拽边缘/角） ───
   const handleResizeStart = useCallback(
@@ -892,12 +948,42 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   }, [])
 
   // ─── 一键整理：移除过程组件，把方案+辅助组件收进活页本 ───
+  const dockingRef = useRef(false)
   const handleOrganize = useCallback(() => {
-    onOrganize?.() // 移除过程态组件（clarify_form / flight_list 等）
-    setDraggedPositions(new Map()) // 清空手动位置，全部回归活页本布局
-    setOrganized(true)
-    setCamera({ x: 0, y: 0, scale: 1 })
-  }, [onOrganize])
+    if (dockingRef.current) return
+    const finish = () => {
+      onOrganize?.() // 移除过程态组件 + 写 dockedIds（clarify_form / flight_list 等）
+      setDraggedPositions(new Map()) // 清空手动位置，全部回归活页本布局
+      setOrganized(true)
+      setCamera({ x: 0, y: 0, scale: 1 })
+    }
+
+    // 两段式飞入：先 spring 飞向文件夹右页，再真正收纳
+    const plan = visibleComponents.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+    const planPos = plan ? positions.get(plan.id) : undefined
+    const flyers = plan
+      ? visibleComponents.filter((c) => COMPONENT_CATEGORIES[c.type] === "auxiliary")
+      : []
+    if (!plan || !planPos || flyers.length === 0) {
+      finish()
+      return
+    }
+    dockingRef.current = true
+    setDraggedPositions((prev) => {
+      const next = new Map(prev)
+      flyers.forEach((c, i) => {
+        next.set(c.id, {
+          x: planPos.x + 560 + (i % 2) * 70,
+          y: planPos.y + 80 + Math.floor(i / 2) * 70,
+        })
+      })
+      return next
+    })
+    window.setTimeout(() => {
+      dockingRef.current = false
+      finish()
+    }, 340)
+  }, [onOrganize, visibleComponents, positions])
 
   // ─── 退出整理：回到自由画布 ───
   const handleUnorganize = useCallback(() => {
@@ -997,6 +1083,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
                 organized={organized}
                 dockedComponents={dockedComponents}
                 dockableCount={dockableCount}
+                dropHint={dropHint}
                 onClose={onClose}
                 onInteract={onInteract}
                 onDragStart={handleDragStart}
