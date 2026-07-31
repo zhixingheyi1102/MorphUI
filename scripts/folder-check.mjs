@@ -25,7 +25,7 @@ if (await tab.count()) {
 const org = page.getByRole("button", { name: "一键整理" }).first()
 if (await org.count()) {
   await org.click()
-  await page.waitForTimeout(2500)
+  await page.waitForTimeout(5500) // 三幕编排：翻页1s + 逐张飞入3.4s + 清场
   const spread = page.locator("text=随行资料").first()
   if (await spread.count()) {
     const sc = spread.locator("xpath=ancestor::div[contains(@class,'group')][1]").first()

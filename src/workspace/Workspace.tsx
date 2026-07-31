@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from "react"
 import { useDrag } from "@use-gesture/react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, animate } from "framer-motion"
 import type { ComponentInstance } from "../engine/types"
 import registry, { COMPONENT_CATEGORIES } from "../components/registry"
 import PlanFolder from "./PlanFolder"
@@ -948,43 +948,87 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     setCamera({ x: 0, y: 0, scale: 1 })
   }, [])
 
-  // ─── 一键整理：移除过程组件，把方案+辅助组件收进活页本 ───
+  // ─── 一键整理：三幕串行编排（模仿叠纸滑动的参考视频，全程无跳变） ───
+  // 幕一：文件夹翻开 + 相机缓推取景；幕二：辅助组件逐张滑进右页、落定后才收纳；幕三：清场
   const dockingRef = useRef(false)
   const handleOrganize = useCallback(() => {
     if (dockingRef.current) return
-    const finish = () => {
-      onOrganize?.() // 移除过程态组件 + 写 dockedIds（clarify_form / flight_list 等）
-      setDraggedPositions(new Map()) // 清空手动位置，全部回归活页本布局
-      setOrganized(true)
-      setCamera({ x: 0, y: 0, scale: 1 })
-    }
+    dockingRef.current = true
 
-    // 两段式飞入：先 spring 飞向文件夹右页，再真正收纳
     const plan = visibleComponents.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
-    const planPos = plan ? positions.get(plan.id) : undefined
     const flyers = plan
       ? visibleComponents.filter((c) => COMPONENT_CATEGORIES[c.type] === "auxiliary")
       : []
-    if (!plan || !planPos || flyers.length === 0) {
-      finish()
+
+    // ── 幕一（t=0）：进入整理布局（卡片 spring 归位），文件夹随 organized 翻开 ──
+    setDraggedPositions(new Map())
+    setOrganized(true)
+
+    // 相机缓动推到能看全「文件夹 + 右侧待收列」的景别，禁止 setCamera 瞬移
+    const rect = viewportRef.current?.getBoundingClientRect()
+    if (rect) {
+      // 展开后文件夹宽 ≈1096；右侧网格宽按 tidy 布局同款算法估算
+      const FOLDER_W = 1096
+      const sizes = buildVisualSizes(sizesRef.current, scales)
+      const rightIds = visibleComponents
+        .filter((c) => COMPONENT_CATEGORIES[c.type] !== "plan")
+        .map((c) => c.id)
+      const colW = rightIds.length > 0
+        ? Math.max(...rightIds.map((id) => (sizes.get(id) ?? { w: 384 }).w))
+        : 0
+      const ncols = rightIds.length <= 1 ? rightIds.length : 2
+      const gridW = ncols > 0 ? ncols * colW + (ncols - 1) * BINDER_GRID_GAP : 0
+      const contentW = AUTO_PLACE_ORIGIN.x + FOLDER_W + (gridW > 0 ? TIDY_COL_GAP + gridW : 0) + 80
+      const s = clamp(Math.min(rect.width / contentW, rect.height / 1000), MIN_SCALE, 1)
+      const from = { ...camera }
+      const to = { x: 24 - AUTO_PLACE_ORIGIN.x * s, y: 24 - AUTO_PLACE_ORIGIN.y * s, scale: s }
+      animate(0, 1, {
+        duration: 0.9,
+        ease: [0.3, 0.75, 0.25, 1],
+        onUpdate: (t) =>
+          setCamera({
+            x: from.x + (to.x - from.x) * t,
+            y: from.y + (to.y - from.y) * t,
+            scale: from.scale + (to.scale - from.scale) * t,
+          }),
+      })
+    }
+
+    const finish = () => {
+      onOrganize?.() // 移除过程态组件 + 兜底写 dockedIds
+      setDraggedPositions(new Map())
+      dockingRef.current = false
+    }
+
+    if (!plan || flyers.length === 0) {
+      window.setTimeout(finish, 500)
       return
     }
-    dockingRef.current = true
-    setDraggedPositions((prev) => {
-      const next = new Map(prev)
-      flyers.forEach((c, i) => {
-        next.set(c.id, {
-          x: planPos.x + 560 + (i % 2) * 70,
-          y: planPos.y + 80 + Math.floor(i / 2) * 70,
+
+    // ── 幕二（翻页完成后）：纸片一张接一张滑到右页上，落定后才真正收纳 ──
+    // tidy 布局中方案固定在画布原点；右页从 x ≈ 原点 + 536 开始
+    const ox = AUTO_PLACE_ORIGIN.x
+    const oy = AUTO_PLACE_ORIGIN.y
+    const T0 = 1000   // 等翻页 rotateY + 相机推近完成
+    const STEP = 520  // 单张节拍：上一张落定收纳后，下一张再起飞
+    const FLY = 400   // 飞行时长（spring 大致落定）
+    flyers.forEach((c, i) => {
+      window.setTimeout(() => {
+        setDraggedPositions((prev) => {
+          const next = new Map(prev)
+          // 落点像纸片叠进文件夹右页：微错位堆叠
+          next.set(c.id, { x: ox + 556 + (i % 2) * 36, y: oy + 110 + i * 42 })
+          return next
         })
-      })
-      return next
+      }, T0 + i * STEP)
+      window.setTimeout(() => {
+        onInteract(c.id, `dock:${c.id}`)
+      }, T0 + i * STEP + FLY)
     })
-    window.setTimeout(() => {
-      dockingRef.current = false
-      finish()
-    }, 340)
-  }, [onOrganize, visibleComponents, positions])
+
+    // ── 幕三：全部落定后清场 ──
+    window.setTimeout(finish, T0 + (flyers.length - 1) * STEP + FLY + 500)
+  }, [camera, onOrganize, onInteract, visibleComponents, scales])
 
   // ─── 退出整理：回到自由画布 ───
   const handleUnorganize = useCallback(() => {
