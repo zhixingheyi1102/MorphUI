@@ -48,7 +48,7 @@ const scenario: Step[] = [
   // ──────────────────────────────────────────────
 
   // ──────────────────────────────────────────────
-  // Step 3: 用户提交 ClarifyForm → 出方案
+  // Step 3: 用户提交 ClarifyForm → 出方案（预算作为 hint）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "component_interact", componentId: "clarify" },
@@ -56,20 +56,6 @@ const scenario: Step[] = [
       "明白了！和朋友的文艺两日游，给你安排好了 ✨ 两天行程在右边，你看看节奏合不合适～",
     workspaceActions: [
       { action: "remove", componentId: "clarify" },
-      {
-        action: "create",
-        componentId: "budget",
-        componentType: "budget_tracker",
-        data: {
-          total: 1500,
-          items: [
-            { label: "交通", amount: 120 },
-            { label: "餐饮", amount: 400 },
-            { label: "门票", amount: 180 },
-            { label: "住宿", amount: 500 },
-          ],
-        },
-      },
       {
         action: "create",
         componentId: "itinerary",
@@ -99,6 +85,27 @@ const scenario: Step[] = [
             },
           },
         },
+      },
+    ],
+    hints: [
+      {
+        label: "📊 查看预算明细",
+        actions: [
+          {
+            action: "create",
+            componentId: "budget",
+            componentType: "budget_tracker",
+            data: {
+              total: 1500,
+              items: [
+                { label: "交通", amount: 120 },
+                { label: "餐饮", amount: 400 },
+                { label: "门票", amount: 180 },
+                { label: "住宿", amount: 500 },
+              ],
+            },
+          },
+        ],
       },
     ],
   },
@@ -157,28 +164,28 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 5: 点击地图标记 → POI 卡片由「即时 POI 创建」处理
-  //         不消耗剧本步骤，useChat 中直接从 marker 数据生成
+  // 点击地图标记 → 地图内部处理（不消耗剧本步骤）
   // ──────────────────────────────────────────────
-  // （无需剧本步骤 — 由 handleComponentInteract 中的即时创建逻辑处理）
 
   // ──────────────────────────────────────────────
-  // Step 5: 用户在 POI 卡片点击"探索玩法" → 更新 POI 加入玩法列表
+  // Step 5: 用户在 POI 面板点击"探索玩法" → 更新地图加入玩法列表
   // ──────────────────────────────────────────────
   {
-    trigger: { type: "component_interact", componentId: "poi", value: "explore" },
+    trigger: { type: "component_interact", componentId: "map", value: "explore" },
     aiMessage: "武康路有好几种玩法，看看哪个更合你意～ 选一个可以直接加到行程里。",
     workspaceActions: [
       {
         action: "update",
-        componentId: "poi",
+        componentId: "map",
         data: {
-          activities: [
-            { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
-            { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
-            { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
-          ],
-          activitiesLoaded: true,
+          poiDeepContent: {
+            activities: [
+              { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
+              { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
+              { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
+            ],
+            activitiesLoaded: true,
+          },
         },
       },
     ],
@@ -188,10 +195,14 @@ const scenario: Step[] = [
   // Step 6: 用户选了一个玩法 → 更新行程
   // ──────────────────────────────────────────────
   {
-    trigger: { type: "component_interact", componentId: "poi" },
+    trigger: { type: "component_interact", componentId: "map" },
     aiMessage: "「老洋房漫步」已加入 Day 1 行程！免费的，预算没变化 👍",
     workspaceActions: [
-      { action: "remove", componentId: "poi" },
+      {
+        action: "update",
+        componentId: "map",
+        data: { poiDeepContent: undefined },
+      },
       {
         action: "update",
         componentId: "itinerary",
@@ -241,28 +252,28 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 8: 点击餐厅标记 → POI 卡片由「即时 POI 创建」处理
-  //         不消耗剧本步骤
+  // 点击餐厅标记 → 地图内部处理（不消耗剧本步骤）
   // ──────────────────────────────────────────────
-  // （无需剧本步骤 — 由 handleComponentInteract 中的即时创建逻辑处理）
 
   // ──────────────────────────────────────────────
-  // Step 8: 用户在餐厅 POI 卡片点击"查看评价" → 更新 POI 加入评价
+  // Step 8: 用户在餐厅 POI 面板点击"查看评价" → 更新地图加入评价
   // ──────────────────────────────────────────────
   {
-    trigger: { type: "component_interact", componentId: "poi", value: "explore" },
+    trigger: { type: "component_interact", componentId: "map", value: "explore" },
     aiMessage: "衡山小馆是地道的上海本帮菜，性价比很高！人均大概 80-120 元。",
     workspaceActions: [
       {
         action: "update",
-        componentId: "poi",
+        componentId: "map",
         data: {
-          priceRange: "人均 ¥80-120",
-          distance: "距武康路步行 5 分钟",
-          reviews: [
-            { user: "小红薯er", text: "红烧肉入口即化，葱油拌面也好吃！", score: 5 },
-            { user: "食在上海", text: "排队人多但翻台快，推荐午市来", score: 4 },
-          ],
+          poiDeepContent: {
+            priceRange: "人均 ¥80-120",
+            distance: "距武康路步行 5 分钟",
+            reviews: [
+              { user: "小红薯er", text: "红烧肉入口即化，葱油拌面也好吃！", score: 5 },
+              { user: "食在上海", text: "排队人多但翻台快，推荐午市来", score: 4 },
+            ],
+          },
         },
       },
     ],
@@ -276,11 +287,11 @@ const scenario: Step[] = [
     userMessage: "晚上住哪里比较好？",
     aiMessage: "给你推荐了几家离景点近的酒店，点击查看详情。优先按距离排的～",
     workspaceActions: [
-      { action: "remove", componentId: "poi" },
       {
         action: "update",
         componentId: "map",
         data: {
+          poiDeepContent: undefined,
           extraMarkers: [
             {
               id: "hotel1", name: "花间堂·愉园", lat: 31.2140, lng: 121.4425, type: "hotel",

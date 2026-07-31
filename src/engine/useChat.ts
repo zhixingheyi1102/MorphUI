@@ -15,6 +15,8 @@ export function useChat(scenario?: Step[]) {
   const historyRef = useRef<Array<{ role: string; content: string }>>([
     { role: "system", content: SYSTEM_PROMPT },
   ])
+  // hint ID → 对应的 workspaceActions
+  const hintActionsRef = useRef<Map<string, WorkspaceAction[]>>(new Map())
 
   // 当前剧本步骤的建议（仅 user_send 类型的才显示 sug）
   const currentStep = scenario?.[scriptIndex]
@@ -57,9 +59,9 @@ export function useChat(scenario?: Step[]) {
     }
   }, [applyActions])
 
-  // 逐字打出文字
+  // 逐字打出文字，返回消息 ID
   const typeText = useCallback(
-    (text: string, onDone: () => void) => {
+    (text: string, onDone: (msgId: string) => void) => {
       const id = nextId()
       setChatMessages((prev) => [...prev, { id, role: "ai", text: "" }])
       setIsTyping(true)
@@ -73,7 +75,7 @@ export function useChat(scenario?: Step[]) {
           setTimeout(tick, 15 + Math.random() * 25)
         } else {
           setIsTyping(false)
-          onDone()
+          onDone(id)
         }
       }
       setTimeout(tick, 300)
@@ -104,10 +106,23 @@ export function useChat(scenario?: Step[]) {
         historyRef.current.push({ role: "user", content: step.userMessage })
       }
 
-      // 逐字打出 AI 消息 → 执行工作区动作 → 推进 index
-      typeText(step.aiMessage, () => {
+      // 逐字打出 AI 消息 → 执行工作区动作 → 添加 hints → 推进 index
+      typeText(step.aiMessage, (msgId) => {
         if (step.workspaceActions) applyActions(step.workspaceActions)
         historyRef.current.push({ role: "assistant", content: step.aiMessage })
+
+        // 如果 step 有 hints，写入消息并注册动作
+        if (step.hints && step.hints.length > 0) {
+          const hintItems = step.hints.map((h, i) => {
+            const hintId = `hint-${msgId}-${i}`
+            hintActionsRef.current.set(hintId, h.actions)
+            return { id: hintId, label: h.label }
+          })
+          setChatMessages((prev) =>
+            prev.map((m) => (m.id === msgId ? { ...m, hints: hintItems } : m))
+          )
+        }
+
         setScriptIndex((i) => i + 1)
       })
 
@@ -262,46 +277,12 @@ export function useChat(scenario?: Step[]) {
     (componentId: string, value?: string) => {
       if (isTyping) return
 
-      // ── 即时 POI 创建：点击地图标记 → 直接从标记数据生成 POI 卡片 ──
-      const comp = components.find((c) => c.id === componentId)
-      if (comp?.type === "map_view" && value) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapData = comp.data as any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allMarkers = [...(mapData.markers ?? []), ...(mapData.extraMarkers ?? [])] as any[]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const marker = allMarkers.find((m: any) => m.id === value)
-
-        if (marker) {
-          // 立即创建 POI 卡片
-          applyActions([{
-            action: "create",
-            componentId: "poi",
-            componentType: "poi_card",
-            data: {
-              type: marker.type ?? "spot",
-              name: marker.name,
-              desc: marker.desc,
-              imageUrl: marker.imageUrl,
-              tags: marker.tags,
-              rating: marker.rating,
-            },
-          }])
-
-          // 打出简短消息
-          const msg = `这是${marker.name}的详情 ✨ 点击「探索玩法」了解更多～`
-          typeText(msg, () => {
-            historyRef.current.push({ role: "assistant", content: msg })
-          })
-          return
-        }
-      }
-
-      // ── 先尝试走剧本 ──
+      // 先尝试走剧本
       const stepped = advanceScript({ type: "component_interact", componentId, value })
       if (stepped) return
 
-      // ── 剧本没匹配上 → 走 AI ──
+      // 剧本没匹配上 → 走 AI
+      const comp = components.find((c) => c.id === componentId)
       const compName = comp?.type ?? componentId
       const message = value
         ? `[用户在「${compName}」组件上选择了: ${value}]`
@@ -310,13 +291,28 @@ export function useChat(scenario?: Step[]) {
       historyRef.current.push({ role: "user", content: message })
       callAI(historyRef.current)
     },
-    [isTyping, components, applyActions, typeText, advanceScript, callAI]
+    [isTyping, advanceScript, components, callAI]
   )
 
   // ─── 手动关闭组件 ───
   const closeComponent = useCallback((componentId: string) => {
     setComponents((prev) => prev.filter((c) => c.id !== componentId))
   }, [])
+
+  // ─── Hint 点击 ───
+  const handleHintClick = useCallback((hintId: string) => {
+    const actions = hintActionsRef.current.get(hintId)
+    if (actions) {
+      applyActions(actions)
+      hintActionsRef.current.delete(hintId)
+    }
+    // 从消息中移除该 hint
+    setChatMessages((prev) =>
+      prev.map((m) =>
+        m.hints ? { ...m, hints: m.hints.filter((h) => h.id !== hintId) } : m
+      )
+    )
+  }, [applyActions])
 
   // ─── 拖拽排序 ───
   const reorderComponents = useCallback((fromIndex: number, toIndex: number) => {
@@ -336,6 +332,7 @@ export function useChat(scenario?: Step[]) {
     sendMessage,
     handleComponentInteract,
     closeComponent,
+    handleHintClick,
     reorderComponents,
   }
 }

@@ -7,7 +7,7 @@ import Workspace from "./workspace/Workspace"
 export default function App() {
   const {
     chatMessages, components, isTyping, suggestions,
-    sendMessage, handleComponentInteract, closeComponent,
+    sendMessage, handleComponentInteract, closeComponent, handleHintClick,
   } = useChat(scenario)
 
   const handleSend = useCallback(
@@ -28,6 +28,7 @@ export default function App() {
           isTyping={isTyping}
           suggestions={suggestions}
           onSend={handleSend}
+          onHintClick={handleHintClick}
         />
       </div>
       <Workspace

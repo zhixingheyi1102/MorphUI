@@ -17,6 +17,7 @@ export type Step = {
   userMessage?: string
   aiMessage: string
   workspaceActions?: WorkspaceAction[]
+  hints?: Array<{ label: string; actions: WorkspaceAction[] }>
 }
 
 // 聊天消息
@@ -24,6 +25,7 @@ export type ChatMessage = {
   id: string
   role: "user" | "ai"
   text: string
+  hints?: Array<{ id: string; label: string }>
 }
 
 // 工作区里的一个组件实例

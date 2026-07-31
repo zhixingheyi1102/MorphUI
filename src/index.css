@@ -68,3 +68,14 @@
 .dragging * {
   user-select: none;
 }
+
+/* 笔记本横线纹理 */
+.notebook-lines {
+  background-image:
+    repeating-linear-gradient(
+      transparent,
+      transparent 31px,
+      #ebe7df 31px,
+      #ebe7df 32px
+    );
+}

@@ -6,9 +6,10 @@ type Props = {
   isTyping: boolean
   suggestions: string[]
   onSend: (text: string, scripted?: boolean) => void
+  onHintClick: (hintId: string) => void
 }
 
-export default function ChatPanel({ messages, isTyping, suggestions, onSend }: Props) {
+export default function ChatPanel({ messages, isTyping, suggestions, onSend, onHintClick }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState("")
 
@@ -54,22 +55,35 @@ export default function ChatPanel({ messages, isTyping, suggestions, onSend }: P
           </div>
         )}
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "bg-indigo-500 text-white rounded-br-md"
-                  : "bg-white text-gray-700 shadow-sm border border-gray-100 rounded-bl-md"
-              }`}
-            >
-              {msg.text}
-              {msg.role === "ai" && isTyping && msg.id === messages[messages.length - 1]?.id && (
-                <span className="inline-block w-0.5 h-4 bg-gray-400 ml-0.5 animate-pulse align-middle" />
-              )}
+          <div key={msg.id}>
+            <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-indigo-500 text-white rounded-br-md"
+                    : "bg-white text-gray-700 shadow-sm border border-gray-100 rounded-bl-md"
+                }`}
+              >
+                {msg.text}
+                {msg.role === "ai" && isTyping && msg.id === messages[messages.length - 1]?.id && (
+                  <span className="inline-block w-0.5 h-4 bg-gray-400 ml-0.5 animate-pulse align-middle" />
+                )}
+              </div>
             </div>
+            {/* Hints — 紧贴 AI 消息下方 */}
+            {msg.role === "ai" && msg.hints && msg.hints.length > 0 && !isTyping && (
+              <div className="flex flex-wrap gap-1.5 mt-1.5 ml-1">
+                {msg.hints.map((hint) => (
+                  <button
+                    key={hint.id}
+                    onClick={() => onHintClick(hint.id)}
+                    className="px-3 py-1 text-xs rounded-full border border-gray-200 text-gray-600 bg-white hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm"
+                  >
+                    {hint.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />
