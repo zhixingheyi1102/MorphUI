@@ -305,3 +305,27 @@
   );
   opacity: 0.82;
 }
+
+/* 地图缩放控件：复古纸质风 + 收进内框（避免压住右下角墨线角标被裁不完整）
+   Tailwind preflight 会把 button 背景重置为透明，这里显式补回 */
+.maplibregl-map .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  margin: 0 18px 18px 0;
+}
+.maplibregl-ctrl-group {
+  background: var(--paper-map, #F6F1E1) !important;
+  border: 1px solid rgba(50, 71, 107, 0.45);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(50, 71, 107, 0.22) !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button {
+  width: 26px;
+  height: 26px;
+  background-color: transparent !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(50, 71, 107, 0.28);
+}
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: sepia(0.4) hue-rotate(180deg) saturate(0.6);
+}
