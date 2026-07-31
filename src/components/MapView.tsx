@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { renderToStaticMarkup } from "react-dom/server"
 import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
@@ -244,9 +244,11 @@ const BUILDING_POIS: BuildingPoi[] = [
   { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
-// 建筑随 zoom 纯等比例缩放：与地图缩放严格同步（每级 zoom 尺寸 ×2），zoom=14 为 baseH
+// 建筑随 zoom 等比例缩放（每级 zoom 尺寸 ×2，zoom=14 为 baseH）；
+// 但锚定 POI 点大小作为下限：缩小到再远也保持和 POI 圆点（28~36px）同级的可见尺寸
+const BUILDING_MIN_H = 40
 function buildingHeight(baseH: number, zoom: number) {
-  return baseH * Math.pow(2, zoom - 14)
+  return Math.max(baseH * Math.pow(2, zoom - 14), BUILDING_MIN_H)
 }
 
 // 手绘路线：在锚点间插值 + 垂直方向确定性抖动，模拟钢笔运笔
