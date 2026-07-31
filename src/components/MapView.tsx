@@ -365,13 +365,34 @@ function PoiPanel({
 
   return (
     <motion.div
-      initial={{ width: 0, opacity: 0 }}
-      animate={{ width: 340, opacity: 1 }}
-      exit={{ width: 0, opacity: 0 }}
-      transition={{ type: "spring", damping: 28, stiffness: 340 }}
-      className="shrink-0 overflow-hidden"
-      style={{ borderLeft: "1px solid var(--ink-line)", background: POI_PAPER[marker.type] ?? POI_PAPER.spot, fontFamily: "var(--font-cn)", color: "var(--ink)" }}
+      initial={{ width: 0, opacity: 0, rotateY: -75 }}
+      animate={{ width: 340, opacity: 1, rotateY: 0 }}
+      exit={{ width: 0, opacity: 0, rotateY: -75 }}
+      transition={{ type: "spring", damping: 26, stiffness: 200 }}
+      className="shrink-0 overflow-hidden relative"
+      style={{
+        borderLeft: "1px solid var(--ink-line)",
+        background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
+        fontFamily: "var(--font-cn)",
+        color: "var(--ink)",
+        transformOrigin: "left center",
+        transformPerspective: 1100,
+      }}
     >
+      {/* 展开时的折页阴影：翻开瞬间左侧偏暗，展开后淡出 */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: 0 }}
+        exit={{ opacity: 0.5 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+        style={{ zIndex: 20, background: "linear-gradient(90deg, rgba(43,43,43,0.38), rgba(43,43,43,0.10) 42%, transparent 72%)" }}
+      />
+      {/* 展开后残留折痕：贴左缘一道淡淡的纸折光影 */}
+      <span
+        className="absolute inset-y-0 left-0 pointer-events-none"
+        style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
+      />
       <div className="w-[340px] h-full overflow-y-auto">
         {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
         <div className="relative px-4 pt-3 mb-2">
@@ -1008,6 +1029,30 @@ export default function MapView({ data, onInteract }: Props) {
                 }}
               />
             ))}
+          </div>
+          {/* 折叠中缝：初始态像对折的纸质地图（深折痕），展开 POI 后只留淡淡余痕 */}
+          <div
+            className="absolute inset-y-0 pointer-events-none"
+            style={{ zIndex: 6, left: "50%", width: 72, transform: "translateX(-50%)" }}
+          >
+            {/* 闭合态：深折痕 + 两侧纸面明暗 */}
+            <div
+              className="absolute inset-0 transition-opacity duration-700"
+              style={{
+                opacity: selectedMarker ? 0 : 1,
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(43,43,43,0.08) 34%, rgba(43,43,43,0.22) 48%, rgba(43,43,43,0.30) 50%, rgba(255,255,255,0.32) 53%, rgba(43,43,43,0.06) 68%, transparent 100%)",
+              }}
+            />
+            {/* 展开态：余痕 */}
+            <div
+              className="absolute inset-0 transition-opacity duration-700"
+              style={{
+                opacity: selectedMarker ? 1 : 0,
+                background:
+                  "linear-gradient(90deg, transparent 32%, rgba(43,43,43,0.09) 49%, rgba(43,43,43,0.11) 50%, rgba(255,255,255,0.16) 53%, transparent 68%)",
+              }}
+            />
           </div>
         </div>
       </div>
