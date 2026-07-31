@@ -153,6 +153,8 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
   const clearQuote = useCallback(() => setQuotedSpot(null), [])
 
   // 组件操作（create / update / remove）
+  // 一键整理执行过后，新创建的辅助组件自动跟进文件夹（写 dockedIds）
+  const organizedOnceRef = useRef(false)
   const applyActions = useCallback((actions: WorkspaceAction[]) => {
     setComponents((prev) => {
       let next = [...prev]
@@ -166,6 +168,29 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
           )
         } else if (a.action === "remove") {
           next = next.filter((c) => c.id !== a.componentId)
+        }
+      }
+      if (organizedOnceRef.current) {
+        const plan = next.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
+        if (plan) {
+          const docked = (plan.data.dockedIds as string[] | undefined) ?? []
+          const newAuxIds = actions
+            .filter(
+              (a) =>
+                a.action === "create" &&
+                a.componentType &&
+                COMPONENT_CATEGORIES[a.componentType] === "auxiliary" &&
+                a.componentId !== plan.id &&
+                !docked.includes(a.componentId)
+            )
+            .map((a) => a.componentId)
+          if (newAuxIds.length > 0) {
+            next = next.map((c) =>
+              c.id === plan.id
+                ? { ...c, data: { ...c.data, dockedIds: [...docked, ...newAuxIds] } }
+                : c
+            )
+          }
         }
       }
       return next
@@ -811,6 +836,7 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
 
   // ─── 一键整理：移除过程态组件，辅助组件收进方案文件夹（写 dockedIds）───
   const organizeWorkspace = useCallback(() => {
+    organizedOnceRef.current = true
     setComponents((prev) => {
       // 已收进文件夹的组件（dockedIds）一律豁免清场——机票等 process 组件收纳后不能被删
       const planPrev = prev.find((c) => COMPONENT_CATEGORIES[c.type] === "plan")
