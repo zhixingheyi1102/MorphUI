@@ -242,6 +242,23 @@ const BUILDING_POIS: BuildingPoi[] = [
   { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
   { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
   { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
+  // —— 全城地标（彼此距离远，全 zoom 常显）——
+  { id: "b-artmuseum", name: "中华艺术宫", lngLat: [121.48993, 31.18648], img: "/buildings/china-art-museum.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-wukang", name: "武康大楼", lngLat: [121.43373, 31.20626], img: "/buildings/wukang-mansion.png", baseH: 60, minZoom: 0, maxZoom: 99 },
+  { id: "b-jingan", name: "静安寺", lngLat: [121.44079, 31.22522], img: "/buildings/jingan-temple.png", baseH: 56, minZoom: 0, maxZoom: 99 },
+  { id: "b-longhua", name: "龙华塔", lngLat: [121.44735, 31.17562], img: "/buildings/longhua-pagoda.png", baseH: 66, minZoom: 0, maxZoom: 99 },
+  { id: "b-fangsheng", name: "朱家角放生桥", lngLat: [121.05145, 31.11358], img: "/buildings/fangsheng-bridge.png", baseH: 46, minZoom: 0, maxZoom: 99 },
+  { id: "b-disney", name: "迪士尼城堡", lngLat: [121.65532, 31.14575], img: "/buildings/disney-castle.png", baseH: 76, minZoom: 0, maxZoom: 99 },
+  { id: "b-astronomy", name: "上海天文馆", lngLat: [121.92259, 30.91513], img: "/buildings/astronomy-museum.png", baseH: 60, minZoom: 0, maxZoom: 99 },
+  { id: "b-yuyuan", name: "豫园九曲桥", lngLat: [121.48742, 31.22866], img: "/buildings/yuyuan-bridge.png", baseH: 50, minZoom: 0, maxZoom: 99 },
+  { id: "b-tianzifang", name: "田子坊", lngLat: [121.4641, 31.21034], img: "/buildings/tianzifang.png", baseH: 46, minZoom: 0, maxZoom: 99 },
+  // —— 扎堆地标（离上面某个近，缩小时收起，z≥13 才出现防堆叠）——
+  { id: "b-chenghuang", name: "城隍庙", lngLat: [121.48819, 31.22788], img: "/buildings/chenghuang-temple.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-xintiandi", name: "新天地", lngLat: [121.47044, 31.22193], img: "/buildings/xintiandi.png", baseH: 46, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shikumen", name: "石库门（张园）", lngLat: [121.45605, 31.23037], img: "/buildings/shikumen.png", baseH: 42, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-tram", name: "南京路当当车", lngLat: [121.4753, 31.23768], img: "/buildings/dangdang-tram.png", baseH: 38, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-postmuseum", name: "邮政博物馆", lngLat: [121.48075, 31.24641], img: "/buildings/post-museum.png", baseH: 64, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
 // 建筑随 zoom 等比例缩放（每级 zoom 尺寸 ×2，zoom=14 为 baseH）；
@@ -681,6 +698,7 @@ export default function MapView({ data, onInteract }: Props) {
   const mapReady = useRef(false)
   const markerObjs = useRef<maplibregl.Marker[]>([])
   const buildingMarkers = useRef<{ poi: BuildingPoi; marker: maplibregl.Marker; img: HTMLImageElement }[]>([])
+  const buildingClickRef = useRef<(poi: BuildingPoi) => void>(() => {})
   const routeSourceIds = useRef<string[]>([])
   const prevMarkerIds = useRef<Set<string> | null>(null)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
@@ -756,25 +774,31 @@ export default function MapView({ data, onInteract }: Props) {
         id: "brush-route-halo", type: "line", source: "brush-route",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": BRUSH_INK, "line-opacity": 0.13,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 16, 15],
+          "line-color": BRUSH_INK, "line-opacity": 0.2,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 6, 16, 17],
         },
       })
       map.addLayer({
         id: "brush-route-ink", type: "line", source: "brush-route",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": BRUSH_INK, "line-opacity": 0.72,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.6, 16, 3.4],
+          "line-color": BRUSH_INK, "line-opacity": 0.85,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.2, 16, 4.5],
         },
       })
     }
 
     // 建筑 marker：图片底部对齐坐标点，随 zoom 连续缩放 + LOD 显隐
+    // 建筑即景点标识：可点击，点击打开最近的行程 POI 面板
     if (buildingMarkers.current.length === 0) {
       for (const poi of BUILDING_POIS) {
         const el = document.createElement("div")
-        el.style.cssText = "pointer-events:none;"
+        el.style.cssText = "cursor:pointer;"
+        el.title = poi.name
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation()
+          buildingClickRef.current(poi)
+        })
         const img = document.createElement("img")
         img.src = poi.img
         img.alt = poi.name
@@ -863,8 +887,8 @@ export default function MapView({ data, onInteract }: Props) {
         addRoute(
           `route-${d}`, coords,
           isActive ? dayColor(d) : DIM_COLOR,
-          isActive ? 3.5 : 2.5,
-          isActive ? 0.75 : 0.35,
+          isActive ? 4.5 : 2.5,
+          isActive ? 0.9 : 0.35,
         )
       }
     } else if (spotMarkers.length > 1) {
@@ -872,18 +896,12 @@ export default function MapView({ data, onInteract }: Props) {
       addRoute("route-all", coords, data.routeColor ?? "#6366f1", 3, 0.6)
     }
 
-    // 标记
+    // 标记：景点（spot）不再画圆点 pin——建筑素材即景点标识；餐厅/酒店等保留 pin
     allMarkers.forEach((m) => {
+      if (m.type === "spot") return
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
-      // 景点按天着色；非当前天置灰。非景点（餐厅/酒店）保持原色
-      let colorOverride: string | undefined
-      let dimmed = false
-      if (hasDays && m.type === "spot") {
-        colorOverride = dayColor(m.day)
-        dimmed = activeDay != null && m.day != null && m.day !== activeDay && !isSelected
-      }
-      const el = createMarkerEl(m.type, isHighlight, isSelected, colorOverride, dimmed)
+      const el = createMarkerEl(m.type, isHighlight, isSelected, undefined, false)
       el.title = m.name
       el.addEventListener("click", (ev) => {
         ev.stopPropagation()
@@ -894,6 +912,19 @@ export default function MapView({ data, onInteract }: Props) {
         .addTo(map)
       markerObjs.current.push(marker)
     })
+
+    // 建筑点击 = 打开最近行程景点的 POI 面板（1.2km 内才算同一地点）
+    buildingClickRef.current = (poi) => {
+      let best: { id: string; d: number } | null = null
+      for (const m of allMarkers) {
+        if (m.type !== "spot") continue
+        const dx = (m.lng - poi.lngLat[0]) * 96000 // 上海纬度 1°lng ≈ 96km
+        const dy = (m.lat - poi.lngLat[1]) * 111000
+        const d = Math.hypot(dx, dy)
+        if (!best || d < best.d) best = { id: m.id, d }
+      }
+      if (best && best.d < 1200) handleMarkerClick(best.id)
+    }
 
     // 有新地点出现时，平移/缩放地图让所有地点（含新出现的）都进入视野
     const currentIds = new Set(allMarkers.map((m) => m.id))
@@ -911,6 +942,23 @@ export default function MapView({ data, onInteract }: Props) {
       }
     }
   }, [data, selectedMarkerId, handleMarkerClick, styleVersion])
+
+  // 切换/安排某一天路线时，自动 zoom 到当天景点——放大到能看清用户具体在哪（街区级）
+  useEffect(() => {
+    const map = mapInstance.current
+    if (!map || !mapReady.current) return
+    const day = data.activeDay
+    if (!day) return
+    const daySpots = (data.markers ?? []).filter((m) => m.type === "spot" && m.day === day)
+    if (daySpots.length === 0) return
+    if (daySpots.length === 1) {
+      map.easeTo({ center: [daySpots[0].lng, daySpots[0].lat], zoom: 14.5, duration: 800 })
+    } else {
+      const bounds = new maplibregl.LngLatBounds()
+      for (const m of daySpots) bounds.extend([m.lng, m.lat])
+      map.fitBounds(bounds, { padding: 70, maxZoom: 15.5, duration: 800 })
+    }
+  }, [data.activeDay, data.markers, styleVersion])
 
   const stopDragPropagation = (e: React.DragEvent) => {
     e.stopPropagation()
