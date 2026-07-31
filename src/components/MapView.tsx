@@ -369,31 +369,40 @@ function PoiPanel({
       animate={{ width: 340 }}
       exit={{ width: 0 }}
       transition={{ type: "spring", damping: 19, stiffness: 200, mass: 1 }}
-      className="shrink-0 overflow-hidden relative"
+      className="shrink-0 relative"
       style={{
-        borderLeft: "1px solid var(--ink-line)",
+        // 错层便签：负 margin 让纸卡比地图卡上露 12px、下露 18px（stretch 高度 = 容器 + 30）
+        marginTop: -12,
+        marginBottom: -18,
+        rotate: 0.6,
+        transformOrigin: "top left",
         background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
+        border: "1px solid var(--ink-line)",
+        borderRadius: 4,
+        boxShadow: "0 10px 20px rgba(43,43,43,0.28), 0 2px 6px rgba(43,43,43,0.16)",
         fontFamily: "var(--font-cn)",
         color: "var(--ink)",
       }}
     >
-      {/* 抽出瞬间的槽口阴影：卡刚出槽时整体偏暗，抽出后亮起来 */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        initial={{ opacity: 0.45 }}
-        animate={{ opacity: 0 }}
-        exit={{ opacity: 0.45 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        style={{ zIndex: 20, background: "linear-gradient(90deg, rgba(43,43,43,0.38), rgba(43,43,43,0.10) 42%, transparent 72%)" }}
-      />
-      {/* 卡槽边缘的常驻阴影：贴左缘一道，表示卡是从地图背后抽出来的 */}
-      <span
-        className="absolute inset-y-0 left-0 pointer-events-none"
-        style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
-      />
-      {/* 卡片内容锚定右缘：宽度展开时整张卡跟着前缘向右滑出（抽卡） */}
-      {/* 阻止 wheel 冒泡到画布 viewport，卡内滚动不带动整个页面 */}
-      <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+      {/* 裁剪层：宽度 0→340 抽出动画期间裁掉内容，圆角随纸卡 */}
+      <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: 3 }}>
+        {/* 抽出瞬间的槽口阴影：卡刚出槽时整体偏暗，抽出后亮起来 */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0.45 }}
+          animate={{ opacity: 0 }}
+          exit={{ opacity: 0.45 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          style={{ zIndex: 20, background: "linear-gradient(90deg, rgba(43,43,43,0.38), rgba(43,43,43,0.10) 42%, transparent 72%)" }}
+        />
+        {/* 接缝处的常驻阴影：贴左缘一道，强化便签压在地图卡上的层次 */}
+        <span
+          className="absolute inset-y-0 left-0 pointer-events-none"
+          style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
+        />
+        {/* 卡片内容锚定右缘：宽度展开时整张卡跟着前缘向右滑出（抽卡） */}
+        {/* 阻止 wheel 冒泡到画布 viewport，卡内滚动不带动整个页面 */}
+        <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
         {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
         <div className="relative px-4 pt-3 mb-2">
           <button
@@ -656,6 +665,33 @@ function PoiPanel({
           )}
         </div>
       </div>
+      </div>
+      {/* 回形针：别在便签上缘，越出卡外，把"便签夹在地图卡上"的隐喻钉实 */}
+      <svg
+        className="absolute pointer-events-none select-none"
+        viewBox="0 0 20 40"
+        style={{
+          top: -14, left: 96, width: 20, height: 40, zIndex: 30,
+          transform: "rotate(8deg)",
+          filter: "drop-shadow(1px 1.5px 1.5px rgba(43,43,43,0.35))",
+        }}
+      >
+        <path
+          d="M7 5 a5 5 0 0 1 10 0 v25 a7 7 0 0 1 -14 0 V13 a3.5 3.5 0 0 1 7 0 v16"
+          fill="none"
+          stroke="var(--metal-silver)"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+        {/* 金属高光 */}
+        <path
+          d="M7 5 a5 5 0 0 1 10 0 v25 a7 7 0 0 1 -14 0 V13 a3.5 3.5 0 0 1 7 0 v16"
+          fill="none"
+          stroke="rgba(255,255,255,0.55)"
+          strokeWidth="0.8"
+          strokeLinecap="round"
+        />
+      </svg>
     </motion.div>
   )
 }
@@ -972,7 +1008,7 @@ export default function MapView({ data, onInteract }: Props) {
 
   return (
     <div
-      className="shrink-0 flex overflow-hidden relative"
+      className="shrink-0 flex relative"
       style={{
         isolation: "isolate",
         background: "var(--paper-map)",
@@ -984,8 +1020,9 @@ export default function MapView({ data, onInteract }: Props) {
       onDragStart={stopDragPropagation}
       draggable={false}
     >
-      {/* 地图区域：始终整张 384px。POI 详情页折在背面，右缘露出纸边（见下方折边元素） */}
-      <div className="w-96 shrink-0 flex flex-col">
+      {/* 地图区域：始终整张 384px。POI 详情页是"别在地图上的便签"，上下露头（见 PoiPanel） */}
+      {/* 根容器改 overflow-visible 让便签露头，圆角裁剪职责移到地图列自己身上 */}
+      <div className="w-96 shrink-0 flex flex-col overflow-hidden" style={{ borderRadius: "var(--r-sticker) 0 0 var(--r-sticker)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
           <h3 className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
           <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)", paddingRight: selectedMarker ? 0 : 16 }}>
