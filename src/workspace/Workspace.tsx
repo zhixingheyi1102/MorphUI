@@ -1011,22 +1011,46 @@ export default function Workspace({ components, onInteract, onClose, onOrganize,
     let px = startPos.x
     let py = startPos.y
 
-    // 水平：e 向右扩，w 向左扩（右边缘锚定）
-    if (dir === "e" || dir === "ne" || dir === "se") {
-      sx = clamp((base.w * startScale.sx + dx) / base.w, MIN_RESIZE, MAX_RESIZE)
-    } else if (dir === "w" || dir === "nw" || dir === "sw") {
-      sx = clamp((base.w * startScale.sx - dx) / base.w, MIN_RESIZE, MAX_RESIZE)
-      const rightEdge = startPos.x + base.w * startScale.sx
-      px = rightEdge - base.w * sx
-    }
+    const isCorner = dir === "ne" || dir === "nw" || dir === "se" || dir === "sw"
 
-    // 垂直：s 向下扩，n 向上扩（下边缘锚定）
-    if (dir === "s" || dir === "se" || dir === "sw") {
-      sy = clamp((base.h * startScale.sy + dy) / base.h, MIN_RESIZE, MAX_RESIZE)
-    } else if (dir === "n" || dir === "ne" || dir === "nw") {
-      sy = clamp((base.h * startScale.sy - dy) / base.h, MIN_RESIZE, MAX_RESIZE)
-      const bottomEdge = startPos.y + base.h * startScale.sy
-      py = bottomEdge - base.h * sy
+    if (isCorner) {
+      // 角把手等比缩放：两轴各算缩放系数，取变化更大的那个，同乘到两轴上
+      // （保持组件当前长宽比，之前被边把手拉伸过的也不会跳变）
+      const fx = (base.w * startScale.sx + (dir === "ne" || dir === "se" ? dx : -dx)) / (base.w * startScale.sx)
+      const fy = (base.h * startScale.sy + (dir === "se" || dir === "sw" ? dy : -dy)) / (base.h * startScale.sy)
+      let f = Math.abs(fx - 1) >= Math.abs(fy - 1) ? fx : fy
+      // 两轴都夹在 [MIN, MAX] 内：系数取两轴允许范围的交集
+      f = clamp(f, Math.max(MIN_RESIZE / startScale.sx, MIN_RESIZE / startScale.sy), Math.min(MAX_RESIZE / startScale.sx, MAX_RESIZE / startScale.sy))
+      sx = startScale.sx * f
+      sy = startScale.sy * f
+      // 锚定对角：左侧把手锚右缘，上侧把手锚底缘
+      if (dir === "nw" || dir === "sw") {
+        const rightEdge = startPos.x + base.w * startScale.sx
+        px = rightEdge - base.w * sx
+      }
+      if (dir === "nw" || dir === "ne") {
+        const bottomEdge = startPos.y + base.h * startScale.sy
+        py = bottomEdge - base.h * sy
+      }
+    } else {
+      // 边把手保持单轴拉伸
+      // 水平：e 向右扩，w 向左扩（右边缘锚定）
+      if (dir === "e") {
+        sx = clamp((base.w * startScale.sx + dx) / base.w, MIN_RESIZE, MAX_RESIZE)
+      } else if (dir === "w") {
+        sx = clamp((base.w * startScale.sx - dx) / base.w, MIN_RESIZE, MAX_RESIZE)
+        const rightEdge = startPos.x + base.w * startScale.sx
+        px = rightEdge - base.w * sx
+      }
+
+      // 垂直：s 向下扩，n 向上扩（下边缘锚定）
+      if (dir === "s") {
+        sy = clamp((base.h * startScale.sy + dy) / base.h, MIN_RESIZE, MAX_RESIZE)
+      } else if (dir === "n") {
+        sy = clamp((base.h * startScale.sy - dy) / base.h, MIN_RESIZE, MAX_RESIZE)
+        const bottomEdge = startPos.y + base.h * startScale.sy
+        py = bottomEdge - base.h * sy
+      }
     }
 
     info.currentScale = { sx, sy }
