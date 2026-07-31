@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { perfStyle, Postmark } from "./postcard"
 import { renderToStaticMarkup } from "react-dom/server"
-import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
+import { MapPin, ForkKnife, Buildings, Bank, Bed, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
 import * as maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
@@ -97,7 +97,7 @@ function dayColor(day?: string) {
 const MARKER_ICONS: Record<string, typeof MapPin> = {
   spot: MapPin,
   restaurant: ForkKnife,
-  hotel: Buildings,
+  hotel: Bed,
 }
 
 const TYPE_META: Record<string, { Icon: typeof MapPin; label: string }> = {
@@ -301,6 +301,11 @@ const BRUSH_ROUTE: [number, number][] = [
 const BRUSH_INK = "#32476B" // 复古海军蓝墨
 
 // ─── 标记 DOM 元素（MapLibre 用 HTMLElement 作为 marker） ───
+// 复古纸质圆章：POI 纸色底 + 海军蓝墨线框 + 白描边外圈 + 线条图标（餐厅叉勺/住宿床铺）
+const PIN_PAPER: Record<string, string> = {
+  restaurant: "var(--paper-sage)",
+  hotel: "var(--paper-blue)",
+}
 function createMarkerEl(
   type: string,
   highlight = false,
@@ -308,24 +313,28 @@ function createMarkerEl(
   colorOverride?: string,
   dimmed = false,
 ): HTMLElement {
-  const color = colorOverride ?? MARKER_COLORS[type] ?? "#6366f1"
+  const paper = colorOverride ?? PIN_PAPER[type] ?? "var(--paper-cream)"
   const Icon = MARKER_ICONS[type] ?? MapPin
-  const size = highlight || selected ? 36 : 28
-  const ring = selected ? `border: 3px solid white; box-shadow: 0 0 0 2px ${color}, 0 4px 12px ${color}88;` : ""
+  const size = highlight || selected ? 34 : 27
+  // 白描边外圈 + 墨蓝细框；选中时白圈加厚、投影加深（像章子被按下去盖实了）
+  const outline = selected
+    ? "box-shadow: 0 0 0 3px rgba(255,255,255,0.95), 0 0 0 4.5px rgba(50,71,107,0.55), 0 4px 10px rgba(43,43,43,0.35);"
+    : "box-shadow: 0 0 0 2.5px rgba(255,255,255,0.9), 0 2px 6px rgba(43,43,43,0.28);"
   const el = document.createElement("div")
   el.style.cssText = `
     width:${size}px; height:${size}px;
     display:flex; align-items:center; justify-content:center;
-    background:${color}; border-radius:50%;
-    color:white;
-    box-shadow: 0 2px 8px ${color}66;
+    background:${paper}; border-radius:50%;
+    border: 1.5px solid rgba(50,71,107,0.75);
+    color:${BRUSH_INK};
     opacity:${dimmed ? 0.4 : 1};
     cursor:pointer;
-    ${ring}
+    transform: rotate(${type === "restaurant" ? -4 : 4}deg);
+    ${outline}
     ${highlight && !selected ? "animation: pulse 1.5s infinite;" : ""}
     transition: all 0.2s ease;
   `
-  el.innerHTML = renderToStaticMarkup(<Icon size={size * 0.55} weight="fill" color="white" />)
+  el.innerHTML = renderToStaticMarkup(<Icon size={size * 0.58} weight="regular" color={BRUSH_INK} />)
   return el
 }
 
@@ -898,9 +907,9 @@ export default function MapView({ data, onInteract }: Props) {
       routeSourceIds.current.push(id)
     }
 
-    // 暂时隐藏：每日路线虚线 + 餐厅/酒店 pin（用户要求先删掉，置 true 可恢复）
+    // 每日路线虚线仍隐藏；餐厅/酒店 pin 以复古纸质圆章样式展示
     const SHOW_DAY_ROUTES = false
-    const SHOW_POI_PINS = false
+    const SHOW_POI_PINS = true
 
     if (SHOW_DAY_ROUTES && hasDays) {
       const byDay = new Map<string, Marker[]>()
