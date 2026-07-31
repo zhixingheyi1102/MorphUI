@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { DotsSixVertical } from "@phosphor-icons/react"
 import SpotCard from "./plan/SpotCard"
 import TransportCard from "./plan/TransportCard"
 
@@ -46,6 +47,56 @@ type Props = {
   onInteract: (value?: string) => void
 }
 
+// 单个景点条目：整卡可点引用，仅左侧手柄可拖拽排序
+// 用纯指针事件实现（不依赖 framer layout），避免在被 transform 的画布里产生位移漂移
+function SpotItem({
+  spot,
+  isFirst,
+  isDragging,
+  onQuote,
+  onDragStart,
+  registerRef,
+}: {
+  spot: Spot
+  isFirst: boolean
+  isDragging: boolean
+  onQuote: (name: string) => void
+  onDragStart: (id: string, e: React.PointerEvent) => void
+  registerRef: (id: string, el: HTMLDivElement | null) => void
+}) {
+  return (
+    <div
+      ref={(el) => registerRef(spot.id, el)}
+      className="relative"
+      style={{ opacity: isDragging ? 0.4 : 1, transition: "opacity 0.15s" }}
+    >
+      {/* 交通连接（第一个景点上方不显示） */}
+      {spot.transport && <TransportCard transport={spot.transport} />}
+
+      <div className="relative flex items-start">
+        {/* 拖拽手柄 —— 阻止冒泡到画布，避免触发整块画布平移 */}
+        <button
+          onPointerDown={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            onDragStart(spot.id, e)
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="shrink-0 mt-4 mr-1 cursor-grab active:cursor-grabbing touch-none opacity-40 hover:opacity-90 transition-opacity"
+          style={{ color: "var(--ink-soft)" }}
+          title="拖动调整顺序"
+          aria-label="拖动调整顺序"
+        >
+          <DotsSixVertical size={18} weight="bold" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <SpotCard spot={spot} isFirst={isFirst} onQuote={onQuote} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PlanNotebook({ data, onInteract }: Props) {
   const dayKeys = Object.keys(data.days)
   const [activeTab, setActiveTab] = useState(data.activeTab ?? dayKeys[0])
@@ -84,6 +135,65 @@ export default function PlanNotebook({ data, onInteract }: Props) {
   }
 
   const day = days[activeTab]
+
+  // 本地维护当前天的景点顺序，保证拖拽即时流畅；随外部数据变化同步
+  const [orderedSpots, setOrderedSpots] = useState<Spot[]>(day?.spots ?? [])
+  useEffect(() => {
+    setOrderedSpots(days[activeTab]?.spots ?? [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, day?.spots])
+
+  // ─── 纯指针事件拖拽重排（不依赖 framer layout，在缩放/平移的画布里稳定）───
+  // 关键：ref 按 spot.id 存（不是渲染下标）。拖拽中 setOrderedSpots 会重渲染，
+  // 同一 DOM 节点会落到新的下标；若用下标索引 ref，就会错位导致排列失效、丢条目。
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
+  // 拖拽会话内的活动状态（放 ref 避免异步闭包读到旧 state）
+  const sessionRef = useRef<{ order: Spot[]; id: string } | null>(null)
+
+  const registerRef = (id: string, el: HTMLDivElement | null) => {
+    if (el) itemRefs.current.set(id, el)
+    else itemRefs.current.delete(id)
+  }
+
+  const handleDragStart = (id: string) => {
+    sessionRef.current = { order: [...orderedSpots], id }
+    setDraggingId(id)
+
+    const move = (ev: PointerEvent) => {
+      const sess = sessionRef.current
+      if (!sess) return
+      // 指针落在哪个条目上：按 id 查元素比较 clientY 与中点（屏幕坐标，缩放下自洽）
+      let target = sess.order.length - 1
+      for (let i = 0; i < sess.order.length; i++) {
+        const el = itemRefs.current.get(sess.order[i].id)
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        if (ev.clientY < r.top + r.height / 2) { target = i; break }
+      }
+      const pos = sess.order.findIndex((s) => s.id === sess.id)
+      if (pos < 0 || target === pos) return
+      const next = [...sess.order]
+      const [moved] = next.splice(pos, 1)
+      next.splice(target, 0, moved)
+      sess.order = next
+      setOrderedSpots(next)
+    }
+    const up = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      const sess = sessionRef.current
+      sessionRef.current = null
+      setDraggingId(null)
+      if (sess) {
+        const ids = sess.order.map((s) => s.id).join(",")
+        onInteract(`reorder:${activeTab}:${ids}`)
+      }
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  }
+
   if (!day) return null
 
   // 生成装订孔
@@ -150,18 +260,18 @@ export default function PlanNotebook({ data, onInteract }: Props) {
           ))}
         </div>
 
-        {/* 内容区 — 全部平铺展开 */}
+        {/* 内容区 — 全部平铺展开，景点卡可上下拖拽排序 */}
         <div className="pl-10 pr-5 py-5 notebook-lines">
-          {day.spots.map((spot, i) => (
-            <div key={spot.id}>
-              {/* 交通连接（第一个景点上方不显示） */}
-              {spot.transport && (
-                <TransportCard transport={spot.transport} />
-              )}
-
-              {/* 景点卡片 */}
-              <SpotCard spot={spot} isFirst={i === 0} onQuote={(name) => onInteract(`quote:${name}`)} />
-            </div>
+          {orderedSpots.map((spot, i) => (
+            <SpotItem
+              key={spot.id}
+              spot={spot}
+              isFirst={i === 0}
+              isDragging={draggingId === spot.id}
+              onQuote={(name) => onInteract(`quote:${name}`)}
+              onDragStart={handleDragStart}
+              registerRef={registerRef}
+            />
           ))}
         </div>
       </div>

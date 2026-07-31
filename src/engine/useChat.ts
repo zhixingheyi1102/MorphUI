@@ -8,6 +8,85 @@ function nextId() {
   return `msg-${++msgCounter}`
 }
 
+// ─── 行程重排的时间/交通重算辅助 ───
+function parseTimeToMin(t?: string): number | null {
+  if (!t) return null
+  const m = /^(\d{1,2}):(\d{2})/.exec(t.trim())
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+function formatMin(min: number): string {
+  const h = Math.floor(min / 60) % 24
+  const mm = min % 60
+  return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`
+}
+function parseDurationMin(d?: string): number {
+  if (!d) return 0
+  let total = 0
+  const h = /(\d+(?:\.\d+)?)\s*h/.exec(d)
+  if (h) total += parseFloat(h[1]) * 60
+  const m = /(\d+)\s*min/.exec(d)
+  if (m) total += Number(m[1])
+  return total
+}
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const la1 = (a.lat * Math.PI) / 180
+  const la2 = (b.lat * Math.PI) / 180
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(x))
+}
+// 按两点直线距离估算交通方式/耗时（demo 用启发式，非真实路由）
+function estimateTransport(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const dist = haversineKm(a, b)
+  let method: string
+  let mins: number
+  if (dist < 0.8) {
+    method = "步行"
+    mins = (dist / 5) * 60
+  } else if (dist < 4) {
+    method = "地铁"
+    mins = (dist / 18) * 60 + 8
+  } else {
+    method = "打车"
+    mins = (dist / 30) * 60 + 3
+  }
+  const duration = Math.max(5, Math.round(mins / 5) * 5)
+  return { method, duration: `${duration}min`, distance: `${dist.toFixed(1)}km` }
+}
+
+// 按给定顺序重算一天的时间与交通衔接：
+// - 起点时间沿用第一条自身的 time；逐条累加"游玩时长 + 交通时长"
+// - 相邻两点都能取到经纬度时才重算交通（第一条无交通）；取不到坐标则保留原 transport
+function recomputeDaySpots(
+  spots: Array<Record<string, unknown>>,
+  coordOf: (id: string) => { lat: number; lng: number } | null,
+): Array<Record<string, unknown>> {
+  let cursor = parseTimeToMin(spots[0]?.time as string | undefined)
+  return spots.map((s, i) => {
+    const next: Record<string, unknown> = { ...s }
+    if (i === 0) {
+      delete next.transport
+    } else {
+      const prev = coordOf(spots[i - 1].id as string)
+      const cur = coordOf(s.id as string)
+      if (prev && cur) {
+        const t = estimateTransport(prev, cur)
+        next.transport = t
+        if (cursor != null) cursor += parseDurationMin(t.duration)
+      } else if (next.transport) {
+        if (cursor != null) cursor += parseDurationMin((next.transport as { duration?: string }).duration)
+      }
+    }
+    if (cursor != null) {
+      next.time = formatMin(cursor)
+      cursor += parseDurationMin(s.duration as string | undefined)
+    }
+    return next
+  })
+}
+
 // 合并组件 data：默认浅合并，但对 days（行程按天）做逐天合并，
 // 避免只更新 day2 时把 day1 整个覆盖丢失
 type CompData = Record<string, unknown>
@@ -364,6 +443,120 @@ export function useChat(scenario?: Step[]) {
   // ─── 组件交互 ───
   const handleComponentInteract = useCallback(
     (componentId: string, value?: string) => {
+      // 组件内联编辑：直接写回该组件的 data，不触发对话
+      if (value && value.startsWith("edit:")) {
+        try {
+          const patch = JSON.parse(value.slice(5))
+          applyActions([{ action: "update", componentId, data: patch }])
+        } catch (e) {
+          console.error("Inline edit parse error:", e)
+        }
+        return
+      }
+
+      // 行程景点拖拽重排 → 就地重算时间/交通，并同步地图标记顺序（路线随之重画）
+      // 纯确定性计算，不走 AI，保证拖完即时生效
+      if (componentId === "itinerary" && value && value.startsWith("reorder:")) {
+        const rest = value.slice("reorder:".length)
+        const sep = rest.indexOf(":")
+        const dayKey = rest.slice(0, sep)
+        const orderIds = rest.slice(sep + 1).split(",").filter(Boolean)
+
+        const itinComp = components.find((c) => c.id === "itinerary")
+        const daysData = itinComp?.data.days as
+          | Record<string, { label: string; spots: Array<Record<string, unknown>> }>
+          | undefined
+        const oldSpots = daysData?.[dayKey]?.spots
+        if (!daysData || !oldSpots) return
+
+        // 地图标记按 id 建索引，供取经纬度
+        const mapComp = components.find((c) => c.id === "map")
+        const mapMarkers = (mapComp?.data.markers as Array<Record<string, unknown>>) ?? []
+        const markerById = new Map(mapMarkers.map((m) => [m.id as string, m]))
+        const coordOf = (id: string) => {
+          const mk = markerById.get(id)
+          const s = oldSpots.find((x) => x.id === id)
+          const lat = (mk?.lat as number) ?? (s?.lat as number)
+          const lng = (mk?.lng as number) ?? (s?.lng as number)
+          return lat != null && lng != null ? { lat, lng } : null
+        }
+
+        // 按新顺序取出 spot
+        const reordered = orderIds
+          .map((id) => oldSpots.find((s) => s.id === id))
+          .filter((s): s is Record<string, unknown> => s != null)
+        if (reordered.length !== oldSpots.length) return
+
+        // 起点时间沿用原第一条；逐条重算时间与交通衔接
+        const newSpots = recomputeDaySpots(reordered, coordOf)
+
+        // 地图标记：把本天景点按新顺序排列，其它标记（别天/餐厅/酒店、非标记景点如午餐）保持原位
+        // 只重排"既是本天景点又在地图上"的标记；顺序取自 newSpots 中在地图有对应点的子序列
+        const markerOrderIds = newSpots
+          .map((s) => s.id as string)
+          .filter((id) => markerById.has(id))
+        const reorderSet = new Set(markerOrderIds)
+        let ptr = 0
+        const newMarkers = mapMarkers.map((m) =>
+          reorderSet.has(m.id as string) ? markerById.get(markerOrderIds[ptr++])! : m
+        )
+
+        applyActions([
+          {
+            action: "update",
+            componentId: "itinerary",
+            data: { days: { [dayKey]: { ...daysData[dayKey], spots: newSpots } } },
+          },
+          ...(mapComp ? [{ action: "update" as const, componentId: "map", data: { markers: newMarkers } }] : []),
+        ])
+        return
+      }
+
+      // POI 面板"从行程中去掉" → 就地把该点从所在天移除并重算，同时把地图标记标为 offRoute
+      // （保留图钉可再点/再加回，路线不再经过它）。纯确定性，不走 AI。
+      if (componentId === "map" && value && value.startsWith("removespot:")) {
+        const markerId = value.slice("removespot:".length)
+        const itinComp = components.find((c) => c.id === "itinerary")
+        const daysData = itinComp?.data.days as
+          | Record<string, { label: string; spots: Array<Record<string, unknown>> }>
+          | undefined
+        if (!daysData) return
+
+        // 找到包含该点的那一天
+        const dayKey = Object.keys(daysData).find((k) =>
+          daysData[k].spots.some((s) => s.id === markerId)
+        )
+
+        const mapComp = components.find((c) => c.id === "map")
+        const mapMarkers = (mapComp?.data.markers as Array<Record<string, unknown>>) ?? []
+        const coordOf = (id: string) => {
+          const mk = mapMarkers.find((m) => m.id === id)
+          const lat = mk?.lat as number | undefined
+          const lng = mk?.lng as number | undefined
+          return lat != null && lng != null ? { lat, lng } : null
+        }
+
+        const actions: WorkspaceAction[] = []
+        if (dayKey) {
+          const remaining = daysData[dayKey].spots.filter((s) => s.id !== markerId)
+          const newSpots = recomputeDaySpots(remaining, coordOf)
+          actions.push({
+            action: "update",
+            componentId: "itinerary",
+            data: { days: { [dayKey]: { ...daysData[dayKey], spots: newSpots } } },
+          })
+        }
+        // 地图：该标记标记为 offRoute（路线跳过它，图钉保留）
+        if (mapComp) {
+          const newMarkers = mapMarkers.map((m) =>
+            m.id === markerId ? { ...m, offRoute: true } : m
+          )
+          actions.push({ action: "update", componentId: "map", data: { markers: newMarkers } })
+        }
+        if (actions.length > 0) applyActions(actions)
+        return
+      }
+
       if (isTyping) return
 
       // 点方案里的景点卡 → 引用到输入框，不发消息
@@ -375,6 +568,43 @@ export function useChat(scenario?: Step[]) {
       // POI 面板的引导词 → 当作用户发问，走正常发送流程
       if (value && value.startsWith("ask:")) {
         sendMessage(value.slice(4), false)
+        return
+      }
+
+      // POI 面板"加入行程" → 查出该标记信息，交给模型决定放到哪一天并重排
+      if (componentId === "map" && value && value.startsWith("addspot:")) {
+        const markerId = value.slice(8)
+        const mapComp = components.find((c) => c.id === "map")
+        const markers = mapComp
+          ? [
+              ...((mapComp.data.markers as Array<Record<string, unknown>>) ?? []),
+              ...((mapComp.data.extraMarkers as Array<Record<string, unknown>>) ?? []),
+            ]
+          : []
+        const mk = markers.find((m) => m.id === markerId)
+        const name = (mk?.name as string) ?? markerId
+        const type = (mk?.type as string) ?? "spot"
+        const desc = (mk?.desc as string) ?? ""
+        // 若该点之前被移出路线（offRoute），重新加入时清掉该标记
+        if (mapComp) {
+          const baseMarkers = (mapComp.data.markers as Array<Record<string, unknown>>) ?? []
+          if (baseMarkers.some((m) => m.id === markerId && m.offRoute)) {
+            applyActions([
+              {
+                action: "update",
+                componentId: "map",
+                data: { markers: baseMarkers.map((m) => (m.id === markerId ? { ...m, offRoute: false } : m)) },
+              },
+            ])
+          }
+        }
+        setAiSuggestions([])
+        setChatMessages((prev) => [...prev, { id: nextId(), role: "user", text: `把「${name}」加入行程` }])
+        historyRef.current.push({
+          role: "user",
+          content: `请把地图上的这个点位加入行程：id=${markerId}，名称=${name}，类型=${type}${desc ? `，简介=${desc}` : ""}。你来判断它最适合安排在哪一天、哪个时段，用 update_component 更新 itinerary（在对应 day 的 spots 里新增该条目，字段含 id/name/desc，酌情加 time/tag/transport），并同步重排该天后续条目的时间与交通衔接。`,
+        })
+        callAI(historyRef.current)
         return
       }
 
@@ -440,6 +670,13 @@ export function useChat(scenario?: Step[]) {
     [isTyping, advanceScript, components, callAI, typeText, applyActions, sendMessage]
   )
 
+  // ─── 用户直接在画布上添加组件（粘贴图片 / 链接 / 文本）───
+  const addComponent = useCallback((type: string, data: Record<string, unknown>): string => {
+    const id = `paste-${++msgCounter}`
+    applyActions([{ action: "create", componentId: id, componentType: type, data }])
+    return id
+  }, [applyActions])
+
   // ─── 手动关闭组件 ───
   const closeComponent = useCallback((componentId: string) => {
     setComponents((prev) => prev.filter((c) => c.id !== componentId))
@@ -480,9 +717,22 @@ export function useChat(scenario?: Step[]) {
     })
   }, [])
 
+  // 把"当前真实在行程里的点位 id"注入地图 data，供 POI 卡按钮判断加入/移出状态
+  // （直接由行程内容派生，无需额外 state，避免写回循环）
+  const itinComp = components.find((c) => c.id === "itinerary")
+  const itineraryDays = itinComp?.data.days as
+    | Record<string, { spots?: Array<{ id?: string }> }>
+    | undefined
+  const itinerarySpotIds = itineraryDays
+    ? Object.values(itineraryDays).flatMap((d) => (d.spots ?? []).map((s) => s.id).filter(Boolean))
+    : []
+  const decoratedComponents = components.map((c) =>
+    c.id === "map" ? { ...c, data: { ...c.data, itinerarySpotIds } } : c
+  )
+
   return {
     chatMessages,
-    components,
+    components: decoratedComponents,
     isTyping,
     isThinking,
     suggestions,
@@ -490,6 +740,7 @@ export function useChat(scenario?: Step[]) {
     clearQuote,
     sendMessage,
     handleComponentInteract,
+    addComponent,
     closeComponent,
     organizeWorkspace,
     handleHintClick,

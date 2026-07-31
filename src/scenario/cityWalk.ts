@@ -142,7 +142,10 @@ const scenario: Step[] = [
                   { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
                   { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
                 ],
-                suggestions: ["这附近有好吃的吗？", "怎么去下一个景点？"],
+                qa: [
+                  { id: "q_best_time", q: "什么时候来最好？", a: "工作日上午人少，出片最佳。傍晚梧桐光影也很美，但周末下午武康大楼一带会非常拥挤。" },
+                  { id: "q_highlight", q: "必看的是什么？", a: "武康大楼（诺曼底公寓）是标志，另有巴金故居、密丹公寓等老洋房，沿街建筑本身就是看点。" },
+                ],
               },
             },
             {
@@ -156,7 +159,10 @@ const scenario: Step[] = [
                   { id: "vintage", title: "中古店淘宝", desc: "沿街 vintage 店铺，淘复古服饰和饰品", duration: "1.5h", price: 0, tag: "免费" },
                   { id: "brunch", title: "法式 Brunch", desc: "安福路 brunch 圣地，推荐 RAC 和 Egg", duration: "1h", price: 120, tag: "美食" },
                 ],
-                suggestions: ["有推荐的话剧吗？", "附近有咖啡馆吗？"],
+                qa: [
+                  { id: "q_theater", q: "话剧值得看吗？", a: "上海话剧艺术中心的先锋剧目口碑不错，建议提前在官网或小程序订票，热门场次常常满座。" },
+                  { id: "q_vibe", q: "这条街适合逛多久？", a: "1–1.5 小时足够。以独立设计师店和 vintage 店为主，走走停停、拍拍照，节奏很松弛。" },
+                ],
               },
             },
             {
@@ -168,7 +174,10 @@ const scenario: Step[] = [
                   { id: "local", title: "本帮菜体验", desc: "尝地道上海菜：红烧肉、腌笃鲜、葱油拌面", duration: "1h", price: 100, tag: "美食" },
                   { id: "italian", title: "意式简餐", desc: "Alimentari 的手工面和提拉米苏", duration: "1h", price: 150, tag: "西餐" },
                 ],
-                suggestions: ["人均大概多少？", "需要提前订位吗？"],
+                qa: [
+                  { id: "q_price", q: "人均大概多少？", a: "衡山小馆人均 ¥80–120，本帮菜性价比高；Alimentari 意式简餐人均 ¥120–180。" },
+                  { id: "q_booking", q: "需要提前订位吗？", a: "午市翻台快，一般不用等太久；晚市和周末建议提前订位，尤其是热门的衡山小馆。" },
+                ],
               },
             },
             {
@@ -181,7 +190,10 @@ const scenario: Step[] = [
                   { id: "church", title: "教堂巡礼", desc: "国际礼拜堂 + 诸圣堂，哥特与罗马风格交汇", duration: "1h", price: 0, tag: "免费" },
                   { id: "cinema", title: "衡山电影院", desc: "1951 年开业的老影院，看一场经典电影", duration: "2h", price: 50, tag: "文化" },
                 ],
-                suggestions: ["教堂可以进去参观吗？", "这一带还有什么好逛的？"],
+                qa: [
+                  { id: "q_church", q: "教堂可以进去吗？", a: "国际礼拜堂对外开放，可入内参观，注意保持安静、着装得体；遇礼拜活动时以现场指引为准。" },
+                  { id: "q_around", q: "这一带还有什么好逛？", a: "衡山电影院是 1951 年开业的老影院，周边梧桐街区适合散步，也有不少咖啡馆可以歇脚。" },
+                ],
               },
             },
             {
@@ -195,7 +207,10 @@ const scenario: Step[] = [
                   { id: "gallery", title: "画廊巡游", desc: "10+ 家独立画廊和摄影展，免费参观", duration: "1h", price: 0, tag: "免费" },
                   { id: "snack", title: "弄堂小吃", desc: "臭豆腐、葱油饼、鸡爪，一路吃过去", duration: "1h", price: 50, tag: "美食" },
                 ],
-                suggestions: ["晚上住哪里比较好？", "第二天去哪玩？"],
+                qa: [
+                  { id: "q_ticket", q: "需要门票吗？", a: "田子坊本身免费开放，弄堂里的画廊多数可免费参观；手作工作坊按项目单独收费。" },
+                  { id: "q_snack", q: "有什么好吃的？", a: "弄堂小吃很集中：臭豆腐、葱油饼、鸡爪一路吃过去，人均 ¥50 左右就能吃得很满足。" },
+                ],
               },
             },
             // ── Day 2 · 滨江文化线 ──
@@ -207,7 +222,10 @@ const scenario: Step[] = [
                 activities: [
                   { id: "psa_exhibit", title: "看当期特展", desc: "免费常设 + 当期特展，工业厂房改造空间很出片", duration: "2h", price: 0, tag: "免费" },
                 ],
-                suggestions: ["当期有什么展？", "附近哪里吃午饭？"],
+                qa: [
+                  { id: "q_free", q: "真的免费吗？", a: "常设展免费，部分当期特展可能单独售票。工业厂房改造的挑高空间很出片，建议留 2 小时。" },
+                  { id: "q_time", q: "逛多久合适？", a: "2 小时左右。若碰上大型特展可以更久；周一闭馆，出发前记得确认开放时间。" },
+                ],
               },
             },
             {
@@ -218,7 +236,10 @@ const scenario: Step[] = [
                 activities: [
                   { id: "dock_walk", title: "江边漫步", desc: "沿黄浦江散步，看老仓库改造的创意店铺", duration: "45min", price: 0, tag: "免费" },
                 ],
-                suggestions: ["这里有江景餐厅吗？", "去外滩怎么走？"],
+                qa: [
+                  { id: "q_view_food", q: "有江景餐厅吗？", a: "老码头沿江有不少江景餐饮和酒吧，傍晚坐下来看黄浦江很惬意，人均价位偏中高。" },
+                  { id: "q_walk", q: "逛这里要多久？", a: "45 分钟到 1 小时。以老仓库改造的创意店铺和江边步道为主，适合快速逛一圈拍照。" },
+                ],
               },
             },
             {
@@ -231,7 +252,10 @@ const scenario: Step[] = [
                   { id: "xlb", title: "南翔小笼", desc: "百年老字号，蟹粉小笼一定要趁热吃", duration: "1h", price: 80, tag: "美食" },
                   { id: "garden", title: "豫园游园", desc: "明代江南古典园林，亭台楼阁移步换景", duration: "1h", price: 40, tag: "文化" },
                 ],
-                suggestions: ["门票多少钱？", "小吃街怎么走？"],
+                qa: [
+                  { id: "q_ticket", q: "门票多少钱？", a: "豫园园林门票约 ¥40；城隍庙、小吃街本身免费，进园游览才需买票。" },
+                  { id: "q_xlb", q: "小笼哪家好？", a: "南翔馒头店是百年老字号，蟹粉小笼要趁热吃。高峰期排队较长，建议错峰或线上取号。" },
+                ],
               },
             },
             {
@@ -244,7 +268,10 @@ const scenario: Step[] = [
                   { id: "bund_walk", title: "万国建筑巡礼", desc: "沿江看 52 幢历史建筑，对岸就是陆家嘴", duration: "1h", price: 0, tag: "免费" },
                   { id: "cruise", title: "浦江游船", desc: "坐船夜游黄浦江，两岸灯光尽收眼底", duration: "1h", price: 120, tag: "热门" },
                 ],
-                suggestions: ["夜景几点最好看？", "有推荐的观景台吗？"],
+                qa: [
+                  { id: "q_night", q: "夜景几点最好看？", a: "日落后 18:30–20:00 灯光全开最佳，对岸陆家嘴天际线最亮。周末人多，想拍空镜可再晚一些。" },
+                  { id: "q_cruise", q: "值得坐游船吗？", a: "浦江夜游约 1 小时、人均 ¥120，两岸灯光尽收眼底，第一次来很推荐；赶时间的话沿江步行也够看。" },
+                ],
               },
             },
             {
@@ -255,7 +282,10 @@ const scenario: Step[] = [
                 activities: [
                   { id: "shopping", title: "逛街购物", desc: "老字号 + 潮牌云集，走到人民广场", duration: "2h", price: 0, tag: "免费" },
                 ],
-                suggestions: ["有什么老字号推荐？", "晚上吃什么好？"],
+                qa: [
+                  { id: "q_brand", q: "有什么老字号？", a: "南京路上老字号云集，第一食品商店、沈大成、真老大房都值得逛，适合买伴手礼。" },
+                  { id: "q_dinner", q: "晚上吃什么好？", a: "步行街及周边本帮菜、小吃、连锁都很齐全，一路逛到人民广场，随走随吃很方便。" },
+                ],
               },
             },
           ],
