@@ -1,5 +1,49 @@
 @import "tailwindcss";
 
+/* ── 字体：寒蝉活宋（中文）+ JMH Typewriter（英文/数字），本地自托管 ── */
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('/fonts/ChillHuoSong-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('/fonts/ChillHuoSong-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChillHuoSong';
+  src: url('/fonts/ChillHuoSong-ExBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('/fonts/JMHTypewriter-Thin.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('/fonts/JMHTypewriter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('/fonts/JMHTypewriter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JMH Typewriter';
+  src: url('/fonts/JMHTypewriter-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
 /* ── MorphUI Design System v0.1 — 复古办公文具 Token 层 ── */
 :root {
   /* 桌面 */
@@ -53,10 +97,10 @@
   --sp-4: 24px;
   --sp-5: 40px;
 
-  /* 字体（暂用系统回退） */
-  --font-cn: 'Songti SC', 'SimSun', serif;
-  --font-en: 'Courier New', ui-monospace, monospace;
-  --font-display: 'Songti SC', serif;
+  /* 字体 */
+  --font-cn: 'ChillHuoSong', 'Songti SC', 'SimSun', serif;
+  --font-en: 'JMH Typewriter', 'Courier New', ui-monospace, monospace;
+  --font-display: 'ChillHuoSong', 'Songti SC', serif;
 }
 
 /* 组件入场动画 */
@@ -165,4 +209,52 @@
       color-mix(in srgb, var(--ink-line) 55%, transparent) 31px,
       color-mix(in srgb, var(--ink-line) 55%, transparent) 32px
     );
+}
+
+/* ── 收据（Receipt）─────────────────────────── */
+/* 收据纸：淡柠檬底 + 微弱纸张颗粒 */
+.receipt-paper {
+  background-color: #F4EFD3;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 锯齿撕边（上/下），颜色与收据纸一致 */
+.receipt-zigzag-top,
+.receipt-zigzag-bottom {
+  height: 7px;
+  background-color: #F4EFD3;
+}
+.receipt-zigzag-top {
+  clip-path: polygon(0 100%, 100% 100%, 100% 55%,
+    97% 0, 94% 55%, 91% 0, 88% 55%, 85% 0, 82% 55%, 79% 0, 76% 55%, 73% 0,
+    70% 55%, 67% 0, 64% 55%, 61% 0, 58% 55%, 55% 0, 52% 55%, 49% 0, 46% 55%,
+    43% 0, 40% 55%, 37% 0, 34% 55%, 31% 0, 28% 55%, 25% 0, 22% 55%, 19% 0,
+    16% 55%, 13% 0, 10% 55%, 7% 0, 4% 55%, 1% 0, 0 55%);
+}
+.receipt-zigzag-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 45%,
+    97% 100%, 94% 45%, 91% 100%, 88% 45%, 85% 100%, 82% 45%, 79% 100%, 76% 45%, 73% 100%,
+    70% 45%, 67% 100%, 64% 45%, 61% 100%, 58% 45%, 55% 100%, 52% 45%, 49% 100%, 46% 45%,
+    43% 100%, 40% 45%, 37% 100%, 34% 45%, 31% 100%, 28% 45%, 25% 100%, 22% 45%, 19% 100%,
+    16% 45%, 13% 100%, 10% 45%, 7% 100%, 4% 45%, 1% 100%, 0 45%);
+}
+
+/* 明细行点线引导（label ..... amount） */
+.receipt-leader {
+  flex: 1;
+  margin: 0 6px;
+  border-bottom: 1.5px dotted color-mix(in srgb, var(--ink) 35%, transparent);
+  transform: translateY(-4px);
+}
+
+/* 条码：细密竖线 */
+.receipt-barcode {
+  height: 26px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ink) 0, var(--ink) 1.5px, transparent 1.5px, transparent 3.5px,
+    var(--ink) 3.5px, var(--ink) 4.5px, transparent 4.5px, transparent 8px,
+    var(--ink) 8px, var(--ink) 11px, transparent 11px, transparent 13px
+  );
+  opacity: 0.82;
 }
