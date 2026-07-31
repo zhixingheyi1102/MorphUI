@@ -69,8 +69,6 @@ type Props = {
     activeDay?: string
     // 当前真实在行程里的点位 id（由 useChat 根据行程内容注入），用于 POI 卡按钮状态
     itinerarySpotIds?: string[]
-    // 外部请求打开某点的二级详情（方案 POI 条卡点击）：ts 变化即触发，可重复打开同一点
-    focusMarker?: { id: string; ts: number }
   }
   onInteract: (value: string) => void
 }
@@ -831,21 +829,6 @@ export default function MapView({ data, onInteract }: Props) {
     () => new Set([...(data.itinerarySpotIds ?? []), ...addedMarkerIds]),
     [data.itinerarySpotIds, addedMarkerIds]
   )
-
-  // 外部（方案 POI 条卡）请求打开详情：飞到该点并抽出二级 POST CARD 便签
-  const lastFocusTs = useRef(0)
-  useEffect(() => {
-    const fm = data.focusMarker
-    if (!fm || fm.ts === lastFocusTs.current) return
-    lastFocusTs.current = fm.ts
-    const mk = [...(data.markers ?? []), ...(data.extraMarkers ?? [])].find((m) => m.id === fm.id)
-    if (!mk) return
-    setSelectedMarkerId(fm.id)
-    const map = mapInstance.current
-    if (map && mapReady.current) {
-      map.flyTo({ center: [mk.lng, mk.lat], zoom: Math.max(map.getZoom(), 14), duration: 800 })
-    }
-  }, [data.focusMarker, data.markers, data.extraMarkers])
 
   // 点"加入行程"：乐观标记为已加入（按钮立即切换），并交给模型决定放到哪一天
   const handleAddToItinerary = useCallback((markerId: string) => {

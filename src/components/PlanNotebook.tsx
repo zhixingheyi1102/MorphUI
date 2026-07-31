@@ -55,14 +55,14 @@ function SpotItem({
   spot,
   isFirst,
   isDragging,
-  onOpenDetail,
+  onAskMore,
   onDragStart,
   registerRef,
 }: {
   spot: Spot
   isFirst: boolean
   isDragging: boolean
-  onOpenDetail: (id: string) => void
+  onAskMore: (name: string) => void
   onDragStart: (id: string, e: React.PointerEvent) => void
   registerRef: (id: string, el: HTMLDivElement | null) => void
 }) {
@@ -94,7 +94,7 @@ function SpotItem({
           <DotsSixVertical size={18} weight="bold" />
         </button>
         <div className="flex-1 min-w-0">
-          <SpotCard spot={spot} isFirst={isFirst} onOpenDetail={onOpenDetail} />
+          <SpotCard spot={spot} isFirst={isFirst} onAskMore={onAskMore} />
         </div>
       </div>
     </div>
@@ -273,7 +273,7 @@ export default function PlanNotebook({ data, onInteract, embedded }: Props) {
               spot={spot}
               isFirst={i === 0}
               isDragging={draggingId === spot.id}
-              onOpenDetail={(id) => onInteract(`opendetail:${id}`)}
+              onAskMore={(name) => onInteract(`ask:多介绍一下「${name}」`)}
               onDragStart={handleDragStart}
               registerRef={registerRef}
             />
