@@ -365,35 +365,34 @@ function PoiPanel({
 
   return (
     <motion.div
-      initial={{ width: 0, opacity: 0, rotateY: -75 }}
-      animate={{ width: 340, opacity: 1, rotateY: 0 }}
-      exit={{ width: 0, opacity: 0, rotateY: -75 }}
-      transition={{ type: "spring", damping: 26, stiffness: 200 }}
+      initial={{ width: 0 }}
+      animate={{ width: 340 }}
+      exit={{ width: 0 }}
+      transition={{ type: "spring", damping: 22, stiffness: 240, mass: 0.9 }}
       className="shrink-0 overflow-hidden relative"
       style={{
         borderLeft: "1px solid var(--ink-line)",
         background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
         fontFamily: "var(--font-cn)",
         color: "var(--ink)",
-        transformOrigin: "left center",
-        transformPerspective: 1100,
       }}
     >
-      {/* 展开时的折页阴影：翻开瞬间左侧偏暗，展开后淡出 */}
+      {/* 抽出瞬间的槽口阴影：卡刚出槽时整体偏暗，抽出后亮起来 */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        initial={{ opacity: 0.5 }}
+        initial={{ opacity: 0.45 }}
         animate={{ opacity: 0 }}
-        exit={{ opacity: 0.5 }}
-        transition={{ duration: 0.55, ease: "easeOut" }}
+        exit={{ opacity: 0.45 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         style={{ zIndex: 20, background: "linear-gradient(90deg, rgba(43,43,43,0.38), rgba(43,43,43,0.10) 42%, transparent 72%)" }}
       />
-      {/* 展开后残留折痕：贴左缘一道淡淡的纸折光影 */}
+      {/* 卡槽边缘的常驻阴影：贴左缘一道，表示卡是从地图背后抽出来的 */}
       <span
         className="absolute inset-y-0 left-0 pointer-events-none"
         style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
       />
-      <div className="w-[340px] h-full overflow-y-auto">
+      {/* 卡片内容锚定右缘：宽度展开时整张卡跟着前缘向右滑出（抽卡） */}
+      <div className="absolute right-0 top-0 w-[340px] h-full overflow-y-auto">
         {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
         <div className="relative px-4 pt-3 mb-2">
           <button
@@ -668,7 +667,7 @@ export default function MapView({ data, onInteract }: Props) {
   const mapInstance = useRef<maplibregl.Map | null>(null)
   const mapReady = useRef(false)
   const markerObjs = useRef<maplibregl.Marker[]>([])
-  const buildingMarkers = useRef<{ poi: BuildingPoi; marker: maplibregl.Marker; img: HTMLImageElement }[]>([])
+  const buildingMarkers = useRef<{ poi: BuildingPoi; marker: maplibregl.Marker; img: HTMLImageElement; inner: HTMLDivElement }[]>([])
   const buildingClickRef = useRef<(poi: BuildingPoi) => void>(() => {})
   const routeSourceIds = useRef<string[]>([])
   const prevMarkerIds = useRef<Set<string> | null>(null)
@@ -764,7 +763,8 @@ export default function MapView({ data, onInteract }: Props) {
     // 建筑即景点标识：可点击，点击打开最近的行程 POI 面板
     if (buildingMarkers.current.length === 0) {
       for (const [i, poi] of BUILDING_POIS.entries()) {
-        // 结构：el（hover 目标 + LOD 显隐）> shadow（地面软影）+ float（呼吸浮动）> hover（上浮放大）> img
+        // 结构：el（hover 目标）> inner（LOD 显隐，MapLibre 会覆写 el 的 opacity 所以不能放 el 上）
+        //       > shadow（地面软影）+ float（呼吸浮动）> hover（上浮放大）> img
         const el = document.createElement("div")
         el.className = "building-marker"
         el.title = poi.name
@@ -772,6 +772,8 @@ export default function MapView({ data, onInteract }: Props) {
           ev.stopPropagation()
           buildingClickRef.current(poi)
         })
+        const inner = document.createElement("div")
+        inner.style.cssText = "transition: opacity .35s ease;"
         const shadow = document.createElement("div")
         shadow.className = "building-shadow"
         shadow.style.animationDelay = `${i * 0.45}s`
@@ -791,18 +793,19 @@ export default function MapView({ data, onInteract }: Props) {
         `
         hover.appendChild(img)
         float.appendChild(hover)
-        el.appendChild(shadow)
-        el.appendChild(float)
+        inner.appendChild(shadow)
+        inner.appendChild(float)
+        el.appendChild(inner)
         const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
           .setLngLat(poi.lngLat)
           .addTo(map)
-        buildingMarkers.current.push({ poi, marker, img })
+        buildingMarkers.current.push({ poi, marker, img, inner })
       }
     }
 
     const applyLod = () => {
       const z = map.getZoom()
-      for (const { poi, marker, img } of buildingMarkers.current) {
+      for (const { poi, marker, img, inner } of buildingMarkers.current) {
         const visible = z >= poi.minZoom && z < poi.maxZoom
         // 统一视觉框（所有建筑同尺寸），按素材长边归一，消除宽高比差异
         const box = buildingHeight(z)
@@ -811,10 +814,9 @@ export default function MapView({ data, onInteract }: Props) {
         img.style.height = `${Math.round(box * k)}px`
         img.style.width = "auto"
         img.style.transform = visible ? "scale(1)" : "scale(0.82)"
-        // LOD 显隐作用在整个 marker（含软影），隐藏时不拦截点击
-        const el = marker.getElement()
-        el.style.opacity = visible ? "1" : "0"
-        el.style.pointerEvents = visible ? "auto" : "none"
+        // LOD 显隐放 inner 层（MapLibre 会覆写 el 的 opacity）；隐藏时 el 不拦截点击
+        inner.style.opacity = visible ? "1" : "0"
+        marker.getElement().style.pointerEvents = visible ? "auto" : "none"
       }
     }
     // 素材首次加载完成后才拿得到 naturalWidth，加载完再归一一次
@@ -934,7 +936,8 @@ export default function MapView({ data, onInteract }: Props) {
       } else {
         const bounds = new maplibregl.LngLatBounds()
         for (const m of allMarkers) bounds.extend([m.lng, m.lat])
-        map.fitBounds(bounds, { padding: 40, maxZoom: 15, duration: 600 })
+        // 顶部多留：建筑 PNG 底部锚定向上长 68px，防止最北的建筑伸出视野被裁
+        map.fitBounds(bounds, { padding: { top: 110, bottom: 40, left: 40, right: 40 }, maxZoom: 15, duration: 600 })
       }
     }
   }, [data, selectedMarkerId, handleMarkerClick, styleVersion])
@@ -952,7 +955,7 @@ export default function MapView({ data, onInteract }: Props) {
     } else {
       const bounds = new maplibregl.LngLatBounds()
       for (const m of daySpots) bounds.extend([m.lng, m.lat])
-      map.fitBounds(bounds, { padding: 70, maxZoom: 15.5, duration: 800 })
+      map.fitBounds(bounds, { padding: { top: 130, bottom: 70, left: 70, right: 70 }, maxZoom: 15.5, duration: 800 })
     }
   }, [data.activeDay, data.markers, styleVersion])
 
