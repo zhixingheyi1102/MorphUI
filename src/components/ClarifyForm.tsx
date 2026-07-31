@@ -24,6 +24,13 @@ type Props = {
 export default function ClarifyForm({ data, onInteract }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [dynamicQuestions, setDynamicQuestions] = useState<Question[]>([])
+  const [confirmed, setConfirmed] = useState(false)
+
+  const handleConfirm = () => {
+    if (confirmed) return
+    setConfirmed(true)
+    onInteract()
+  }
 
   const handleSelect = (questionId: string, option: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: option }))
@@ -75,15 +82,17 @@ export default function ClarifyForm({ data, onInteract }: Props) {
       </div>
 
       <button
-        onClick={onInteract}
-        disabled={!allAnswered}
+        onClick={handleConfirm}
+        disabled={!allAnswered || confirmed}
         className={`mt-6 w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
-          allAnswered
-            ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm"
-            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+          confirmed
+            ? "bg-gray-100 text-gray-400 cursor-default"
+            : allAnswered
+              ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm"
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"
         }`}
       >
-        确认，开始规划 ✨
+        {confirmed ? "已确认 ✓" : "确认，开始规划 ✨"}
       </button>
     </div>
   )

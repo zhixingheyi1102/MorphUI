@@ -55,22 +55,21 @@ const scenario: Step[] = [
     aiMessage:
       "明白了！和朋友的文艺两日游，给你安排好了 ✨ 两天行程在右边，你看看节奏合不合适～",
     workspaceActions: [
-      { action: "remove", componentId: "clarify" },
       {
         action: "create",
         componentId: "itinerary",
-        componentType: "itinerary",
+        componentType: "plan_notebook",
         data: {
           activeTab: "day1",
           days: {
             day1: {
               label: "Day 1 · 法租界漫步",
               spots: [
-                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑" },
-                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
+                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80" },
+                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
                 { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
-                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
-                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
+                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
               ],
             },
             day2: {
@@ -116,7 +115,12 @@ const scenario: Step[] = [
   {
     trigger: { type: "user_send" },
     userMessage: "加个地图看看路线吧",
-    aiMessage: "路线地图给你安排上了！点击标记可以查看景点详情～",
+    aiMessage: "路线地图给你安排上了！点击标记可以查看景点详情，感兴趣的话还能探索更多玩法～",
+    suggestions: [
+      "加个地图看看路线吧",
+      "这些地方之间远吗？",
+      "有没有特别推荐的景点？",
+    ],
     workspaceActions: [
       {
         action: "create",
@@ -132,29 +136,62 @@ const scenario: Step[] = [
               desc: "从武康大楼出发，沿途老洋房和巴金故居，法租界最经典的一条路",
               imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80",
               tags: ["历史建筑", "法租界", "网红打卡"],
+              deepContent: {
+                activities: [
+                  { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
+                  { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
+                  { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
+                ],
+              },
             },
             {
               id: "anfu", name: "安福路", lat: 31.2173, lng: 121.4405, type: "spot",
               desc: "独立设计师店和话剧艺术中心聚集的文艺街区",
               imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80",
               tags: ["文艺街区", "设计师店", "话剧"],
+              deepContent: {
+                activities: [
+                  { id: "theater", title: "话剧体验", desc: "安福路话剧艺术中心，看一场先锋话剧", duration: "2h", price: 280, tag: "文艺" },
+                  { id: "vintage", title: "中古店淘宝", desc: "沿街 vintage 店铺，淘复古服饰和饰品", duration: "1.5h", price: 0, tag: "免费" },
+                  { id: "brunch", title: "法式 Brunch", desc: "安福路 brunch 圣地，推荐 RAC 和 Egg", duration: "1h", price: 120, tag: "美食" },
+                ],
+              },
             },
             {
               id: "lunch1", name: "衡山路午餐", lat: 31.2091, lng: 121.4456, type: "spot",
               desc: "推荐衡山小馆或 Alimentari，地道本帮菜与意式简餐",
               tags: ["美食", "本帮菜"],
+              deepContent: {
+                activities: [
+                  { id: "local", title: "本帮菜体验", desc: "尝地道上海菜：红烧肉、腌笃鲜、葱油拌面", duration: "1h", price: 100, tag: "美食" },
+                  { id: "italian", title: "意式简餐", desc: "Alimentari 的手工面和提拉米苏", duration: "1h", price: 150, tag: "西餐" },
+                ],
+              },
             },
             {
               id: "fuxing", name: "复兴西路", lat: 31.2108, lng: 121.4352, type: "spot",
               desc: "国际礼拜堂、衡山电影院一带，感受老上海的文化底蕴",
               imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80",
               tags: ["历史建筑", "教堂", "老上海"],
+              deepContent: {
+                activities: [
+                  { id: "church", title: "教堂巡礼", desc: "国际礼拜堂 + 诸圣堂，哥特与罗马风格交汇", duration: "1h", price: 0, tag: "免费" },
+                  { id: "cinema", title: "衡山电影院", desc: "1951 年开业的老影院，看一场经典电影", duration: "2h", price: 50, tag: "文化" },
+                ],
+              },
             },
             {
               id: "tianzifang", name: "田子坊", lat: 31.2104, lng: 121.4737, type: "spot",
               desc: "石库门弄堂里的艺术区，手工艺品和创意小店",
               imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80",
               tags: ["文创园区", "弄堂", "手工艺"],
+              deepContent: {
+                activities: [
+                  { id: "craft", title: "手作体验", desc: "陶艺、皮具、版画工作坊，带走一件手作纪念品", duration: "1.5h", price: 180, tag: "体验" },
+                  { id: "gallery", title: "画廊巡游", desc: "10+ 家独立画廊和摄影展，免费参观", duration: "1h", price: 0, tag: "免费" },
+                  { id: "snack", title: "弄堂小吃", desc: "臭豆腐、葱油饼、鸡爪，一路吃过去", duration: "1h", price: 50, tag: "美食" },
+                ],
+              },
             },
           ],
           routeColor: "#6366f1",
@@ -165,34 +202,11 @@ const scenario: Step[] = [
 
   // ──────────────────────────────────────────────
   // 点击地图标记 → 地图内部处理（不消耗剧本步骤）
+  // 点击"探索玩法"/"查看评价" → 地图内部展开 deepContent（本地处理）
   // ──────────────────────────────────────────────
 
   // ──────────────────────────────────────────────
-  // Step 5: 用户在 POI 面板点击"探索玩法" → 更新地图加入玩法列表
-  // ──────────────────────────────────────────────
-  {
-    trigger: { type: "component_interact", componentId: "map", value: "explore" },
-    aiMessage: "武康路有好几种玩法，看看哪个更合你意～ 选一个可以直接加到行程里。",
-    workspaceActions: [
-      {
-        action: "update",
-        componentId: "map",
-        data: {
-          poiDeepContent: {
-            activities: [
-              { id: "arch", title: "老洋房漫步", desc: "跟着建筑地图走，看 10 栋经典洋房，了解每栋背后的故事", duration: "1.5h", price: 0, tag: "免费" },
-              { id: "photo", title: "旅拍体验", desc: "在武康大楼、密丹公寓等标志建筑前拍一组文艺照", duration: "2h", price: 299, tag: "热门" },
-              { id: "cafe", title: "咖啡巡礼", desc: "武康路沿线 5 家精品咖啡馆，一路喝过去", duration: "2h", price: 150, tag: "美食" },
-            ],
-            activitiesLoaded: true,
-          },
-        },
-      },
-    ],
-  },
-
-  // ──────────────────────────────────────────────
-  // Step 6: 用户选了一个玩法 → 更新行程
+  // Step 5: 用户在 POI 面板选了一个玩法 → 更新行程
   // ──────────────────────────────────────────────
   {
     trigger: { type: "component_interact", componentId: "map" },
@@ -200,26 +214,26 @@ const scenario: Step[] = [
     workspaceActions: [
       {
         action: "update",
-        componentId: "map",
-        data: { poiDeepContent: undefined },
-      },
-      {
-        action: "update",
         componentId: "itinerary",
         data: {
-          selectedActivity: { spotId: "wukang", activity: "老洋房漫步" },
+          selectedActivity: { spotId: "wukang", activity: { id: "arch", title: "老洋房漫步", duration: "1.5h", price: 0 } },
         },
       },
     ],
   },
 
   // ──────────────────────────────────────────────
-  // Step 7: 用户问餐厅 → 地图加餐厅 Marker（携带基本信息）
+  // Step 6: 用户问餐厅 → 地图加餐厅 Marker（带 deepContent）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "user_send" },
     userMessage: "附近有什么好吃的餐厅吗？",
-    aiMessage: "在地图上标了几家评价不错的餐厅 🍜 点击标记查看详情～",
+    aiMessage: "在地图上标了几家评价不错的餐厅 🍜 点击标记查看详情，还能看用户评价～",
+    suggestions: [
+      "附近有什么好吃的餐厅吗？",
+      "有没有本地特色小吃？",
+      "推荐下午茶的地方",
+    ],
     workspaceActions: [
       {
         action: "update",
@@ -232,18 +246,42 @@ const scenario: Step[] = [
               rating: 4.7,
               desc: "地道上海本帮菜，红烧肉和葱油拌面是招牌，性价比高",
               tags: ["本帮菜", "老字号", "性价比高"],
+              deepContent: {
+                priceRange: "人均 ¥80-120",
+                distance: "距武康路步行 5 分钟",
+                reviews: [
+                  { user: "小红薯er", text: "红烧肉入口即化，葱油拌面也好吃！", score: 5 },
+                  { user: "食在上海", text: "排队人多但翻台快，推荐午市来", score: 4 },
+                ],
+              },
             },
             {
               id: "rest2", name: "Alimentari", lat: 31.2128, lng: 121.4415, type: "restaurant",
               rating: 4.5,
               desc: "意式简餐，手工面和薄饼披萨口碑很好",
               tags: ["意大利菜", "轻食", "氛围好"],
+              deepContent: {
+                priceRange: "人均 ¥120-180",
+                distance: "距武康路步行 8 分钟",
+                reviews: [
+                  { user: "pasta_lover", text: "手工意面很惊艳，配合白葡萄酒绝了", score: 5 },
+                  { user: "吃遍法租界", text: "环境很好适合约会，提拉米苏一定要点", score: 4 },
+                ],
+              },
             },
             {
               id: "rest3", name: "RAC Bar", lat: 31.2160, lng: 121.4380, type: "restaurant",
               rating: 4.6,
               desc: "法租界人气餐吧，brunch 和鸡尾酒都不错",
               tags: ["西餐", "Brunch", "鸡尾酒"],
+              deepContent: {
+                priceRange: "人均 ¥150-200",
+                distance: "距武康路步行 3 分钟",
+                reviews: [
+                  { user: "周末达人", text: "brunch 永远排队但值得等，班尼迪克蛋神作", score: 5 },
+                  { user: "鸡尾酒笔记", text: "晚上的鸡尾酒很专业，氛围也一流", score: 5 },
+                ],
+              },
             },
           ],
         },
@@ -252,64 +290,64 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // 点击餐厅标记 → 地图内部处理（不消耗剧本步骤）
-  // ──────────────────────────────────────────────
-
-  // ──────────────────────────────────────────────
-  // Step 8: 用户在餐厅 POI 面板点击"查看评价" → 更新地图加入评价
-  // ──────────────────────────────────────────────
-  {
-    trigger: { type: "component_interact", componentId: "map", value: "explore" },
-    aiMessage: "衡山小馆是地道的上海本帮菜，性价比很高！人均大概 80-120 元。",
-    workspaceActions: [
-      {
-        action: "update",
-        componentId: "map",
-        data: {
-          poiDeepContent: {
-            priceRange: "人均 ¥80-120",
-            distance: "距武康路步行 5 分钟",
-            reviews: [
-              { user: "小红薯er", text: "红烧肉入口即化，葱油拌面也好吃！", score: 5 },
-              { user: "食在上海", text: "排队人多但翻台快，推荐午市来", score: 4 },
-            ],
-          },
-        },
-      },
-    ],
-  },
-
-  // ──────────────────────────────────────────────
-  // Step 9: 用户问酒店 → 地图加酒店 Marker
+  // Step 7: 用户问酒店 → 地图加酒店 Marker（带 deepContent）
   // ──────────────────────────────────────────────
   {
     trigger: { type: "user_send" },
     userMessage: "晚上住哪里比较好？",
     aiMessage: "给你推荐了几家离景点近的酒店，点击查看详情。优先按距离排的～",
+    suggestions: [
+      "晚上住哪里比较好？",
+      "有没有有特色的民宿？",
+      "离景点近的酒店有哪些？",
+    ],
     workspaceActions: [
       {
         action: "update",
         componentId: "map",
         data: {
-          poiDeepContent: undefined,
           extraMarkers: [
             {
               id: "hotel1", name: "花间堂·愉园", lat: 31.2140, lng: 121.4425, type: "hotel",
               stars: 4, rating: 4.6,
               desc: "老洋房改造的精品酒店，花园庭院，含早餐",
               tags: ["精品酒店", "法租界", "步行可达"],
+              deepContent: {
+                priceRange: "¥680/晚",
+                distance: "距武康路步行 5 分钟",
+                reviews: [
+                  { user: "旅行日记", text: "老洋房氛围绝佳，早餐丰盛，服务贴心", score: 5 },
+                  { user: "周末出逃", text: "花园里喝下午茶太惬意了，值得入住", score: 4 },
+                ],
+              },
             },
             {
               id: "hotel2", name: "衡山路十二号", lat: 31.2100, lng: 121.4460, type: "hotel",
               stars: 4, rating: 4.4,
               desc: "衡山路核心位置，设计感强的精品酒店",
               tags: ["设计酒店", "核心地段"],
+              deepContent: {
+                priceRange: "¥520/晚",
+                distance: "距衡山路地铁站步行 3 分钟",
+                reviews: [
+                  { user: "设计控", text: "房间设计感很强，细节到位", score: 4 },
+                  { user: "商旅客", text: "位置绝佳，出行方便，隔音稍差", score: 3 },
+                ],
+              },
             },
             {
               id: "hotel3", name: "上海国际饭店", lat: 31.2330, lng: 121.4710, type: "hotel",
               stars: 4, rating: 4.3,
               desc: "经典老牌酒店，蝴蝶酥是招牌",
               tags: ["经典老牌", "南京路"],
+              deepContent: {
+                priceRange: "¥450/晚",
+                distance: "距南京路步行街步行 1 分钟",
+                reviews: [
+                  { user: "怀旧派", text: "老上海的情怀，蝴蝶酥必买，性价比高", score: 4 },
+                  { user: "上海通", text: "位置无敌，设施稍旧但干净整洁", score: 4 },
+                ],
+              },
             },
           ],
         },
@@ -318,12 +356,17 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 10: 用户切偏好 → 换酒店 + 更新预算
+  // Step 8: 用户切偏好 → 换酒店 + 更新预算
   // ──────────────────────────────────────────────
   {
     trigger: { type: "user_send" },
     userMessage: "我更看重舒适度",
     aiMessage: "换了一批更舒适的酒店推荐！五星级为主，预算也同步更新了～",
+    suggestions: [
+      "我更看重舒适度",
+      "有没有外滩江景的酒店？",
+      "预算能控制在 500 以内吗？",
+    ],
     workspaceActions: [
       {
         action: "update",
@@ -335,18 +378,42 @@ const scenario: Step[] = [
               stars: 5, rating: 4.9,
               desc: "87层无边际泳池，外滩全景，米其林餐厅",
               tags: ["五星级", "外滩江景", "顶级服务"],
+              deepContent: {
+                priceRange: "¥2800/晚",
+                distance: "距外滩步行 10 分钟",
+                reviews: [
+                  { user: "奢旅达人", text: "87楼泳池无敌江景，服务堪称完美", score: 5 },
+                  { user: "生日旅行", text: "升级了套房，管家服务太贴心了", score: 5 },
+                ],
+              },
             },
             {
               id: "hotel2", name: "上海半岛酒店", lat: 31.2390, lng: 121.4900, type: "hotel",
               stars: 5, rating: 4.8,
               desc: "外滩百年建筑，劳斯莱斯接送，管家服务",
               tags: ["五星级", "百年建筑", "管家服务"],
+              deepContent: {
+                priceRange: "¥3200/晚",
+                distance: "外滩核心位置",
+                reviews: [
+                  { user: "半岛粉", text: "劳斯莱斯接机太有仪式感，大堂下午茶必体验", score: 5 },
+                  { user: "周年纪念", text: "套房能直接看到陆家嘴全景，一生推", score: 5 },
+                ],
+              },
             },
             {
               id: "hotel3", name: "上海华尔道夫", lat: 31.2380, lng: 121.4880, type: "hotel",
               stars: 5, rating: 4.7,
               desc: "外滩历史建筑群中的奢华酒店，长廊酒吧",
               tags: ["五星级", "历史建筑", "长廊酒吧"],
+              deepContent: {
+                priceRange: "¥2500/晚",
+                distance: "外滩核心位置",
+                reviews: [
+                  { user: "酒店控", text: "长廊酒吧氛围绝了，调酒师很专业", score: 5 },
+                  { user: "历史爱好者", text: "百年老建筑改的，每个角落都有故事", score: 4 },
+                ],
+              },
             },
           ],
         },
@@ -368,7 +435,7 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 11: 用户说临时要去深圳出差 → 弹航班列表
+  // Step 9: 用户说临时要去深圳出差 → 弹航班列表
   // ──────────────────────────────────────────────
   {
     trigger: { type: "user_send" },
@@ -393,7 +460,7 @@ const scenario: Step[] = [
   },
 
   // ──────────────────────────────────────────────
-  // Step 12: 用户选了航班 → 调整 Day2 行程 + 更新预算 + 出差清单
+  // Step 10: 用户选了航班 → 调整 Day2 行程 + 更新预算 + 出差清单
   // ──────────────────────────────────────────────
   {
     trigger: { type: "component_interact", componentId: "flights" },
@@ -409,11 +476,11 @@ const scenario: Step[] = [
             day1: {
               label: "Day 1 · 法租界漫步",
               spots: [
-                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑" },
-                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
+                { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80" },
+                { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
                 { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
-                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
-                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", transport: { method: "地铁", duration: "15min", distance: "3km" } },
+                { id: "fuxing", name: "复兴西路", time: "13:30", duration: "1.5h", desc: "国际礼拜堂、衡山电影院一带", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1548919973-5cef591cdbc9?w=640&q=80", transport: { method: "步行", duration: "5min", distance: "0.4km" } },
+                { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
               ],
             },
             day2: {

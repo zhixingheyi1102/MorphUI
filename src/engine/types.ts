@@ -18,6 +18,7 @@ export type Step = {
   aiMessage: string
   workspaceActions?: WorkspaceAction[]
   hints?: Array<{ label: string; actions: WorkspaceAction[] }>
+  suggestions?: string[]
 }
 
 // 聊天消息

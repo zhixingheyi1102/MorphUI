@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react"
 import type { ChatMessage, ComponentInstance, Step, WorkspaceAction } from "./types"
 import { streamChat, SYSTEM_PROMPT } from "./api"
+import { COMPONENT_CATEGORIES } from "../components/registry"
 
 let msgCounter = 0
 function nextId() {
@@ -18,11 +19,15 @@ export function useChat(scenario?: Step[]) {
   // hint ID → 对应的 workspaceActions
   const hintActionsRef = useRef<Map<string, WorkspaceAction[]>>(new Map())
 
-  // 当前剧本步骤的建议（仅 user_send 类型的才显示 sug）
+  // 当前剧本步骤的建议
   const currentStep = scenario?.[scriptIndex]
   const suggestions: string[] = []
-  if (currentStep?.trigger.type === "user_send" && currentStep.userMessage) {
-    suggestions.push(currentStep.userMessage)
+  if (currentStep?.trigger.type === "user_send") {
+    if (currentStep.suggestions) {
+      suggestions.push(...currentStep.suggestions)
+    } else if (currentStep.userMessage) {
+      suggestions.push(currentStep.userMessage)
+    }
   }
 
   // 组件操作（create / update / remove）
@@ -135,8 +140,9 @@ export function useChat(scenario?: Step[]) {
   const parseInlineToolCalls = useCallback(
     (text: string): { cleanText: string; toolCalls: Array<{ name: string; arguments: string }> } => {
       const toolCalls: Array<{ name: string; arguments: string }> = []
+      let cleanText = text
 
-      // GPT-5.5 有时会用 <multi_tool_use.parallel> 格式
+      // 格式 1: <multi_tool_use.parallel>...</multi_tool_use.parallel>
       const multiMatch = text.match(/<multi_tool_use\.parallel\s*>([\s\S]*?)<\/multi_tool_use\.parallel>/)
       if (multiMatch) {
         try {
@@ -152,11 +158,31 @@ export function useChat(scenario?: Step[]) {
         } catch (e) {
           console.warn("Failed to parse multi_tool_use:", e)
         }
-        const cleanText = text.replace(/<multi_tool_use\.parallel\s*>[\s\S]*?<\/multi_tool_use\.parallel>\s*/g, "").trim()
+        cleanText = text.replace(/<multi_tool_use\.parallel\s*>[\s\S]*?<\/multi_tool_use\.parallel>\s*/g, "").trim()
+        if (toolCalls.length > 0) return { cleanText, toolCalls }
+      }
+
+      // 格式 2: <functions.XXX call_id JSON_BODY</functions.XXX>
+      const functionsRegex = /<functions\.([\w]+)\s+[\w-]+\s*([\s\S]*?)\s*<\/functions\.\1>/g
+      let functionsMatch
+      while ((functionsMatch = functionsRegex.exec(text)) !== null) {
+        const fnName = functionsMatch[1]
+        const body = functionsMatch[2].trim()
+        // 提取 JSON（可能夹杂在其他文本中）
+        const jsonMatch = body.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          try {
+            const args = JSON.parse(jsonMatch[0])
+            toolCalls.push({ name: fnName, arguments: JSON.stringify(args) })
+          } catch { /* ignore malformed JSON */ }
+        }
+      }
+      if (toolCalls.length > 0) {
+        cleanText = text.replace(/<functions\.[\w]+\s+[\w-]+\s*[\s\S]*?<\/functions\.[\w]+>\s*/g, "").trim()
         return { cleanText, toolCalls }
       }
 
-      // 也处理单个 tool call 文本格式
+      // 格式 3: 单个 JSON tool call 对象
       const singleMatch = text.match(/\{"(?:name|recipient_name)"[\s\S]*?"(?:arguments|parameters)"[\s\S]*?\}(?=\s|$)/)
       if (singleMatch) {
         try {
@@ -167,7 +193,7 @@ export function useChat(scenario?: Step[]) {
             toolCalls.push({ name: fnName, arguments: typeof args === "string" ? args : JSON.stringify(args) })
           }
         } catch { /* ignore */ }
-        const cleanText = text.replace(singleMatch[0], "").trim()
+        cleanText = text.replace(singleMatch[0], "").trim()
         return { cleanText, toolCalls }
       }
 
@@ -314,6 +340,16 @@ export function useChat(scenario?: Step[]) {
     )
   }, [applyActions])
 
+  // ─── 一键整理：移除过程态组件，保留方案和辅助组件 ───
+  const organizeWorkspace = useCallback(() => {
+    setComponents((prev) =>
+      prev.filter((c) => {
+        const cat = COMPONENT_CATEGORIES[c.type]
+        return cat === "plan" || cat === "auxiliary"
+      })
+    )
+  }, [])
+
   // ─── 拖拽排序 ───
   const reorderComponents = useCallback((fromIndex: number, toIndex: number) => {
     setComponents((prev) => {
@@ -332,6 +368,7 @@ export function useChat(scenario?: Step[]) {
     sendMessage,
     handleComponentInteract,
     closeComponent,
+    organizeWorkspace,
     handleHintClick,
     reorderComponents,
   }

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { useDrag } from "@use-gesture/react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ComponentInstance } from "../engine/types"
-import registry from "../components/registry"
+import registry, { COMPONENT_CATEGORIES } from "../components/registry"
 
 // ─── 常量 ───
 const MIN_SCALE = 0.3
@@ -36,6 +36,7 @@ type Props = {
   components: ComponentInstance[]
   onInteract: (componentId: string, value?: string) => void
   onClose: (componentId: string) => void
+  onOrganize?: () => void
 }
 
 // ─── 碰撞检测：两个矩形是否重叠（含间距） ───
@@ -293,7 +294,7 @@ function CanvasCard({
 // ═══════════════════════════════════════════════════
 //  主组件：自由画布工作区
 // ═══════════════════════════════════════════════════
-export default function Workspace({ components, onInteract, onClose }: Props) {
+export default function Workspace({ components, onInteract, onClose, onOrganize }: Props) {
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, scale: 1 })
   // 只存用户手动拖拽过的位置；未拖拽的组件位置在渲染时动态计算
   const [draggedPositions, setDraggedPositions] = useState<Map<string, Position>>(new Map())
@@ -334,24 +335,67 @@ export default function Workspace({ components, onInteract, onClose }: Props) {
     })
   }, [components])
 
-  // ─── 根据实测尺寸计算所有组件位置 + 碰撞解决 ───
+  // ─── 根据分类计算所有组件位置 + 碰撞解决 ───
   const positions = useMemo(() => {
     const result = new Map<string, Position>()
-    let autoX = AUTO_PLACE_ORIGIN.x
+    const viewportRect = viewportRef.current?.getBoundingClientRect()
+    const vpWidth = viewportRect?.width ?? 1200
 
-    // 第一步：计算基础位置（自动排列 + 手动定位）
-    for (const comp of components) {
+    // 按分类分组
+    const planComp = components.find((c) => {
+      const cat = COMPONENT_CATEGORIES[c.type]
+      return cat === "plan"
+    })
+    const auxComps = components.filter((c) => {
+      const cat = COMPONENT_CATEGORIES[c.type]
+      return cat === "auxiliary"
+    })
+    const processComps = components.filter((c) => {
+      const cat = COMPONENT_CATEGORIES[c.type]
+      return cat !== "plan" && cat !== "auxiliary"
+    })
+
+    // 1. PlanNotebook 居中偏左
+    let planRight = AUTO_PLACE_ORIGIN.x
+    if (planComp) {
+      const dragged = draggedPositions.get(planComp.id)
+      const planSize = sizesRef.current.get(planComp.id) ?? { w: 480, h: 600 }
+      const planPos = dragged ?? {
+        x: Math.max(AUTO_PLACE_ORIGIN.x, vpWidth * 0.3 - planSize.w / 2),
+        y: AUTO_PLACE_ORIGIN.y,
+      }
+      result.set(planComp.id, planPos)
+      planRight = planPos.x + planSize.w + 32
+    }
+
+    // 2. 辅助组件放在 PlanNotebook 右侧，纵向堆叠
+    let auxY = AUTO_PLACE_ORIGIN.y
+    for (const comp of auxComps) {
       const dragged = draggedPositions.get(comp.id)
       if (dragged) {
         result.set(comp.id, dragged)
       } else {
-        result.set(comp.id, { x: autoX, y: AUTO_PLACE_ORIGIN.y })
-        const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
-        autoX += sz.w + AUTO_PLACE_GAP
+        result.set(comp.id, { x: planRight, y: auxY })
       }
+      const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
+      auxY += sz.h + 24
     }
 
-    // 第二步：碰撞解决 — 手动定位的组件优先不动，自动排列的被推开
+    // 3. 过程组件放在更右侧，纵向堆叠
+    const auxRight = planRight + (auxComps.length > 0 ? 384 + 32 : 0)
+    let processY = AUTO_PLACE_ORIGIN.y
+    for (const comp of processComps) {
+      const dragged = draggedPositions.get(comp.id)
+      if (dragged) {
+        result.set(comp.id, dragged)
+      } else {
+        result.set(comp.id, { x: auxRight, y: processY })
+      }
+      const sz = sizesRef.current.get(comp.id) ?? { w: 384, h: 300 }
+      processY += sz.h + AUTO_PLACE_GAP
+    }
+
+    // 碰撞解决
     const fixedIds = new Set(draggedPositions.keys())
     return resolveCollisions(result, fixedIds, sizesRef.current)
   }, [components, draggedPositions, measureVersion])
@@ -469,6 +513,28 @@ export default function Workspace({ components, onInteract, onClose }: Props) {
     setCamera({ x: 0, y: 0, scale: 1 })
   }, [])
 
+  // ─── 一键整理：移除过程组件 + 重置辅助组件位置 ───
+  const handleOrganize = useCallback(() => {
+    onOrganize?.()
+    // 重置辅助组件的手动拖拽位置，让它们回归自动排列
+    setDraggedPositions((prev) => {
+      const next = new Map<string, Position>()
+      for (const [id, pos] of prev) {
+        const comp = components.find((c) => c.id === id)
+        if (comp && COMPONENT_CATEGORIES[comp.type] === "plan") {
+          next.set(id, pos) // 保留 PlanNotebook 的手动位置
+        }
+      }
+      return next
+    })
+  }, [onOrganize, components])
+
+  // 是否有过程态组件（决定是否显示整理按钮）
+  const hasProcessComponents = components.some((c) => {
+    const cat = COMPONENT_CATEGORIES[c.type]
+    return cat !== "plan" && cat !== "auxiliary"
+  })
+
   // ─── 空态 ───
   if (components.length === 0) {
     return (
@@ -570,6 +636,17 @@ export default function Workspace({ components, onInteract, onClose }: Props) {
           +
         </button>
       </div>
+
+      {/* 一键整理按钮 */}
+      {hasProcessComponents && onOrganize && (
+        <button
+          onClick={handleOrganize}
+          className="absolute bottom-4 left-4 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 text-sm text-gray-600 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-md transition-all z-50"
+        >
+          <span>✨</span>
+          一键整理
+        </button>
+      )}
     </div>
   )
 }

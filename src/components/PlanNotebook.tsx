@@ -125,8 +125,8 @@ export default function PlanNotebook({ data }: Props) {
           ))}
         </div>
 
-        {/* 内容区 */}
-        <div className="pl-10 pr-5 py-5 max-h-[70vh] overflow-y-auto notebook-lines">
+        {/* 内容区 — 全部平铺展开 */}
+        <div className="pl-10 pr-5 py-5 notebook-lines">
           {day.spots.map((spot, i) => (
             <div key={spot.id}>
               {/* 交通连接（第一个景点上方不显示） */}

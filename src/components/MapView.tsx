@@ -4,19 +4,6 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
 // ─── 类型 ───
-type Marker = {
-  id: string
-  name: string
-  lat: number
-  lng: number
-  type: "spot" | "restaurant" | "hotel"
-  rating?: number
-  stars?: number
-  desc?: string
-  imageUrl?: string
-  tags?: string[]
-}
-
 type Activity = {
   id: string
   title: string
@@ -32,12 +19,25 @@ type Review = {
   score: number
 }
 
-type PoiDeepContent = {
+type DeepContent = {
   activities?: Activity[]
-  activitiesLoaded?: boolean
   reviews?: Review[]
   priceRange?: string
   distance?: string
+}
+
+type Marker = {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  type: "spot" | "restaurant" | "hotel"
+  rating?: number
+  stars?: number
+  desc?: string
+  imageUrl?: string
+  tags?: string[]
+  deepContent?: DeepContent
 }
 
 type Props = {
@@ -48,7 +48,6 @@ type Props = {
     extraMarkers?: Marker[]
     routeColor?: string
     highlightSpot?: string
-    poiDeepContent?: PoiDeepContent
   }
   onInteract: (value: string) => void
 }
@@ -105,20 +104,21 @@ function createIcon(type: string, highlight = false, selected = false) {
 // ═══════════════════════════════════════════════
 function PoiPanel({
   marker,
-  deepContent,
+  explored,
   onExplore,
   onActivityClick,
   onClose,
 }: {
   marker: Marker
-  deepContent?: PoiDeepContent
+  explored: boolean
   onExplore: () => void
   onActivityClick: (actId: string) => void
   onClose: () => void
 }) {
-  const hasDeep =
-    deepContent?.activitiesLoaded ||
-    (deepContent?.reviews && deepContent.reviews.length > 0)
+  const deep = marker.deepContent
+  const showDeep = explored && deep
+  const hasActivities = showDeep && deep.activities && deep.activities.length > 0
+  const hasReviews = showDeep && deep.reviews && deep.reviews.length > 0
 
   return (
     <motion.div
@@ -193,17 +193,17 @@ function PoiPanel({
           )}
 
           {/* 深度内容 - 价格 + 距离 */}
-          {(deepContent?.priceRange || deepContent?.distance) && (
+          {showDeep && (deep.priceRange || deep.distance) && (
             <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
-              {deepContent.priceRange && <span>{deepContent.priceRange}</span>}
-              {deepContent.priceRange && deepContent.distance && <span className="text-gray-300">|</span>}
-              {deepContent.distance && <span>📍 {deepContent.distance}</span>}
+              {deep.priceRange && <span>{deep.priceRange}</span>}
+              {deep.priceRange && deep.distance && <span className="text-gray-300">|</span>}
+              {deep.distance && <span>📍 {deep.distance}</span>}
             </div>
           )}
 
           {/* 深度内容 - 评价 */}
           <AnimatePresence>
-            {deepContent?.reviews && deepContent.reviews.length > 0 && (
+            {hasReviews && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -214,7 +214,7 @@ function PoiPanel({
                 <div className="pt-2 border-t border-gray-100 mb-2">
                   <p className="text-[10px] font-medium text-gray-600 mb-1.5">用户评价</p>
                   <div className="space-y-1.5">
-                    {deepContent.reviews.map((r) => (
+                    {deep!.reviews!.map((r) => (
                       <div key={r.user} className="p-1.5 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-[10px] font-medium text-gray-700">@{r.user}</span>
@@ -231,7 +231,7 @@ function PoiPanel({
 
           {/* 深度内容 - 玩法列表 */}
           <AnimatePresence>
-            {deepContent?.activities && deepContent.activities.length > 0 && (
+            {hasActivities && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -242,7 +242,7 @@ function PoiPanel({
                 <div className="pt-2 border-t border-gray-100">
                   <p className="text-[10px] font-medium text-gray-600 mb-1.5">🎯 玩法推荐 · 选一个加入行程</p>
                   <div className="space-y-1.5">
-                    {deepContent.activities.map((act) => (
+                    {deep!.activities!.map((act) => (
                       <button
                         key={act.id}
                         onClick={() => onActivityClick(act.id)}
@@ -269,8 +269,8 @@ function PoiPanel({
             )}
           </AnimatePresence>
 
-          {/* 探索按钮 */}
-          {!hasDeep && (
+          {/* 探索按钮（有 deepContent 且未展开时显示） */}
+          {deep && !explored && (
             <button
               onClick={onExplore}
               className="w-full mt-2 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1"
@@ -294,27 +294,17 @@ export default function MapView({ data, onInteract }: Props) {
   const markersLayer = useRef<L.LayerGroup | null>(null)
   const routeLayer = useRef<L.Polyline | null>(null)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
-  // 记录 deep content 对应的 marker id，切换标记时忽略旧内容
-  const deepContentForRef = useRef<string | null>(null)
+  const [exploredMarkerIds, setExploredMarkerIds] = useState<Set<string>>(new Set())
 
   const allMarkers = [...(data.markers ?? []), ...(data.extraMarkers ?? [])]
   const selectedMarker = selectedMarkerId ? allMarkers.find((m) => m.id === selectedMarkerId) : null
 
-  // 当 poiDeepContent 更新时，记录它属于哪个标记
-  useEffect(() => {
-    if (data.poiDeepContent) {
-      deepContentForRef.current = selectedMarkerId
-    }
-  }, [data.poiDeepContent])
-
-  // 只有 deep content 的 marker 与当前选中的匹配时才显示
-  const activeDeepContent =
-    selectedMarkerId && deepContentForRef.current === selectedMarkerId
-      ? data.poiDeepContent
-      : undefined
-
   const handleMarkerClick = useCallback((markerId: string) => {
     setSelectedMarkerId((prev) => (prev === markerId ? null : markerId))
+  }, [])
+
+  const handleExplore = useCallback((markerId: string) => {
+    setExploredMarkerIds((prev) => new Set(prev).add(markerId))
   }, [])
 
   // 初始化地图
@@ -422,8 +412,8 @@ export default function MapView({ data, onInteract }: Props) {
           <PoiPanel
             key={selectedMarker.id}
             marker={selectedMarker}
-            deepContent={activeDeepContent}
-            onExplore={() => onInteract("explore")}
+            explored={exploredMarkerIds.has(selectedMarker.id)}
+            onExplore={() => handleExplore(selectedMarker.id)}
             onActivityClick={(actId) => onInteract(actId)}
             onClose={() => setSelectedMarkerId(null)}
           />
