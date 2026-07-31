@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
+import { renderToStaticMarkup } from "react-dom/server"
+import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
+import * as maplibregl from "maplibre-gl"
+import "maplibre-gl/dist/maplibre-gl.css"
 
 // ─── 类型 ───
 type Activity = {
@@ -91,16 +93,23 @@ function dayColor(day?: string) {
   return (day && DAY_COLORS[day]) || DAY_COLORS.day1
 }
 
-const MARKER_ICONS: Record<string, string> = {
-  spot: "📍",
-  restaurant: "🍜",
-  hotel: "🏨",
+const MARKER_ICONS: Record<string, typeof MapPin> = {
+  spot: MapPin,
+  restaurant: ForkKnife,
+  hotel: Buildings,
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  spot: "📍 景点",
-  restaurant: "🍜 餐厅",
-  hotel: "🏨 酒店",
+const TYPE_META: Record<string, { Icon: typeof MapPin; label: string }> = {
+  spot: { Icon: MapPin, label: "景点" },
+  restaurant: { Icon: ForkKnife, label: "餐厅" },
+  hotel: { Icon: Buildings, label: "酒店" },
+}
+
+// POI 面板按类型取纸张色：景点 cream / 餐厅 sage / 酒店 blue
+const POI_PAPER: Record<string, string> = {
+  spot: "var(--paper-cream)",
+  restaurant: "var(--paper-sage)",
+  hotel: "var(--paper-blue)",
 }
 
 const IMAGE_GRADIENTS: Record<string, string> = {
@@ -109,33 +118,129 @@ const IMAGE_GRADIENTS: Record<string, string> = {
   hotel: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)",
 }
 
-function createIcon(
+// ─── LANDUSE 海报风配色（取自地图交互案例.html） ───
+const C = {
+  park: "#69A83F", garden: "#8FC97A", greenery: "#CFE7BA", wood: "#52805F",
+  water: "#4295CC", wetland: "#6BA893", residential: "#EAE2DC", commercial: "#F8CBD3",
+  industrial: "#E5D3EE", farmland: "#B3A82C", infra: "#EDEBE8", public: "#E75FA0",
+  religious: "#F09CB0", recreation: "#9BCB86", special: "#C9D0CF", building: "#F3AEBE",
+  buildingLine: "#E890A6", road: "#FFFFFF", roadCasing: "#E6DDD6", rail: "#D9CFC9",
+  label: "#6B5E63", paper: "#F7F4F1",
+}
+
+// ─── MapLibre 自定义矢量样式：LANDUSE 土地利用配色 ───
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  sources: {
+    openmaptiles: { type: "vector", url: "https://tiles.openfreemap.org/planet" },
+  },
+  layers: [
+    { id: "background", type: "background", paint: { "background-color": C.paper } },
+    { id: "residential", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["residential", "suburb", "neighbourhood"], true, false],
+      paint: { "fill-color": C.residential } },
+    { id: "farmland", type: "fill", source: "openmaptiles", "source-layer": "landcover",
+      filter: ["match", ["get", "class"], ["farmland"], true, false],
+      paint: { "fill-color": C.farmland, "fill-opacity": 0.55 } },
+    { id: "commercial", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["commercial", "retail"], true, false],
+      paint: { "fill-color": C.commercial, "fill-opacity": 0.9 } },
+    { id: "industrial", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["industrial", "garages", "quarry"], true, false],
+      paint: { "fill-color": C.industrial, "fill-opacity": 0.85 } },
+    { id: "infra", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["railway"], true, false],
+      paint: { "fill-color": C.infra } },
+    { id: "special", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["military"], true, false],
+      paint: { "fill-color": C.special, "fill-opacity": 0.8 } },
+    { id: "public", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["hospital"], true, false],
+      paint: { "fill-color": C.public, "fill-opacity": 0.65 } },
+    { id: "religious-edu", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["school", "college", "university", "kindergarten"], true, false],
+      paint: { "fill-color": C.religious, "fill-opacity": 0.55 } },
+    { id: "recreation", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["stadium", "pitch", "track", "playground", "theme_park", "zoo"], true, false],
+      paint: { "fill-color": C.recreation, "fill-opacity": 0.85 } },
+    { id: "cemetery", type: "fill", source: "openmaptiles", "source-layer": "landuse",
+      filter: ["match", ["get", "class"], ["cemetery"], true, false],
+      paint: { "fill-color": C.garden, "fill-opacity": 0.7 } },
+    { id: "greenery", type: "fill", source: "openmaptiles", "source-layer": "landcover",
+      filter: ["match", ["get", "class"], ["grass"], true, false],
+      paint: { "fill-color": C.greenery, "fill-opacity": 0.85 } },
+    { id: "wood", type: "fill", source: "openmaptiles", "source-layer": "landcover",
+      filter: ["match", ["get", "class"], ["wood"], true, false],
+      paint: { "fill-color": C.wood, "fill-opacity": 0.85 } },
+    { id: "wetland", type: "fill", source: "openmaptiles", "source-layer": "landcover",
+      filter: ["match", ["get", "class"], ["wetland"], true, false],
+      paint: { "fill-color": C.wetland, "fill-opacity": 0.8 } },
+    { id: "park", type: "fill", source: "openmaptiles", "source-layer": "park",
+      paint: { "fill-color": C.park, "fill-opacity": 0.75 } },
+    { id: "water", type: "fill", source: "openmaptiles", "source-layer": "water",
+      paint: { "fill-color": C.water } },
+    { id: "waterway", type: "line", source: "openmaptiles", "source-layer": "waterway",
+      paint: { "line-color": C.water, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 16, 3.5] } },
+    { id: "building", type: "fill", source: "openmaptiles", "source-layer": "building", minzoom: 13,
+      paint: { "fill-color": C.building, "fill-outline-color": C.buildingLine,
+               "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 15, 0.95] } },
+    { id: "road-casing", type: "line", source: "openmaptiles", "source-layer": "transportation",
+      filter: ["match", ["get", "class"], ["motorway", "trunk", "primary", "secondary"], true, false],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": C.roadCasing, "line-width": ["interpolate", ["exponential", 1.4], ["zoom"], 10, 2.4, 16, 14] } },
+    { id: "road-minor", type: "line", source: "openmaptiles", "source-layer": "transportation",
+      filter: ["match", ["get", "class"], ["tertiary", "minor", "service", "street", "residential"], true, false],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": C.road, "line-width": ["interpolate", ["exponential", 1.4], ["zoom"], 11, 0.6, 16, 5] } },
+    { id: "road-major", type: "line", source: "openmaptiles", "source-layer": "transportation",
+      filter: ["match", ["get", "class"], ["motorway", "trunk", "primary", "secondary"], true, false],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": C.road, "line-width": ["interpolate", ["exponential", 1.4], ["zoom"], 10, 1.6, 16, 11] } },
+    { id: "rail", type: "line", source: "openmaptiles", "source-layer": "transportation",
+      filter: ["match", ["get", "class"], ["rail", "transit"], true, false],
+      paint: { "line-color": C.rail, "line-dasharray": [3, 2], "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.8, 16, 2.2] } },
+    { id: "boundary", type: "line", source: "openmaptiles", "source-layer": "boundary",
+      filter: ["<=", ["get", "admin_level"], 6],
+      paint: { "line-color": "#CBB6BE", "line-dasharray": [4, 3], "line-width": 1 } },
+    { id: "place-label", type: "symbol", source: "openmaptiles", "source-layer": "place",
+      filter: ["match", ["get", "class"], ["city", "town", "suburb"], true, false],
+      layout: {
+        "text-field": ["coalesce", ["get", "name:zh"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 11, 14, 14],
+      },
+      paint: { "text-color": C.label, "text-halo-color": "#FFFFFF", "text-halo-width": 1.4 } },
+  ],
+}
+
+// ─── 标记 DOM 元素（MapLibre 用 HTMLElement 作为 marker） ───
+function createMarkerEl(
   type: string,
   highlight = false,
   selected = false,
   colorOverride?: string,
   dimmed = false,
-) {
+): HTMLElement {
   const color = colorOverride ?? MARKER_COLORS[type] ?? "#6366f1"
-  const emoji = MARKER_ICONS[type] ?? "📍"
+  const Icon = MARKER_ICONS[type] ?? MapPin
   const size = highlight || selected ? 36 : 28
   const ring = selected ? `border: 3px solid white; box-shadow: 0 0 0 2px ${color}, 0 4px 12px ${color}88;` : ""
-  return L.divIcon({
-    className: "custom-marker",
-    html: `<div style="
-      width:${size}px; height:${size}px;
-      display:flex; align-items:center; justify-content:center;
-      background:${color}; border-radius:50%;
-      color:white; font-size:${size * 0.5}px;
-      box-shadow: 0 2px 8px ${color}66;
-      opacity:${dimmed ? 0.4 : 1};
-      ${ring}
-      ${highlight && !selected ? "animation: pulse 1.5s infinite;" : ""}
-      transition: all 0.2s ease;
-    ">${emoji}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  })
+  const el = document.createElement("div")
+  el.style.cssText = `
+    width:${size}px; height:${size}px;
+    display:flex; align-items:center; justify-content:center;
+    background:${color}; border-radius:50%;
+    color:white;
+    box-shadow: 0 2px 8px ${color}66;
+    opacity:${dimmed ? 0.4 : 1};
+    cursor:pointer;
+    ${ring}
+    ${highlight && !selected ? "animation: pulse 1.5s infinite;" : ""}
+    transition: all 0.2s ease;
+  `
+  el.innerHTML = renderToStaticMarkup(<Icon size={size * 0.55} weight="fill" color="white" />)
+  return el
 }
 
 // ═══════════════════════════════════════════════
@@ -171,13 +276,15 @@ function PoiPanel({
       animate={{ width: 280, opacity: 1 }}
       exit={{ width: 0, opacity: 0 }}
       transition={{ type: "spring", damping: 28, stiffness: 340 }}
-      className="shrink-0 overflow-hidden border-l border-gray-100"
+      className="shrink-0 overflow-hidden"
+      style={{ borderLeft: "1px solid var(--ink-line)", background: POI_PAPER[marker.type] ?? POI_PAPER.spot, fontFamily: "var(--font-cn)", color: "var(--ink)" }}
     >
       <div className="w-[280px] h-full overflow-y-auto">
         {/* 关闭按钮 */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/80 hover:bg-red-400 hover:text-white text-gray-400 text-xs flex items-center justify-center shadow-sm transition-colors"
+          className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
+          style={{ background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
         >
           ✕
         </button>
@@ -197,14 +304,20 @@ function PoiPanel({
             />
           ) : (
             <div
-              className="w-full h-full flex items-center justify-center text-3xl"
-              style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot }}
+              className="w-full h-full flex items-center justify-center"
+              style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
             >
-              {marker.type === "spot" ? "🏛" : marker.type === "restaurant" ? "🍽" : "🏨"}
+              {marker.type === "spot" ? <Bank size={32} weight="duotone" /> : marker.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />}
             </div>
           )}
-          <span className="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-medium bg-white/90 backdrop-blur-sm rounded-full text-gray-600 shadow-sm">
-            {TYPE_LABELS[marker.type] ?? TYPE_LABELS.spot}
+          <span
+            className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 font-medium rounded-full"
+            style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.9)", color: "var(--ink-soft)", boxShadow: "var(--z1)" }}
+          >
+            {(() => {
+              const { Icon, label } = TYPE_META[marker.type] ?? TYPE_META.spot
+              return <><Icon size={13} weight="fill" /> {label}</>
+            })()}
           </span>
         </div>
 
@@ -213,32 +326,39 @@ function PoiPanel({
           {/* 名称 + 评分 */}
           <div className="flex items-start justify-between mb-1">
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 leading-snug">{marker.name}</h4>
+              <h4 className="font-semibold leading-snug" style={{ fontSize: "var(--fs-body)", color: "var(--ink)" }}>{marker.name}</h4>
               {marker.stars != null && (
-                <div className="text-amber-400 text-[11px] mt-0.5 tracking-wide">
+                <div className="mt-0.5 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
                   {"★".repeat(marker.stars)}
-                  <span className="text-gray-300">{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
+                  <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
                 </div>
               )}
             </div>
             {marker.rating != null && (
-              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 rounded shrink-0 ml-2">
-                <span className="text-amber-500 text-[10px]">★</span>
-                <span className="text-[10px] font-medium text-amber-700">{marker.rating}</span>
+              <div
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 ml-2"
+                style={{ background: "rgba(255,255,255,0.5)", border: "1px solid var(--ink-line)" }}
+              >
+                <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★</span>
+                <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>{marker.rating}</span>
               </div>
             )}
           </div>
 
           {/* 简介 */}
           {marker.desc && (
-            <p className="text-xs text-gray-500 leading-relaxed mb-2">{marker.desc}</p>
+            <p className="leading-relaxed mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{marker.desc}</p>
           )}
 
           {/* 标签 */}
           {marker.tags && marker.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
               {marker.tags.map((tag) => (
-                <span key={tag} className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-500">
+                <span
+                  key={tag}
+                  className="px-1.5 py-0.5 rounded-full"
+                  style={{ fontSize: "var(--fs-caption)", background: "rgba(255,255,255,0.45)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)" }}
+                >
                   {tag}
                 </span>
               ))}
@@ -247,10 +367,10 @@ function PoiPanel({
 
           {/* 价格 + 距离 */}
           {deep && (deep.priceRange || deep.distance) && (
-            <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
-              {deep.priceRange && <span className="font-medium text-gray-700">{deep.priceRange}</span>}
-              {deep.priceRange && deep.distance && <span className="text-gray-300">|</span>}
-              {deep.distance && <span>📍 {deep.distance}</span>}
+            <div className="flex items-center gap-2 mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+              {deep.priceRange && <span className="font-medium" style={{ color: "var(--ink)" }}>{deep.priceRange}</span>}
+              {deep.priceRange && deep.distance && <span style={{ color: "var(--ink-line)" }}>|</span>}
+              {deep.distance && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {deep.distance}</span>}
             </div>
           )}
 
@@ -258,9 +378,9 @@ function PoiPanel({
           {hasNearby && (
             <div className="mb-2 space-y-1">
               {deep!.nearby!.map((n) => (
-                <div key={n.label} className="flex items-center justify-between text-[10px]">
-                  <span className="text-gray-400">{n.label}</span>
-                  <span className="text-gray-700 font-medium">{n.value}</span>
+                <div key={n.label} className="flex items-center justify-between" style={{ fontSize: "var(--fs-caption)" }}>
+                  <span style={{ color: "var(--ink-soft)" }}>{n.label}</span>
+                  <span className="font-medium" style={{ color: "var(--ink)" }}>{n.value}</span>
                 </div>
               ))}
             </div>
@@ -268,14 +388,14 @@ function PoiPanel({
 
           {/* 距离导向内容 - 交通 / 景色 */}
           {deep?.access && (
-            <div className="flex items-start gap-1.5 mb-1.5 text-[10px] text-gray-500">
-              <span className="shrink-0">🚇</span>
+            <div className="flex items-start gap-1.5 mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+              <Train className="shrink-0 mt-0.5" size={14} />
               <span className="leading-relaxed">{deep.access}</span>
             </div>
           )}
           {deep?.view && (
-            <div className="flex items-start gap-1.5 mb-2 text-[10px] text-gray-500">
-              <span className="shrink-0">🌆</span>
+            <div className="flex items-start gap-1.5 mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+              <City className="shrink-0 mt-0.5" size={14} />
               <span className="leading-relaxed">{deep.view}</span>
             </div>
           )}
@@ -295,7 +415,8 @@ function PoiPanel({
                     {deep!.images!.map((src, i) => (
                       <div
                         key={i}
-                        className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100"
+                        className="aspect-[4/3] overflow-hidden"
+                        style={{ borderRadius: "var(--r-paper)", background: "var(--paper-oat)" }}
                       >
                         <img
                           src={src}
@@ -325,16 +446,16 @@ function PoiPanel({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="pt-2 border-t border-gray-100 mb-2">
-                  <p className="text-[10px] font-medium text-gray-600 mb-1.5">用户评价</p>
+                <div className="pt-2 mb-2" style={{ borderTop: "1px solid var(--ink-line)" }}>
+                  <p className="font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
                   <div className="space-y-1.5">
                     {deep!.reviews!.map((r) => (
-                      <div key={r.user} className="p-1.5 bg-gray-50 rounded-lg">
+                      <div key={r.user} className="p-1.5 rounded" style={{ background: "rgba(255,255,255,0.45)" }}>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-medium text-gray-700">@{r.user}</span>
-                          <span className="text-[10px] text-amber-500">{"★".repeat(r.score)}</span>
+                          <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
+                          <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>{"★".repeat(r.score)}</span>
                         </div>
-                        <p className="text-[10px] text-gray-500">{r.text}</p>
+                        <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{r.text}</p>
                       </div>
                     ))}
                   </div>
@@ -353,26 +474,27 @@ function PoiPanel({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-[10px] font-medium text-gray-600 mb-1.5">🎯 玩法推荐 · 选一个加入行程</p>
+                <div className="pt-2" style={{ borderTop: "1px solid var(--ink-line)" }}>
+                  <p className="flex items-center gap-1 font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                   <div className="space-y-1.5">
                     {deep!.activities!.map((act) => (
                       <button
                         key={act.id}
                         onClick={() => onActivityClick(act.id)}
-                        className="w-full text-left p-2 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all group"
+                        className="w-full text-left p-2 transition-all hover:brightness-105"
+                        style={{ borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", background: "rgba(255,255,255,0.4)" }}
                       >
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-xs font-medium text-gray-800 group-hover:text-indigo-700">
+                          <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
                             {act.title}
                           </span>
-                          <span className="px-1 py-0.5 text-[9px] rounded-full bg-indigo-50 text-indigo-600">
+                          <span className="px-1 py-0.5 rounded-full" style={{ fontSize: "9px", background: "var(--paper-oat)", color: "var(--ink-soft)" }}>
                             {act.tag}
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-500 mb-1">{act.desc}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                          <span>⏱ {act.duration}</span>
+                        <p className="mb-1" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{act.desc}</p>
+                        <div className="flex items-center gap-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+                          <span className="inline-flex items-center gap-1"><Timer size={13} /> {act.duration}</span>
                           <span>{act.price === 0 ? "免费" : `¥${act.price}`}</span>
                         </div>
                       </button>
@@ -387,25 +509,27 @@ function PoiPanel({
           {deep && deep.activities && deep.activities.length > 0 && !explored && (
             <button
               onClick={onExplore}
-              className="w-full mt-2 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1"
+              className="w-full mt-2 py-1.5 font-medium transition-colors flex items-center justify-center gap-1 hover:brightness-105"
+              style={{ fontSize: "var(--fs-data)", color: "var(--paper-cream)", background: "var(--stamp-red)", borderRadius: "var(--r-paper)" }}
             >
               探索玩法
-              <span className="text-[10px]">→</span>
+              <span style={{ fontSize: "var(--fs-caption)" }}>→</span>
             </button>
           )}
 
-          {/* 引导词：底部追问建议，点击直接发问 */}
+          {/* 引导词：底部追问建议（蓝墨=可交互追问） */}
           {hasSuggestions && (
-            <div className="mt-3 pt-2.5 border-t border-gray-100">
-              <p className="text-[10px] text-gray-400 mb-1.5">你可能还想问</p>
+            <div className="mt-3 pt-2.5" style={{ borderTop: "1px solid var(--ink-line)" }}>
+              <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>你可能还想问</p>
               <div className="flex flex-wrap gap-1.5">
                 {deep!.suggestions!.map((s) => (
                   <button
                     key={s}
                     onClick={() => onSuggest(s)}
-                    className="px-2.5 py-1 text-[10px] rounded-full border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
+                    style={{ fontSize: "var(--fs-caption)", border: "1px solid var(--ink-blue)", color: "var(--ink-blue)", background: "rgba(255,255,255,0.4)" }}
                   >
-                    💡 {s}
+                    <Lightbulb size={13} weight="fill" /> {s}
                   </button>
                 ))}
               </div>
@@ -422,11 +546,14 @@ function PoiPanel({
 // ═══════════════════════════════════════════════
 export default function MapView({ data, onInteract }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<L.Map | null>(null)
-  const markersLayer = useRef<L.LayerGroup | null>(null)
-  const routeLayers = useRef<L.Polyline[]>([])
+  const mapInstance = useRef<maplibregl.Map | null>(null)
+  const mapReady = useRef(false)
+  const markerObjs = useRef<maplibregl.Marker[]>([])
+  const routeSourceIds = useRef<string[]>([])
+  const prevMarkerIds = useRef<Set<string> | null>(null)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
   const [exploredMarkerIds, setExploredMarkerIds] = useState<Set<string>>(new Set())
+  const [styleVersion, setStyleVersion] = useState(0)
 
   const allMarkers = [...(data.markers ?? []), ...(data.extraMarkers ?? [])]
   const selectedMarker = selectedMarkerId ? allMarkers.find((m) => m.id === selectedMarkerId) : null
@@ -447,68 +574,75 @@ export default function MapView({ data, onInteract }: Props) {
   // 初始化地图
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return
-    const map = L.map(mapRef.current, {
-      center: data.center,
+    const map = new maplibregl.Map({
+      container: mapRef.current,
+      style: MAP_STYLE,
+      center: [data.center[1], data.center[0]], // scenario 用 [lat,lng]，MapLibre 用 [lng,lat]
       zoom: data.zoom,
-      zoomControl: false,
+      minZoom: 9,
+      maxZoom: 17.5,
+      attributionControl: false,
     })
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: "",
-      maxZoom: 19,
-      subdomains: "abcd",
-    }).addTo(map)
-    L.control.zoom({ position: "bottomright" }).addTo(map)
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right")
     mapInstance.current = map
-    markersLayer.current = L.layerGroup().addTo(map)
+    ;(window as unknown as { __map?: unknown }).__map = map
 
-    map.on("moveend", () => map.invalidateSize())
-    map.on("zoomend", () => map.invalidateSize())
-    setTimeout(() => map.invalidateSize(), 300)
+    map.on("load", () => {
+      mapReady.current = true
+      map.resize()
+      setStyleVersion((v) => v + 1) // 触发标记/路线渲染
+    })
 
-    const observer = new ResizeObserver(() => map.invalidateSize())
+    map.on("error", (e) => {
+      console.warn("[MapView] maplibre error:", e && e.error)
+    })
+
+    const observer = new ResizeObserver(() => map.resize())
     observer.observe(mapRef.current)
 
     return () => {
       observer.disconnect()
       map.remove()
       mapInstance.current = null
+      mapReady.current = false
     }
   }, [])
 
   // 更新标记和路线
   useEffect(() => {
     const map = mapInstance.current
-    const layer = markersLayer.current
-    if (!map || !layer) return
+    if (!map || !mapReady.current) return
 
-    layer.clearLayers()
-    for (const rl of routeLayers.current) rl.remove()
-    routeLayers.current = []
+    // 清除旧标记
+    for (const mk of markerObjs.current) mk.remove()
+    markerObjs.current = []
+    // 清除旧路线图层与数据源
+    for (const id of routeSourceIds.current) {
+      if (map.getLayer(id)) map.removeLayer(id)
+      if (map.getSource(id)) map.removeSource(id)
+    }
+    routeSourceIds.current = []
 
     // 是否有分天信息（任一 spot 带 day 字段才启用双色联动）
     const hasDays = (data.markers ?? []).some((m) => m.type === "spot" && m.day)
     const activeDay = data.activeDay
 
-    allMarkers.forEach((m) => {
-      const isHighlight = data.highlightSpot === m.id
-      const isSelected = selectedMarkerId === m.id
-      // 景点按天着色；非当前天置灰。非景点（餐厅/酒店）保持原色
-      let colorOverride: string | undefined
-      let dimmed = false
-      if (hasDays && m.type === "spot") {
-        colorOverride = dayColor(m.day)
-        dimmed = activeDay != null && m.day != null && m.day !== activeDay && !isSelected
-      }
-      const icon = createIcon(m.type, isHighlight, isSelected, colorOverride, dimmed)
-      const marker = L.marker([m.lat, m.lng], { icon })
-        .addTo(layer)
-        .bindTooltip(m.name, { direction: "top", offset: [0, -16] })
-
-      marker.on("click", () => handleMarkerClick(m.id))
-    })
-
     // 画路线：按天分组，每天一条线；当前天用本天颜色高亮，其它天置灰
+    // 先加路线（在标记 DOM 之下），再加标记
     const spotMarkers = (data.markers ?? []).filter((m) => m.type === "spot")
+    const addRoute = (id: string, coords: [number, number][], color: string, width: number, opacity: number) => {
+      map.addSource(id, {
+        type: "geojson",
+        data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } },
+      })
+      map.addLayer({
+        id, type: "line", source: id,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": color, "line-width": width, "line-opacity": opacity, "line-dasharray": [2, 2] },
+      })
+      routeSourceIds.current.push(id)
+    }
+
     if (hasDays) {
       const byDay = new Map<string, Marker[]>()
       for (const m of spotMarkers) {
@@ -525,48 +659,88 @@ export default function MapView({ data, onInteract }: Props) {
       for (const [d, spots] of entries) {
         if (spots.length < 2) continue
         const isActive = activeDay == null || d === activeDay
-        const latlngs = spots.map((m) => [m.lat, m.lng] as [number, number])
-        routeLayers.current.push(
-          L.polyline(latlngs, {
-            color: isActive ? dayColor(d) : DIM_COLOR,
-            weight: isActive ? 3.5 : 2.5,
-            opacity: isActive ? 0.75 : 0.35,
-            dashArray: "8 8",
-          }).addTo(map)
+        const coords = spots.map((m) => [m.lng, m.lat] as [number, number])
+        addRoute(
+          `route-${d}`, coords,
+          isActive ? dayColor(d) : DIM_COLOR,
+          isActive ? 3.5 : 2.5,
+          isActive ? 0.75 : 0.35,
         )
       }
     } else if (spotMarkers.length > 1) {
-      const latlngs = spotMarkers.map((m) => [m.lat, m.lng] as [number, number])
-      routeLayers.current.push(
-        L.polyline(latlngs, {
-          color: data.routeColor ?? "#6366f1",
-          weight: 3,
-          opacity: 0.6,
-          dashArray: "8 8",
-        }).addTo(map)
-      )
+      const coords = spotMarkers.map((m) => [m.lng, m.lat] as [number, number])
+      addRoute("route-all", coords, data.routeColor ?? "#6366f1", 3, 0.6)
     }
 
-    setTimeout(() => map.invalidateSize(), 100)
-  }, [data, selectedMarkerId, handleMarkerClick])
+    // 标记
+    allMarkers.forEach((m) => {
+      const isHighlight = data.highlightSpot === m.id
+      const isSelected = selectedMarkerId === m.id
+      // 景点按天着色；非当前天置灰。非景点（餐厅/酒店）保持原色
+      let colorOverride: string | undefined
+      let dimmed = false
+      if (hasDays && m.type === "spot") {
+        colorOverride = dayColor(m.day)
+        dimmed = activeDay != null && m.day != null && m.day !== activeDay && !isSelected
+      }
+      const el = createMarkerEl(m.type, isHighlight, isSelected, colorOverride, dimmed)
+      el.title = m.name
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation()
+        handleMarkerClick(m.id)
+      })
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([m.lng, m.lat])
+        .addTo(map)
+      markerObjs.current.push(marker)
+    })
+
+    // 有新地点出现时，平移/缩放地图让所有地点（含新出现的）都进入视野
+    const currentIds = new Set(allMarkers.map((m) => m.id))
+    const prev = prevMarkerIds.current
+    const hasNew = prev == null || [...currentIds].some((id) => !prev.has(id))
+    prevMarkerIds.current = currentIds
+
+    if (hasNew && allMarkers.length > 0) {
+      if (allMarkers.length === 1) {
+        map.easeTo({ center: [allMarkers[0].lng, allMarkers[0].lat], zoom: Math.max(map.getZoom(), 14), duration: 600 })
+      } else {
+        const bounds = new maplibregl.LngLatBounds()
+        for (const m of allMarkers) bounds.extend([m.lng, m.lat])
+        map.fitBounds(bounds, { padding: 40, maxZoom: 15, duration: 600 })
+      }
+    }
+  }, [data, selectedMarkerId, handleMarkerClick, styleVersion])
 
   const stopDragPropagation = (e: React.DragEvent) => {
     e.stopPropagation()
     e.preventDefault()
   }
 
+  // 阻止地图内的鼠标/指针按下冒泡到工作台，避免拖地图时画布也被平移
+  const stopPointerPropagation = (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation()
+  }
+
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 shrink-0 flex overflow-hidden relative"
-      style={{ isolation: "isolate" }}
+      className="shrink-0 flex overflow-hidden relative"
+      style={{
+        isolation: "isolate",
+        background: "var(--paper-map)",
+        border: "1px solid var(--ink-line)",
+        borderRadius: "var(--r-sticker)",
+        boxShadow: "var(--z1)",
+        fontFamily: "var(--font-cn)",
+      }}
       onDragStart={stopDragPropagation}
       draggable={false}
     >
       {/* 地图区域 */}
       <div className="w-96 shrink-0 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-medium text-gray-700">📍 路线地图</h3>
-          <div className="flex gap-3 text-xs text-gray-400">
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
+          <h3 className="flex items-center gap-1 font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
+          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {
                 const active = data.activeDay == null || data.activeDay === d
@@ -579,9 +753,9 @@ export default function MapView({ data, onInteract }: Props) {
               })
             ) : (
               <>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500" /> 景点</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> 餐厅</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> 酒店</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: MARKER_COLORS.spot }} /> 景点</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: MARKER_COLORS.restaurant }} /> 餐厅</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: MARKER_COLORS.hotel }} /> 酒店</span>
               </>
             )}
           </div>
@@ -590,6 +764,8 @@ export default function MapView({ data, onInteract }: Props) {
           ref={mapRef}
           className="flex-1 min-h-[320px]"
           onDragStart={stopDragPropagation}
+          onMouseDown={stopPointerPropagation}
+          onPointerDown={stopPointerPropagation}
           draggable={false}
         />
       </div>

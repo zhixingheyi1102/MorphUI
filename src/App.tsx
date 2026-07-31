@@ -6,7 +6,7 @@ import Workspace from "./workspace/Workspace"
 
 export default function App() {
   const {
-    chatMessages, components, isTyping, suggestions,
+    chatMessages, components, isTyping, isThinking, suggestions, quotedSpot, clearQuote,
     sendMessage, handleComponentInteract, closeComponent, organizeWorkspace, handleHintClick,
   } = useChat(scenario)
 
@@ -26,7 +26,10 @@ export default function App() {
         <ChatPanel
           messages={chatMessages}
           isTyping={isTyping}
+          isThinking={isThinking}
           suggestions={suggestions}
+          quotedSpot={quotedSpot}
+          onClearQuote={clearQuote}
           onSend={handleSend}
           onHintClick={handleHintClick}
         />

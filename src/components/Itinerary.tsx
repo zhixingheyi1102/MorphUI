@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Train, PersonSimpleWalk, Target } from "@phosphor-icons/react"
 
 type Transport = {
   method: string
@@ -65,7 +66,7 @@ export default function Itinerary({ data }: Props) {
               <div className="flex items-center gap-3 py-2 pl-5">
                 <div className="w-px h-8 bg-gray-200 ml-1" />
                 <span className="text-xs text-gray-400 flex items-center gap-1">
-                  {spot.transport.method === "地铁" ? "🚇" : "🚶"}
+                  {spot.transport.method === "地铁" ? <Train size={13} /> : <PersonSimpleWalk size={13} />}
                   {spot.transport.method} {spot.transport.duration}
                 </span>
               </div>
@@ -98,8 +99,8 @@ export default function Itinerary({ data }: Props) {
 
                 {/* 选中的玩法 */}
                 {data.selectedActivity?.spotId === spot.id && (
-                  <div className="mt-2 px-2 py-1 bg-indigo-100 rounded-lg text-xs text-indigo-700">
-                    🎯 {data.selectedActivity.activity}
+                  <div className="mt-2 px-2 py-1 bg-indigo-100 rounded-lg text-xs text-indigo-700 flex items-center gap-1">
+                    <Target size={13} weight="fill" /> {data.selectedActivity.activity}
                   </div>
                 )}
               </div>

@@ -29,7 +29,10 @@ export function useChat(scenario?: Step[]) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [components, setComponents] = useState<ComponentInstance[]>([])
   const [isTyping, setIsTyping] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
   const [scriptIndex, setScriptIndex] = useState(0)
+  // AI 模式下由 suggest_followups 工具产生的动态建议
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
   const historyRef = useRef<Array<{ role: string; content: string }>>([
     { role: "system", content: SYSTEM_PROMPT },
   ])
@@ -38,14 +41,20 @@ export function useChat(scenario?: Step[]) {
 
   // 当前剧本步骤的建议
   const currentStep = scenario?.[scriptIndex]
-  const suggestions: string[] = []
+  const scriptSuggestions: string[] = []
   if (currentStep?.trigger.type === "user_send") {
     if (currentStep.suggestions) {
-      suggestions.push(...currentStep.suggestions)
+      scriptSuggestions.push(...currentStep.suggestions)
     } else if (currentStep.userMessage) {
-      suggestions.push(currentStep.userMessage)
+      scriptSuggestions.push(currentStep.userMessage)
     }
   }
+  // 剧本建议优先（驱动 demo 流程）；剧本走完后用 AI 动态建议
+  const suggestions = scriptSuggestions.length > 0 ? scriptSuggestions : aiSuggestions
+
+  // 被引用到输入框的景点名（点方案里的景点卡触发）
+  const [quotedSpot, setQuotedSpot] = useState<string | null>(null)
+  const clearQuote = useCallback(() => setQuotedSpot(null), [])
 
   // 组件操作（create / update / remove）
   const applyActions = useCallback((actions: WorkspaceAction[]) => {
@@ -67,6 +76,30 @@ export function useChat(scenario?: Step[]) {
     })
   }, [])
 
+  // 从流式（可能不完整）的 tool call 参数里尽早抠出 component_id / component_type，
+  // 以便在完整数据到达前先放一个"生成中"占位卡
+  const placeholderIdsRef = useRef<Set<string>>(new Set())
+  const handleToolCallDelta = useCallback(
+    (tc: { name: string; arguments: string }) => {
+      if (tc.name !== "create_component") return
+      const idMatch = tc.arguments.match(/"component_id"\s*:\s*"([^"]+)"/)
+      const typeMatch = tc.arguments.match(/"component_type"\s*:\s*"([^"]+)"/)
+      if (!idMatch || !typeMatch) return
+      const componentId = idMatch[1]
+      if (placeholderIdsRef.current.has(componentId)) return
+      placeholderIdsRef.current.add(componentId)
+      applyActions([
+        {
+          action: "create",
+          componentId,
+          componentType: typeMatch[1],
+          data: { __generating: true },
+        },
+      ])
+    },
+    [applyActions]
+  )
+
   // 处理模型的 tool call
   const handleToolCall = useCallback((tc: { name: string; arguments: string }) => {
     try {
@@ -75,6 +108,8 @@ export function useChat(scenario?: Step[]) {
         applyActions([{ action: "create", componentId: args.component_id, componentType: args.component_type, data: args.data }])
       } else if (tc.name === "update_component") {
         applyActions([{ action: "update", componentId: args.component_id, data: args.data }])
+      } else if (tc.name === "suggest_followups") {
+        if (Array.isArray(args.suggestions)) setAiSuggestions(args.suggestions.slice(0, 3))
       }
     } catch (e) {
       console.error("Tool call parse error:", e, tc)
@@ -225,6 +260,8 @@ export function useChat(scenario?: Step[]) {
       const aiMsgId = nextId()
       setChatMessages((prev) => [...prev, { id: aiMsgId, role: "ai", text: "" }])
       setIsTyping(true)
+      setIsThinking(true) // 等首个 token 到达前显示思考态
+      placeholderIdsRef.current = new Set() // 本轮的"生成中"占位追踪
 
       let aiText = ""
       const collectedToolCalls: Array<{ name: string; arguments: string }> = []
@@ -232,6 +269,7 @@ export function useChat(scenario?: Step[]) {
       streamChat(
         history,
         (chunk) => {
+          setIsThinking(false) // 有文字了，退出思考态
           aiText += chunk
           // 流式显示时先原样展示，完成后再清理
           setChatMessages((prev) =>
@@ -239,11 +277,13 @@ export function useChat(scenario?: Step[]) {
           )
         },
         (tc) => {
+          setIsThinking(false)
           collectedToolCalls.push(tc)
           handleToolCall(tc)
         },
         () => {
           setIsTyping(false)
+          setIsThinking(false)
 
           // 检查文本里有没有内联的 tool call（GPT-5.5 的 multi_tool_use 格式）
           const { cleanText, toolCalls: inlineToolCalls } = parseInlineToolCalls(aiText)
@@ -266,6 +306,10 @@ export function useChat(scenario?: Step[]) {
               prev.map((m) => (m.id === aiMsgId ? { ...m, text: aiText } : m))
             )
           }
+
+          // 清理没有拿到完整数据的"生成中"占位（如工具调用 JSON 解析失败）
+          setComponents((prev) => prev.filter((c) => !(c.data as CompData)?.__generating))
+          placeholderIdsRef.current = new Set()
 
           // 把 assistant 回复完整记录到历史
           const assistantEntry: Record<string, unknown> = {
@@ -293,10 +337,11 @@ export function useChat(scenario?: Step[]) {
               tool_call_id: toolCallEntries[i]?.id,
             })
           })
-        }
+        },
+        handleToolCallDelta,
       )
     },
-    [handleToolCall]
+    [handleToolCall, handleToolCallDelta]
   )
 
   // ─── 发送消息（点 sug → 走剧本；自己打字 → 走 AI）───
@@ -307,6 +352,7 @@ export function useChat(scenario?: Step[]) {
       if (scripted) {
         advanceScript({ type: "user_send" })
       } else {
+        setAiSuggestions([]) // 清掉上一轮的动态建议，等本轮 AI 重新给
         setChatMessages((prev) => [...prev, { id: nextId(), role: "user", text }])
         historyRef.current.push({ role: "user", content: text })
         callAI(historyRef.current)
@@ -319,6 +365,12 @@ export function useChat(scenario?: Step[]) {
   const handleComponentInteract = useCallback(
     (componentId: string, value?: string) => {
       if (isTyping) return
+
+      // 点方案里的景点卡 → 引用到输入框，不发消息
+      if (value && value.startsWith("quote:")) {
+        setQuotedSpot(value.slice(6))
+        return
+      }
 
       // POI 面板的引导词 → 当作用户发问，走正常发送流程
       if (value && value.startsWith("ask:")) {
@@ -432,7 +484,10 @@ export function useChat(scenario?: Step[]) {
     chatMessages,
     components,
     isTyping,
+    isThinking,
     suggestions,
+    quotedSpot,
+    clearQuote,
     sendMessage,
     handleComponentInteract,
     closeComponent,

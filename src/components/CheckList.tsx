@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react"
+import { ClipboardText, CloudSun, Lightbulb } from "@phosphor-icons/react"
 
 type TodoItem = {
   id: string
@@ -60,32 +61,45 @@ export default function CheckList({ data }: Props) {
   const doneCount = items.filter((i) => i.checked).length
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 w-80 shrink-0">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">📋 {data.title}</h3>
+    <div
+      className="p-5 w-80 shrink-0"
+      style={{
+        background: "var(--paper-manila)",
+        border: "1px solid var(--ink-line)",
+        borderRadius: "var(--r-sticker)",
+        boxShadow: "var(--z1)",
+        fontFamily: "var(--font-cn)",
+        color: "var(--ink)",
+      }}
+    >
+      <h3 className="flex items-center gap-1.5 font-medium mb-3" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><ClipboardText size={16} weight="fill" /> {data.title}</h3>
 
-      {/* 天气提示 */}
+      {/* 天气提示（蓝纸） */}
       {data.weather && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-xl text-xs">
+        <div
+          className="mb-4 p-3"
+          style={{ background: "var(--paper-blue)", borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}
+        >
           <div className="flex items-center justify-between mb-1">
-            <span className="font-medium text-blue-700">
-              🌤 {data.weather.city} · {data.weather.date}
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              <CloudSun size={15} weight="fill" /> {data.weather.city} · {data.weather.date}
             </span>
-            <span className="text-blue-600">{data.weather.temp}</span>
+            <span>{data.weather.temp}</span>
           </div>
-          <p className="text-blue-600">{data.weather.condition}</p>
-          <p className="text-blue-500 mt-1">💡 {data.weather.tips}</p>
+          <p>{data.weather.condition}</p>
+          <p className="mt-1 flex items-center gap-1.5"><Lightbulb size={14} weight="fill" /> {data.weather.tips}</p>
         </div>
       )}
 
       {/* 进度 */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.08)" }}>
           <div
-            className="h-full bg-indigo-400 rounded-full transition-all duration-300"
-            style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%` }}
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%`, background: "var(--ink)" }}
           />
         </div>
-        <span className="text-xs text-gray-400 shrink-0">
+        <span className="shrink-0" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)", fontFamily: "var(--font-en)" }}>
           {doneCount}/{items.length}
         </span>
       </div>
@@ -95,31 +109,36 @@ export default function CheckList({ data }: Props) {
         {items.map((item) => (
           <label
             key={item.id}
-            className="flex items-start gap-2.5 py-1 px-1 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors"
+            className="flex items-start gap-2.5 py-1 px-1 cursor-pointer group transition-colors hover:brightness-95"
+            style={{ borderRadius: "var(--r-paper)" }}
           >
             <div className="mt-0.5 shrink-0">
               <div
-                className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                  item.checked
-                    ? "bg-indigo-500 border-indigo-500"
-                    : "border-gray-300 group-hover:border-indigo-300"
-                }`}
+                className="w-4 h-4 flex items-center justify-center transition-all"
+                style={{
+                  borderRadius: "var(--r-paper)",
+                  border: `2px solid ${item.checked ? "var(--ink-blue)" : "var(--ink-line)"}`,
+                  background: item.checked ? "var(--ink-blue)" : "transparent",
+                }}
                 onClick={(e) => {
                   e.preventDefault()
                   toggleItem(item.id)
                 }}
               >
                 {item.checked && (
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg className="w-2.5 h-2.5" style={{ color: "var(--paper-cream)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </div>
             </div>
             <span
-              className={`text-sm leading-snug transition-all ${
-                item.checked ? "text-gray-400 line-through" : "text-gray-700"
-              }`}
+              className="leading-snug transition-all"
+              style={{
+                fontSize: "var(--fs-data)",
+                color: item.checked ? "var(--postmark)" : "var(--ink)",
+                textDecoration: item.checked ? "line-through" : "none",
+              }}
             >
               {item.text}
             </span>
@@ -135,12 +154,26 @@ export default function CheckList({ data }: Props) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="添加新项目…"
-          className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-gray-200 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-200 transition-colors"
+          className="flex-1 px-3 py-1.5 focus:outline-none transition-colors"
+          style={{
+            fontSize: "var(--fs-data)",
+            borderRadius: "var(--r-paper)",
+            border: "1px solid var(--ink-line)",
+            background: "rgba(255,255,255,0.4)",
+            color: "var(--ink)",
+          }}
         />
         <button
           onClick={addItem}
           disabled={!inputValue.trim()}
-          className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105"
+          style={{
+            fontSize: "var(--fs-data)",
+            borderRadius: "var(--r-paper)",
+            background: "var(--paper-kraft)",
+            border: "1px solid var(--ink)",
+            color: "var(--ink)",
+          }}
         >
           添加
         </button>

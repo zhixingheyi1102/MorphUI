@@ -88,43 +88,62 @@ export default function PlanNotebook({ data, onInteract }: Props) {
   const rings = Array.from({ length: 6 }, (_, i) => i)
 
   return (
-    <div className="relative w-[480px] shrink-0">
+    <div className="relative w-[480px] shrink-0" style={{ fontFamily: "var(--font-cn)" }}>
       {/* Day 标签页 — 笔记本分隔标签风格 */}
       <div className="flex ml-10 -mb-px relative z-10">
-        {dayKeys.map((key, i) => (
-          <button
-            key={key}
-            onClick={() => {
-              setActiveTab(key)
-              onInteract(`day:${key}`)
-            }}
-            className={`relative px-5 py-2 text-sm rounded-t-xl border border-b-0 transition-all ${
-              activeTab === key
-                ? "bg-[#fefcf7] text-gray-900 font-semibold border-gray-200 z-10"
-                : "bg-gray-50 text-gray-400 border-gray-100 hover:text-gray-600 -ml-1"
-            }`}
-            style={{
-              fontFamily: "'Georgia', serif",
-              letterSpacing: "0.02em",
-              transform: activeTab === key ? "none" : `rotate(${i % 2 === 0 ? -1 : 1}deg)`,
-            }}
-          >
-            {data.days[key].label}
-          </button>
-        ))}
+        {dayKeys.map((key, i) => {
+          const active = activeTab === key
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setActiveTab(key)
+                onInteract(`day:${key}`)
+              }}
+              className="relative px-5 py-2 transition-all"
+              style={{
+                fontSize: "var(--fs-data)",
+                fontFamily: "var(--font-display)",
+                letterSpacing: "0.02em",
+                borderTopLeftRadius: "var(--r-sticker)",
+                borderTopRightRadius: "var(--r-sticker)",
+                border: `1px solid ${active ? "var(--ink-line)" : "var(--ink-line)"}`,
+                borderBottom: "none",
+                background: active ? "var(--paper-cream)" : "var(--paper-manila)",
+                color: active ? "var(--ink)" : "var(--ink-soft)",
+                fontWeight: active ? 600 : 400,
+                zIndex: active ? 10 : 1,
+                marginLeft: active || i === 0 ? 0 : -4,
+                transform: active ? "none" : `rotate(${i % 2 === 0 ? -1 : 1}deg)`,
+              }}
+            >
+              {data.days[key].label}
+            </button>
+          )
+        })}
       </div>
 
       {/* 笔记本主体 */}
-      <div className="relative bg-[#fefcf7] rounded-2xl rounded-tl-none shadow-lg border border-gray-200 overflow-hidden">
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: "var(--paper-cream)",
+          border: "1px solid var(--ink-line)",
+          borderRadius: "var(--r-sticker)",
+          borderTopLeftRadius: 0,
+          boxShadow: "var(--z2)",
+        }}
+      >
         {/* 装订孔 */}
         <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col items-center justify-evenly pointer-events-none z-10">
           {/* 装订线 */}
-          <div className="absolute left-[14px] top-4 bottom-4 w-[2px] bg-[#d4cec2] rounded-full" />
-          {/* 装订环 */}
+          <div className="absolute left-[14px] top-4 bottom-4 w-[2px] rounded-full" style={{ background: "var(--ink-line)" }} />
+          {/* 装订环（金属银） */}
           {rings.map((i) => (
             <div
               key={i}
-              className="w-4 h-4 rounded-full border-2 border-[#b8ad9a] bg-[#fefcf7] relative z-10"
+              className="w-4 h-4 rounded-full relative z-10"
+              style={{ border: "2px solid var(--metal-silver)", background: "var(--paper-cream)" }}
             />
           ))}
         </div>
@@ -139,7 +158,7 @@ export default function PlanNotebook({ data, onInteract }: Props) {
               )}
 
               {/* 景点卡片 */}
-              <SpotCard spot={spot} isFirst={i === 0} />
+              <SpotCard spot={spot} isFirst={i === 0} onQuote={(name) => onInteract(`quote:${name}`)} />
             </div>
           ))}
         </div>

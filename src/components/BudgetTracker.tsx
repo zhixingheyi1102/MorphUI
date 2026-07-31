@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Wallet } from "@phosphor-icons/react"
 
 type BudgetItem = {
   label: string
@@ -36,17 +37,27 @@ export default function BudgetTracker({ data }: Props) {
   }, [spent])
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 w-64 shrink-0">
-      <h3 className="text-sm font-medium text-gray-700 mb-1">💰 预算概览</h3>
+    <div
+      className="p-5 w-64 shrink-0"
+      style={{
+        background: "var(--paper-receipt)",
+        border: "1px solid var(--ink-line)",
+        borderRadius: "var(--r-sticker)",
+        boxShadow: "var(--z1)",
+        fontFamily: "var(--font-cn)",
+        color: "var(--ink)",
+      }}
+    >
+      <h3 className="flex items-center gap-1.5 font-medium mb-1" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><Wallet size={16} weight="fill" /> 预算概览</h3>
 
       {/* 总额 */}
       <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-2xl font-bold text-gray-900">¥{animatedSpent.toLocaleString()}</span>
-        <span className="text-sm text-gray-400">/ ¥{data.total.toLocaleString()}</span>
+        <span className="font-bold" style={{ fontSize: "var(--fs-display)", color: "var(--ink)", fontFamily: "var(--font-en)" }}>¥{animatedSpent.toLocaleString()}</span>
+        <span style={{ fontSize: "var(--fs-data)", color: "var(--ink-soft)", fontFamily: "var(--font-en)" }}>/ ¥{data.total.toLocaleString()}</span>
       </div>
 
       {/* 进度条 */}
-      <div className="h-2 bg-gray-100 rounded-full mb-4 overflow-hidden flex">
+      <div className="h-2 rounded-full mb-4 overflow-hidden flex" style={{ background: "rgba(0,0,0,0.06)" }}>
         {data.items.map((item, i) => {
           const pct = (item.amount / data.total) * 100
           return (
@@ -65,15 +76,15 @@ export default function BudgetTracker({ data }: Props) {
       {/* 明细 */}
       <div className="space-y-2">
         {data.items.map((item, i) => (
-          <div key={item.label} className="flex items-center justify-between text-sm">
+          <div key={item.label} className="flex items-center justify-between" style={{ fontSize: "var(--fs-data)" }}>
             <div className="flex items-center gap-2">
               <span
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: COLORS[i % COLORS.length] }}
               />
-              <span className="text-gray-600">{item.label}</span>
+              <span style={{ color: "var(--ink-soft)" }}>{item.label}</span>
             </div>
-            <span className="text-gray-900 font-medium">¥{item.amount}</span>
+            <span className="font-medium" style={{ color: "var(--ink)", fontFamily: "var(--font-en)" }}>¥{item.amount}</span>
           </div>
         ))}
       </div>
