@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, useCallback, type CSSProperties } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { perfStyle, Postmark } from "./postcard"
 import { renderToStaticMarkup } from "react-dom/server"
 import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
 import * as maplibregl from "maplibre-gl"
@@ -232,33 +233,33 @@ type BuildingPoi = {
 
 const BUILDING_POIS: BuildingPoi[] = [
   // —— 聚合态（缩小看全城时）——真实 POI 质心
-  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5002, 31.2379], img: "/buildings/lujiazui-cluster.png", baseH: 200, minZoom: 0, maxZoom: LOD_SPLIT },
-  { id: "b-bund-rep", name: "外滩", lngLat: [121.4856, 31.2386], img: "/buildings/customs-house.png", baseH: 120, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5002, 31.2379], img: "/buildings/lujiazui-cluster.png", baseH: 110, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-bund-rep", name: "外滩", lngLat: [121.4856, 31.2386], img: "/buildings/customs-house.png", baseH: 90, minZoom: 0, maxZoom: LOD_SPLIT },
   // —— 单体态（放大看街区时）——坐标来自 OSM Nominatim 真实 POI
-  { id: "b-pearl", name: "东方明珠", lngLat: [121.49526, 31.24195], img: "/buildings/oriental-pearl.png", baseH: 92, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-shtower", name: "上海中心", lngLat: [121.50125, 31.23564], img: "/buildings/shanghai-tower.png", baseH: 100, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.50142, 31.23725], img: "/buildings/jinmao.png", baseH: 84, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-swfc", name: "环球金融中心", lngLat: [121.50304, 31.23658], img: "/buildings/swfc.png", baseH: 88, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-pearl", name: "东方明珠", lngLat: [121.49526, 31.24195], img: "/buildings/oriental-pearl.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shtower", name: "上海中心", lngLat: [121.50125, 31.23564], img: "/buildings/shanghai-tower.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.50142, 31.23725], img: "/buildings/jinmao.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-swfc", name: "环球金融中心", lngLat: [121.50304, 31.23658], img: "/buildings/swfc.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
   // —— 全城地标（彼此距离远，全 zoom 常显）——
   { id: "b-artmuseum", name: "中华艺术宫", lngLat: [121.48993, 31.18648], img: "/buildings/china-art-museum.png", baseH: 72, minZoom: 0, maxZoom: 99 },
-  { id: "b-wukang", name: "武康大楼", lngLat: [121.43373, 31.20626], img: "/buildings/wukang-mansion.png", baseH: 60, minZoom: 0, maxZoom: 99 },
-  { id: "b-jingan", name: "静安寺", lngLat: [121.44079, 31.22522], img: "/buildings/jingan-temple.png", baseH: 56, minZoom: 0, maxZoom: 99 },
-  { id: "b-longhua", name: "龙华塔", lngLat: [121.44735, 31.17562], img: "/buildings/longhua-pagoda.png", baseH: 66, minZoom: 0, maxZoom: 99 },
-  { id: "b-fangsheng", name: "朱家角放生桥", lngLat: [121.05145, 31.11358], img: "/buildings/fangsheng-bridge.png", baseH: 46, minZoom: 0, maxZoom: 99 },
-  { id: "b-disney", name: "迪士尼城堡", lngLat: [121.65532, 31.14575], img: "/buildings/disney-castle.png", baseH: 76, minZoom: 0, maxZoom: 99 },
-  { id: "b-astronomy", name: "上海天文馆", lngLat: [121.92259, 30.91513], img: "/buildings/astronomy-museum.png", baseH: 60, minZoom: 0, maxZoom: 99 },
-  { id: "b-yuyuan", name: "豫园九曲桥", lngLat: [121.48742, 31.22866], img: "/buildings/yuyuan-bridge.png", baseH: 50, minZoom: 0, maxZoom: 99 },
-  { id: "b-tianzifang", name: "田子坊", lngLat: [121.4641, 31.21034], img: "/buildings/tianzifang.png", baseH: 46, minZoom: 0, maxZoom: 99 },
+  { id: "b-wukang", name: "武康大楼", lngLat: [121.43373, 31.20626], img: "/buildings/wukang-mansion.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-jingan", name: "静安寺", lngLat: [121.44079, 31.22522], img: "/buildings/jingan-temple.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-longhua", name: "龙华塔", lngLat: [121.44735, 31.17562], img: "/buildings/longhua-pagoda.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-fangsheng", name: "朱家角放生桥", lngLat: [121.05145, 31.11358], img: "/buildings/fangsheng-bridge.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-disney", name: "迪士尼城堡", lngLat: [121.65532, 31.14575], img: "/buildings/disney-castle.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-astronomy", name: "上海天文馆", lngLat: [121.92259, 30.91513], img: "/buildings/astronomy-museum.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-yuyuan", name: "豫园九曲桥", lngLat: [121.48742, 31.22866], img: "/buildings/yuyuan-bridge.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-tianzifang", name: "田子坊", lngLat: [121.4641, 31.21034], img: "/buildings/tianzifang.png", baseH: 72, minZoom: 0, maxZoom: 99 },
   // —— 扎堆地标（离上面某个近，缩小时收起，z≥13 才出现防堆叠）——
-  { id: "b-chenghuang", name: "城隍庙", lngLat: [121.48819, 31.22788], img: "/buildings/chenghuang-temple.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-xintiandi", name: "新天地", lngLat: [121.47044, 31.22193], img: "/buildings/xintiandi.png", baseH: 46, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-shikumen", name: "石库门（张园）", lngLat: [121.45605, 31.23037], img: "/buildings/shikumen.png", baseH: 42, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-tram", name: "南京路当当车", lngLat: [121.4753, 31.23768], img: "/buildings/dangdang-tram.png", baseH: 38, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-postmuseum", name: "邮政博物馆", lngLat: [121.48075, 31.24641], img: "/buildings/post-museum.png", baseH: 64, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-chenghuang", name: "城隍庙", lngLat: [121.48819, 31.22788], img: "/buildings/chenghuang-temple.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-xintiandi", name: "新天地", lngLat: [121.47044, 31.22193], img: "/buildings/xintiandi.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shikumen", name: "石库门（张园）", lngLat: [121.45605, 31.23037], img: "/buildings/shikumen.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-tram", name: "南京路当当车", lngLat: [121.4753, 31.23768], img: "/buildings/dangdang-tram.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-postmuseum", name: "邮政博物馆", lngLat: [121.48075, 31.24641], img: "/buildings/post-museum.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
 // 建筑随 zoom 等比例缩放（每级 zoom 尺寸 ×2，zoom=14 为 baseH）；
@@ -333,41 +334,7 @@ function createMarkerEl(
 // ═══════════════════════════════════════════════
 //  明信片装饰件（纯 CSS/SVG）
 // ═══════════════════════════════════════════════
-
-// 邮票齿孔边框：四边打孔，孔色 = 所在纸面颜色（视觉上像撕下来的邮票）
-// r = 孔半径；padding 需 ≥ r*2 + 3 才不会切到内容
-function perfStyle(holeColor: string, r: number): CSSProperties {
-  const tile = r * 4 // 孔间距
-  const strip = r * 2 // 边缘条带厚度
-  const g = (cx: number, cy: number) =>
-    `radial-gradient(circle at ${cx}px ${cy}px, ${holeColor} ${r}px, transparent ${r + 0.5}px)`
-  return {
-    backgroundColor: "#FCFAF2",
-    backgroundImage: [g(tile / 2, 0), g(tile / 2, strip), g(0, tile / 2), g(strip, tile / 2)].join(", "),
-    backgroundSize: `${tile}px ${strip}px, ${tile}px ${strip}px, ${strip}px ${tile}px, ${strip}px ${tile}px`,
-    backgroundPosition: "0 0, 0 100%, 0 0, 100% 0",
-    backgroundRepeat: "repeat-x, repeat-x, repeat-y, repeat-y",
-  }
-}
-
-// 圆形邮戳 + 波浪取消线（墨色 = 复古海军蓝）
-function Postmark() {
-  const ink = "var(--ink-blue)"
-  return (
-    <svg width="98" height="56" viewBox="0 0 98 56" fill="none">
-      <g stroke={ink} opacity="0.5" fill="none">
-        <circle cx="70" cy="28" r="25" strokeWidth="1.4" />
-        <circle cx="70" cy="28" r="19" strokeWidth="0.9" />
-        <path d="M2 14 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-        <path d="M2 28 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-        <path d="M2 42 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-      </g>
-      <text x="70" y="25" textAnchor="middle" fontSize="6.5" letterSpacing="1.2" fill={ink} opacity="0.62" fontFamily="var(--font-en)">SHANGHAI</text>
-      <line x1="58" y1="29.5" x2="82" y2="29.5" stroke={ink} strokeWidth="0.6" opacity="0.5" />
-      <text x="70" y="38" textAnchor="middle" fontSize="6" letterSpacing="0.8" fill={ink} opacity="0.62" fontFamily="var(--font-en)">CITY WALK</text>
-    </svg>
-  )
-}
+// perfStyle / Postmark 已抽到 ./postcard 共享（POICard 同用）
 
 // ═══════════════════════════════════════════════
 //  POI 面板（内嵌在地图右侧）
@@ -821,12 +788,19 @@ export default function MapView({ data, onInteract }: Props) {
       const z = map.getZoom()
       for (const { poi, img } of buildingMarkers.current) {
         const visible = z >= poi.minZoom && z < poi.maxZoom
-        img.style.height = `${Math.round(buildingHeight(poi.baseH, z))}px`
+        // 统一视觉框：baseH 是目标框边长，按素材长边归一（宽图对齐宽、高图对齐高），
+        // 消除素材宽高比差异导致的"图标大小不一"
+        const box = buildingHeight(poi.baseH, z)
+        const { naturalWidth: nw, naturalHeight: nh } = img
+        const k = nw > 0 && nh > 0 ? nh / Math.max(nw, nh) : 1
+        img.style.height = `${Math.round(box * k)}px`
         img.style.width = "auto"
         img.style.opacity = visible ? "1" : "0"
         img.style.transform = visible ? "scale(1)" : "scale(0.82)"
       }
     }
+    // 素材首次加载完成后才拿得到 naturalWidth，加载完再归一一次
+    for (const { img } of buildingMarkers.current) img.onload = applyLod
     applyLod()
     map.on("zoom", applyLod)
     return () => { map.off("zoom", applyLod) }
