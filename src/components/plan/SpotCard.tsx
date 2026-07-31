@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { ChatCircle, MapPin, Target, Timer } from "@phosphor-icons/react"
+import { MapPin, MapTrifold, Target, Timer } from "@phosphor-icons/react"
 
 type Activity = {
   id: string
@@ -24,10 +24,11 @@ type SpotData = {
 type Props = {
   spot: SpotData
   isFirst: boolean
-  onQuote?: (spotName: string) => void
+  // 点整卡 → 打开二级 POST CARD 详情（地图卡飞到该点并抽出便签）
+  onOpenDetail?: (spotId: string) => void
 }
 
-export default function SpotCard({ spot, isFirst, onQuote }: Props) {
+export default function SpotCard({ spot, isFirst, onOpenDetail }: Props) {
   return (
     <div className="relative flex gap-4 group/spot" style={{ fontFamily: "var(--font-cn)" }}>
       {/* 时间轴圆点 */}
@@ -44,8 +45,8 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
 
       {/* 景点卡片 */}
       <div
-        onClick={onQuote ? () => onQuote(spot.name) : undefined}
-        className={`flex-1 min-w-0 p-4 mb-1 transition-shadow relative ${onQuote ? "cursor-pointer hover:brightness-[0.98]" : ""}`}
+        onClick={onOpenDetail ? () => onOpenDetail(spot.id) : undefined}
+        className={`flex-1 min-w-0 p-4 mb-1 transition-shadow relative ${onOpenDetail ? "cursor-pointer hover:brightness-[0.98]" : ""}`}
         style={{
           background: "var(--paper-cream)",
           border: "1px solid var(--ink-line)",
@@ -54,13 +55,13 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
           color: "var(--ink)",
         }}
       >
-        {/* 引用提示（hover 出现） */}
-        {onQuote && (
+        {/* 详情提示（hover 出现） */}
+        {onOpenDetail && (
           <span
             className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full opacity-0 group-hover/spot:opacity-100 transition-opacity pointer-events-none"
             style={{ fontSize: "10px", background: "var(--paper-blue)", color: "var(--ink-blue)", border: "1px solid var(--ink-blue)" }}
           >
-            <ChatCircle size={11} weight="fill" /> 追问
+            <MapTrifold size={11} weight="fill" /> 详情
           </span>
         )}
         <div className="flex gap-3">

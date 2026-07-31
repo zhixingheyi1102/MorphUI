@@ -645,6 +645,19 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
         return
       }
 
+      // 点方案里的 POI 条卡 → 打开二级 POST CARD：地图卡飞到该点并抽出详情便签。
+      // 纯 UI 联动，不走 AI；用时间戳保证重复点击同一景点也能重新触发。
+      if (value && value.startsWith("opendetail:")) {
+        const markerId = value.slice("opendetail:".length)
+        const mapComp = components.find((c) => c.id === "map")
+        if (mapComp) {
+          applyActions([
+            { action: "update", componentId: "map", data: { focusMarker: { id: markerId, ts: Date.now() } } },
+          ])
+        }
+        return
+      }
+
       // 打字期间的会话型交互缓存一枚，打字结束后自动执行，不再静默丢弃
       if (isTyping) {
         pendingInteractRef.current = { componentId, value }
