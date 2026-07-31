@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://maas.devops.xiaohongshu.com',
+        target: 'https://maas.devops.rednote.life',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

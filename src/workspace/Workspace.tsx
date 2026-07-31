@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from "react"
 import { useDrag } from "@use-gesture/react"
 import { motion, AnimatePresence, animate } from "framer-motion"
+import { NoteBlank, ImageSquare, LinkSimple } from "@phosphor-icons/react"
 import type { ComponentInstance } from "../engine/types"
 import registry, { COMPONENT_CATEGORIES } from "../components/registry"
 import PlanFolder from "./PlanFolder"
@@ -10,7 +11,6 @@ const MIN_SCALE = 0.3
 const MAX_SCALE = 1.5
 const SNAP_THRESHOLD = 6          // 对齐吸附阈值（画布像素）
 const COLLISION_GAP = 8           // 碰撞后组件之间的最小间距
-const AUTO_PLACE_GAP = 8          // 自动放置组件间距
 const AUTO_PLACE_ORIGIN = { x: 40, y: 40 }
 const BINDER_GRID_GAP = 24        // 整理模式右侧组件网格间距
 const TIDY_COL_GAP = 40           // 方案与右侧网格之间的间距
@@ -22,8 +22,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 // 组件生成中占位卡的类型标签
 const GENERATING_LABELS: Record<string, string> = {
   clarify_form: "偏好表单",
-  itinerary: "行程方案",
-  plan_notebook: "行程方案",
+  itinerary: "方案",
+  plan_notebook: "方案",
   map_view: "路线地图",
   budget_tracker: "预算概览",
   flight_list: "航班列表",
@@ -68,6 +68,8 @@ type Props = {
   onInteract: (componentId: string, value?: string) => void
   onClose: (componentId: string) => void
   onOrganize?: () => void
+  // 用户在画布上粘贴内容 → 生成对应组件（图片/链接/文本），返回新组件 id
+  onPaste?: (type: string, data: Record<string, unknown>) => string
 }
 
 // ─── 碰撞检测：两个矩形是否重叠（含间距） ───
@@ -83,6 +85,7 @@ function rectsOverlap(
     ay + ah + gap > by
   )
 }
+
 
 // ─── 碰撞解决：推开重叠的组件 ───
 // fixedIds 中的组件不会被推动；其余组件会被推到最近的不重叠位置
@@ -563,7 +566,7 @@ function CanvasCard({
 // ═══════════════════════════════════════════════════
 //  主组件：自由画布工作区
 // ═══════════════════════════════════════════════════
-export default function Workspace({ components, onInteract, onClose, onOrganize }: Props) {
+export default function Workspace({ components, onInteract, onClose, onOrganize, onPaste }: Props) {
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, scale: 1 })
   // 只存用户手动拖拽过的位置；未拖拽的组件位置在渲染时动态计算
   const [draggedPositions, setDraggedPositions] = useState<Map<string, Position>>(new Map())
@@ -575,6 +578,11 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   const [isPanning, setIsPanning] = useState(false)
   const [organized, setOrganized] = useState(false)
   const panStartRef = useRef<{ mx: number; my: number; camX: number; camY: number } | null>(null)
+  // 最近一次鼠标在视口内的屏幕坐标，用于把粘贴内容放到光标处
+  const pointerRef = useRef<{ x: number; y: number } | null>(null)
+  // 底部工具栏：链接输入弹窗的开合与内容
+  const [linkInput, setLinkInput] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   // 每个组件的横纵缩放比例（用户拖拽边缘缩放后写入）
   const [scales, setScales] = useState<Map<string, Scale>>(new Map())
   const resizeRef = useRef<ResizeInfo | null>(null)
@@ -666,21 +674,35 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     }
 
     // ── 自由模式 ──
+    // 自动放置永远是"追加到最右边一列"，不换行、不排成两行：
+    //   1) 先把用户手动挪过的组件登记为固定障碍（尊重你调整后的布局）；
+    //   2) 其余组件按创建顺序，依次摆到当前所有内容的右侧（同一行 y=originY）。
+    // 除非你自己拖动布局，否则新生成的组件只会一路往右接着放。
     const result = new Map<string, Position>()
-    let cursorX = AUTO_PLACE_ORIGIN.x
-    for (const comp of visibleComponents) {
-      const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
-      const dragged = draggedPositions.get(comp.id)
-      if (dragged) {
-        result.set(comp.id, dragged)
-      } else {
-        result.set(comp.id, { x: cursorX, y: AUTO_PLACE_ORIGIN.y })
-      }
-      cursorX += sz.w + AUTO_PLACE_GAP + 24
+    const currentIds = new Set(components.map((c) => c.id))
+    const occupied: Array<{ x: number; y: number; w: number; h: number }> = []
+
+    // 1) 手动位置先占位（作为障碍物），保证自动放置会绕开它们
+    for (const [id, pos] of draggedPositions) {
+      if (!currentIds.has(id)) continue
+      const sz = visualSizes.get(id) ?? { w: 384, h: 300 }
+      result.set(id, pos)
+      occupied.push({ x: pos.x, y: pos.y, w: sz.w, h: sz.h })
     }
-    const fixedIds = new Set(draggedPositions.keys())
-    return resolveCollisions(result, fixedIds, visualSizes)
-  }, [visibleComponents, draggedPositions, measureVersion, organized, scales])
+
+    // 2) 未手动摆放的组件按创建顺序追加到最右边（单行，不换行）
+    for (const comp of components) {
+      if (result.has(comp.id)) continue // 已由手动位置放置
+      const sz = visualSizes.get(comp.id) ?? { w: 384, h: 300 }
+      // x = 现有所有内容的最右缘 + 间距；y 固定在起始行
+      const rightEdge = occupied.reduce((max, r) => Math.max(max, r.x + r.w), AUTO_PLACE_ORIGIN.x - COLLISION_GAP)
+      const x = occupied.length === 0 ? AUTO_PLACE_ORIGIN.x : rightEdge + COLLISION_GAP
+      const slot = { x, y: AUTO_PLACE_ORIGIN.y }
+      result.set(comp.id, slot)
+      occupied.push({ x: slot.x, y: slot.y, w: sz.w, h: sz.h })
+    }
+    return result
+  }, [components, draggedPositions, measureVersion, organized, scales])
 
   // 拖拽提示：拖着可收纳组件时文件夹描边提示（ready），压上去时加亮（over）
   const dropHint = useMemo<"none" | "ready" | "over">(() => {
@@ -705,7 +727,9 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   }, [dragInfo, visibleComponents, positions, scales])
 
   // ─── 画布缩放 & 平移 ───
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  // 用原生 wheel 监听（passive: false）：React 的 onWheel 是 passive 的，
+  // 里面调 preventDefault 会报 "Unable to preventDefault inside passive event listener"。
+  const handleWheel = useCallback((e: WheelEvent) => {
     if (isDraggingRef.current) return
 
     if (e.ctrlKey || e.metaKey) {
@@ -733,6 +757,105 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     }
   }, [])
 
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    el.addEventListener("wheel", handleWheel, { passive: false })
+    return () => el.removeEventListener("wheel", handleWheel)
+  }, [handleWheel])
+
+  // ─── 屏幕坐标 → 画布坐标（考虑相机平移 & 缩放）───
+  const screenToCanvas = useCallback((sx: number, sy: number): Position => {
+    const rect = viewportRef.current?.getBoundingClientRect()
+    const vx = rect ? sx - rect.left : sx
+    const vy = rect ? sy - rect.top : sy
+    return {
+      x: (vx - camera.x) / camera.scale,
+      y: (vy - camera.y) / camera.scale,
+    }
+  }, [camera])
+
+  // ─── 生成组件并放到画布指定位置（不传坐标则放到视口中心）───
+  const spawnComponent = useCallback((type: string, data: Record<string, unknown>, at?: Position) => {
+    if (!onPaste) return
+    const rect = viewportRef.current?.getBoundingClientRect()
+    const target = at ?? screenToCanvas(
+      rect ? rect.left + rect.width / 2 : 0,
+      rect ? rect.top + rect.height / 2 : 0,
+    )
+    const id = onPaste(type, data)
+    setDraggedPositions((prev) => {
+      const next = new Map(prev)
+      next.set(id, target)
+      return next
+    })
+    if (organized) setOrganized(false) // 新增内容回到自由画布，尊重落点
+  }, [onPaste, screenToCanvas, organized])
+
+  // ─── 底部工具栏：从文件选择器加图片 ───
+  const handleFilePick = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = "" // 允许重复选同一文件
+    if (!file || !file.type.startsWith("image/")) return
+    const reader = new FileReader()
+    reader.onload = () => spawnComponent("image_card", { src: reader.result as string })
+    reader.readAsDataURL(file)
+  }, [spawnComponent])
+
+  // ─── 底部工具栏：提交链接 ───
+  const submitLink = useCallback(() => {
+    const url = (linkInput ?? "").trim()
+    setLinkInput(null)
+    if (!url) return
+    const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
+    spawnComponent("link_card", { url: normalized })
+  }, [linkInput, spawnComponent])
+
+  // ─── 画布粘贴：图片 / 链接 / 文本 → 对应组件 ───
+  const URL_RE = /^(https?:\/\/[^\s]+)$/i
+  useEffect(() => {
+    if (!onPaste) return
+    const el = viewportRef.current
+    if (!el) return
+
+    const handlePaste = (e: ClipboardEvent) => {
+      // 焦点在输入框/文本域里时不拦截（让原生粘贴生效）
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return
+
+      const cd = e.clipboardData
+      if (!cd) return
+
+      // 落点：光标处，否则视口中心
+      const rect = el.getBoundingClientRect()
+      const screen = pointerRef.current ?? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      const at = screenToCanvas(screen.x, screen.y)
+
+      // 1) 图片
+      const imgItem = Array.from(cd.items).find((it) => it.type.startsWith("image/"))
+      if (imgItem) {
+        const file = imgItem.getAsFile()
+        if (file) {
+          e.preventDefault()
+          const reader = new FileReader()
+          reader.onload = () => spawnComponent("image_card", { src: reader.result as string }, at)
+          reader.readAsDataURL(file)
+          return
+        }
+      }
+
+      // 2) 文本：URL → 链接卡，否则便签
+      const text = cd.getData("text/plain").trim()
+      if (text) {
+        e.preventDefault()
+        spawnComponent(URL_RE.test(text) ? "link_card" : "note_card", URL_RE.test(text) ? { url: text } : { text }, at)
+      }
+    }
+
+    document.addEventListener("paste", handlePaste)
+    return () => document.removeEventListener("paste", handlePaste)
+  }, [onPaste, screenToCanvas, spawnComponent])
+
   // ─── 鼠标拖拽平移画布（在空白处按下） ───
   const handlePanStart = useCallback((e: React.MouseEvent) => {
     // 只响应画布空白区域的左键；组件卡片会 stopPropagation
@@ -748,6 +871,7 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
   }, [camera.x, camera.y])
 
   const handlePanMove = useCallback((e: React.MouseEvent) => {
+    pointerRef.current = { x: e.clientX, y: e.clientY }
     const start = panStartRef.current
     if (!start) return
     setCamera((cam) => ({
@@ -1050,15 +1174,90 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
     if (organized && components.length === 0) setOrganized(false)
   }, [organized, components.length])
 
+  // ─── 底部工具栏：告诉用户能往画布里加什么 ───
+  const toolbarTools = [
+    { key: "note", label: "便签", Icon: NoteBlank, onClick: () => spawnComponent("note_card", { text: "" }) },
+    { key: "image", label: "图片", Icon: ImageSquare, onClick: () => fileInputRef.current?.click() },
+    { key: "link", label: "链接", Icon: LinkSimple, onClick: () => setLinkInput((v) => (v === null ? "" : v)) },
+  ]
+  const toolbar = (
+    <>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+        {/* 链接输入弹窗 */}
+        {linkInput !== null && (
+          <div
+            className="flex items-center gap-2 px-2 py-1.5"
+            style={{
+              background: "var(--paper-cream)",
+              border: "1px solid var(--ink-line)",
+              borderRadius: "var(--r-sticker)",
+              boxShadow: "var(--z2)",
+            }}
+          >
+            <input
+              autoFocus
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitLink()
+                if (e.key === "Escape") setLinkInput(null)
+              }}
+              placeholder="粘贴或输入链接…"
+              className="px-2 py-1 w-56 focus:outline-none"
+              style={{ fontSize: "var(--fs-data)", borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", background: "rgba(255,255,255,0.5)", color: "var(--ink)", fontFamily: "var(--font-cn)" }}
+            />
+            <button
+              onClick={submitLink}
+              className="px-3 py-1 transition-colors hover:brightness-105"
+              style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", background: "var(--paper-kraft)", border: "1px solid var(--ink)", color: "var(--ink)", fontFamily: "var(--font-cn)" }}
+            >
+              添加
+            </button>
+          </div>
+        )}
+        {/* 工具条 */}
+        <div
+          className="flex items-center gap-1 px-2 py-1.5"
+          style={{
+            background: "var(--paper-cream)",
+            border: "1px solid var(--ink-line)",
+            borderRadius: "var(--r-sticker)",
+            boxShadow: "var(--z2)",
+          }}
+        >
+          {toolbarTools.map((t) => (
+            <button
+              key={t.key}
+              onClick={t.onClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:brightness-95"
+              style={{ color: "var(--ink-soft)", background: "transparent", fontFamily: "var(--font-cn)", fontSize: "var(--fs-caption)" }}
+              title={`添加${t.label}`}
+            >
+              <t.Icon size={18} weight="regular" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+
   // ─── 空态 ───
   if (components.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center desk-bg" style={{ fontFamily: "var(--font-cn)" }}>
+      <div
+        ref={viewportRef}
+        className="flex-1 relative flex items-center justify-center desk-bg"
+        style={{ fontFamily: "var(--font-cn)" }}
+        onMouseMove={(e) => { pointerRef.current = { x: e.clientX, y: e.clientY } }}
+      >
         <div className="text-center" style={{ color: "var(--paper-sage)" }}>
           <div className="text-5xl mb-4 opacity-60">✦</div>
-          <p className="text-lg font-light">在左侧对话中开始你的规划</p>
-          <p className="text-sm mt-1 opacity-70">组件将在这里动态生成</p>
+          <p className="text-lg font-light">这里是你的工作台</p>
+          <p className="text-sm mt-1 opacity-70">在左侧说出需求，方案与组件将在这里生成；也可以直接把图片、链接、文字粘贴到这里</p>
         </div>
+        {toolbar}
       </div>
     )
   }
@@ -1068,7 +1267,6 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
       ref={viewportRef}
       className="flex-1 relative overflow-hidden desk-bg select-none"
       style={{ cursor: isPanning ? "grabbing" : "grab" }}
-      onWheel={handleWheel}
       onMouseDown={handlePanStart}
       onMouseMove={handlePanMove}
       onMouseUp={handlePanEnd}
@@ -1211,6 +1409,8 @@ export default function Workspace({ components, onInteract, onClose, onOrganize 
           退出整理
         </button>
       )}
+
+      {toolbar}
     </div>
   )
 }

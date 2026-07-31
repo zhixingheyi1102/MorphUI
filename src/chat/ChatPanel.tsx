@@ -67,7 +67,7 @@ export default function ChatPanel({ messages, isTyping, isThinking, suggestions,
         {messages.length === 0 && (
           <div className="text-center mt-20" style={{ color: "var(--ink-soft)" }}>
             <p className="flex items-center justify-center gap-1.5 mb-1" style={{ fontSize: "var(--fs-sub)" }}><HandWaving size={20} weight="fill" /> 你好！</p>
-            <p style={{ fontSize: "var(--fs-data)" }}>告诉我你想去哪里旅行，我来帮你规划</p>
+            <p style={{ fontSize: "var(--fs-data)" }}>说说你想做什么——规划、整理、对比都行，我在右侧生成给你</p>
           </div>
         )}
         {messages.map((msg) => {

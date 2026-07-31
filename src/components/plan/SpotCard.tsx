@@ -13,10 +13,10 @@ type Activity = {
 type SpotData = {
   id: string
   name: string
-  time: string
-  duration: string
+  time?: string
+  duration?: string
   desc: string
-  tag: string
+  tag?: string
   imageUrl?: string
   selectedActivities?: Activity[]
 }
@@ -67,12 +67,14 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
           {/* 左侧：名称 + 介绍（flyer 式排版） */}
           <div className="flex-1 min-w-0 flex flex-col">
             <h4 className="leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
-            <span
-              className="self-start px-1.5 py-0.5 mb-1.5"
-              style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
-            >
-              {spot.tag}
-            </span>
+            {spot.tag && (
+              <span
+                className="self-start px-1.5 py-0.5 mb-1.5"
+                style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
+              >
+                {spot.tag}
+              </span>
+            )}
             <p className="leading-relaxed line-clamp-3 mt-auto" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{spot.desc}</p>
           </div>
 
@@ -101,20 +103,22 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
             />
           </div>
 
-          {/* 最右：竖排时间列（flyer 右缘日期式） */}
-          <div
-            className="shrink-0 flex flex-col items-center pt-0.5 pl-2"
-            style={{ fontFamily: "var(--font-en)", color: "var(--ink-soft)", borderLeft: "1px solid var(--ink-line)" }}
-          >
-            {spot.time.split(":").map((seg, i) => (
-              <span key={i} className="leading-tight" style={{ fontSize: 12 }}>
-                {i > 0 && <span className="block text-center" style={{ fontSize: 8, lineHeight: "8px" }}>·</span>}
-                {seg}
-              </span>
-            ))}
-            <span className="my-1" style={{ width: 1, height: 14, background: "var(--ink-line)" }} />
-            <span style={{ fontSize: 9, writingMode: "vertical-rl", letterSpacing: "0.08em" }}>{spot.duration}</span>
-          </div>
+          {/* 最右：竖排时间列（flyer 右缘日期式，仅在有 time 时显示） */}
+          {spot.time && (
+            <div
+              className="shrink-0 flex flex-col items-center pt-0.5 pl-2"
+              style={{ fontFamily: "var(--font-en)", color: "var(--ink-soft)", borderLeft: "1px solid var(--ink-line)" }}
+            >
+              {spot.time.split(":").map((seg, i) => (
+                <span key={i} className="leading-tight" style={{ fontSize: 12 }}>
+                  {i > 0 && <span className="block text-center" style={{ fontSize: 8, lineHeight: "8px" }}>·</span>}
+                  {seg}
+                </span>
+              ))}
+              {spot.duration && <span className="my-1" style={{ width: 1, height: 14, background: "var(--ink-line)" }} />}
+              {spot.duration && <span style={{ fontSize: 9, writingMode: "vertical-rl", letterSpacing: "0.08em" }}>{spot.duration}</span>}
+            </div>
+          )}
         </div>
 
         {/* 已选玩法（蓝墨=用户选择） */}

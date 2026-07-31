@@ -11,7 +11,7 @@ const isPreview = new URLSearchParams(window.location.search).has("preview")
 export default function App() {
   const {
     chatMessages, components, isTyping, isThinking, suggestions, quotedSpot, clearQuote,
-    sendMessage, handleComponentInteract, closeComponent, organizeWorkspace, handleHintClick,
+    sendMessage, handleComponentInteract, addComponent, closeComponent, organizeWorkspace, handleHintClick,
   } = useChat(scenario, isPreview ? previewSeed : [])
 
   const handleSend = useCallback(
@@ -43,6 +43,7 @@ export default function App() {
         onInteract={handleInteract}
         onClose={closeComponent}
         onOrganize={organizeWorkspace}
+        onPaste={addComponent}
       />
     </div>
   )

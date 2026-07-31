@@ -6,6 +6,9 @@ import POICard from "./POICard"
 import BudgetTracker from "./BudgetTracker"
 import FlightList from "./FlightList"
 import CheckList from "./CheckList"
+import NoteCard from "./NoteCard"
+import LinkCard from "./LinkCard"
+import ImageCard from "./ImageCard"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ComponentEntry = React.ComponentType<{ data: any; onInteract: (...args: any[]) => void }>
@@ -20,6 +23,9 @@ const registry: Record<string, ComponentEntry> = {
   budget_tracker: BudgetTracker,
   flight_list: FlightList,
   checklist: CheckList,
+  note_card: NoteCard,
+  link_card: LinkCard,
+  image_card: ImageCard,
 }
 
 export default registry
@@ -37,4 +43,7 @@ export const COMPONENT_CATEGORIES: Record<string, ComponentCategory> = {
   poi_card: "process",
   activity_cards: "process",
   flight_list: "process",
+  note_card: "auxiliary",
+  link_card: "auxiliary",
+  image_card: "auxiliary",
 }

@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { perfStyle, Postmark } from "./postcard"
 import { renderToStaticMarkup } from "react-dom/server"
-import { MapPin, ForkKnife, Buildings, Bank, Bed, Target, Timer, Train, City, Lightbulb } from "@phosphor-icons/react"
+import { MapPin, ForkKnife, Buildings, Bank, Bed, Target, Timer, Train, City, Lightbulb, Plus, Minus } from "@phosphor-icons/react"
 import * as maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
@@ -38,8 +37,8 @@ type DeepContent = {
   view?: string
   // 舒适度导向内容
   images?: string[]
-  // 引导词：面板底部的追问建议
-  suggestions?: string[]
+  // 针对该点位本身的自问自答，点击后在卡片内展开答案
+  qa?: { id: string; q: string; a: string }[]
 }
 
 type Marker = {
@@ -49,6 +48,8 @@ type Marker = {
   lng: number
   type: "spot" | "restaurant" | "hotel"
   day?: string
+  // 已从行程中移出：图钉保留（可再点/再加回），但路线不再经过它
+  offRoute?: boolean
   rating?: number
   stars?: number
   desc?: string
@@ -66,6 +67,8 @@ type Props = {
     routeColor?: string
     highlightSpot?: string
     activeDay?: string
+    // 当前真实在行程里的点位 id（由 useChat 根据行程内容注入），用于 POI 卡按钮状态
+    itinerarySpotIds?: string[]
   }
   onInteract: (value: string) => void
 }
@@ -349,28 +352,35 @@ function createMarkerEl(
 function PoiPanel({
   marker,
   explored,
+  inItinerary,
   onExplore,
   onActivityClick,
-  onSuggest,
+  onAddToItinerary,
+  onRemoveFromItinerary,
   onClose,
 }: {
   marker: Marker
   explored: boolean
+  inItinerary: boolean
   onExplore: () => void
   onActivityClick: (actId: string) => void
-  onSuggest: (text: string) => void
+  onAddToItinerary: () => void
+  onRemoveFromItinerary: () => void
   onClose: () => void
 }) {
   const deep = marker.deepContent
+  // 卡片内展开的问答（点击某个问题在卡片里显示答案，不发到对话框）
+  const [openQaId, setOpenQaId] = useState<string | null>(null)
   const showDeep = explored && deep
   const { Icon: TypeIcon, label: typeLabel } = TYPE_META[marker.type] ?? TYPE_META.spot
-  const paper = POI_PAPER[marker.type] ?? POI_PAPER.spot
   // 玩法仍靠"探索"触发（驱动剧本）；评价/图片/周边信息默认展示
   const hasActivities = showDeep && deep.activities && deep.activities.length > 0
   const hasReviews = deep && deep.reviews && deep.reviews.length > 0
   const hasNearby = deep && deep.nearby && deep.nearby.length > 0
   const hasImages = deep && deep.images && deep.images.length > 0
-  const hasSuggestions = deep && deep.suggestions && deep.suggestions.length > 0
+  const hasQa = deep && deep.qa && deep.qa.length > 0
+  const showExplore = deep && deep.activities && deep.activities.length > 0 && !explored
+  const openQa = hasQa ? deep!.qa!.find((x) => x.id === openQaId) : undefined
 
   return (
     <motion.div
@@ -478,6 +488,23 @@ function PoiPanel({
 
         {/* 内容区 */}
         <div className="px-4 pb-4">
+          {/* 加入 / 移出行程（纯图标切换；加入交给模型排期，移出就地把该点移出路线） */}
+          <div className="flex justify-end mb-1.5">
+            <button
+              onClick={inItinerary ? onRemoveFromItinerary : onAddToItinerary}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
+              style={{
+                fontSize: "var(--fs-caption)",
+                color: inItinerary ? "var(--ink-soft)" : "var(--paper-cream)",
+                background: inItinerary ? "rgba(255,255,255,0.6)" : "var(--stamp-red)",
+                border: inItinerary ? "1px solid var(--ink-line)" : "none",
+              }}
+              title={inItinerary ? "从行程中去掉" : "加入行程"}
+              aria-label={inItinerary ? "从行程中去掉" : "加入行程"}
+            >
+              {inItinerary ? <><Minus size={13} weight="bold" /> 移出行程</> : <><Plus size={13} weight="bold" /> 加入行程</>}
+            </button>
+          </div>
 
           {/* 简介：明信片书写线 */}
           {marker.desc && (
@@ -506,6 +533,7 @@ function PoiPanel({
               ))}
             </div>
           )}
+
 
           {/* 价格 + 距离 */}
           {deep && (deep.priceRange || deep.distance) && (
@@ -647,34 +675,61 @@ function PoiPanel({
             )}
           </AnimatePresence>
 
-          {/* 探索玩法按钮（仅景点，用于触发行程更新；未展开时显示） */}
-          {deep && deep.activities && deep.activities.length > 0 && !explored && (
-            <button
-              onClick={onExplore}
-              className="w-full mt-2 py-1.5 transition-colors flex items-center justify-center gap-1 hover:brightness-105"
-              style={{ fontSize: "var(--fs-data)", color: "var(--paper-cream)", background: "var(--stamp-red)", borderRadius: "var(--r-paper)" }}
-            >
-              探索玩法
-              <span style={{ fontSize: "var(--fs-caption)" }}>→</span>
-            </button>
-          )}
-
-          {/* 引导词：底部追问建议（蓝墨=可交互追问） */}
-          {hasSuggestions && (
+          {/* 底部一排同级 chip：探索玩法 与 追问问题 样式一致、层级平齐 */}
+          {(showExplore || hasQa) && (
             <div className="mt-3 pt-2.5" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-              <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>你可能还想问</p>
               <div className="flex flex-wrap gap-1.5">
-                {deep!.suggestions!.map((s) => (
+                {/* 探索玩法：触发行程更新（与问题 chip 同一层级、同一样式） */}
+                {showExplore && (
                   <button
-                    key={s}
-                    onClick={() => onSuggest(s)}
+                    onClick={onExplore}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
                     style={{ fontSize: "var(--fs-caption)", border: "1px solid var(--ink-blue)", color: "var(--ink-blue)", background: "rgba(255,255,255,0.4)" }}
                   >
-                    <Lightbulb size={13} weight="fill" /> {s}
+                    <Lightbulb size={13} weight="fill" /> 探索玩法
                   </button>
-                ))}
+                )}
+                {/* 关于本点位的问题：点击在卡片内展开答案，不发到对话框 */}
+                {hasQa && deep!.qa!.map((item) => {
+                  const active = openQaId === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setOpenQaId(active ? null : item.id)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
+                      style={{
+                        fontSize: "var(--fs-caption)",
+                        border: "1px solid var(--ink-blue)",
+                        color: active ? "var(--paper-cream)" : "var(--ink-blue)",
+                        background: active ? "var(--ink-blue)" : "rgba(255,255,255,0.4)",
+                      }}
+                    >
+                      <Lightbulb size={13} weight="fill" /> {item.q}
+                    </button>
+                  )
+                })}
               </div>
+
+              {/* 卡片内答案区（点问题后就地展开） */}
+              <AnimatePresence>
+                {openQa && (
+                  <motion.div
+                    key={openQa.id}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div
+                      className="mt-2 p-2.5 leading-relaxed"
+                      style={{ fontSize: "var(--fs-caption)", color: "var(--ink)", background: "rgba(255,255,255,0.5)", border: "1px solid var(--ink-line)", borderRadius: "var(--r-paper)" }}
+                    >
+                      {openQa.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -725,6 +780,7 @@ export default function MapView({ data, onInteract }: Props) {
   const prevMarkerIds = useRef<Set<string> | null>(null)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
   const [exploredMarkerIds, setExploredMarkerIds] = useState<Set<string>>(new Set())
+  const [addedMarkerIds, setAddedMarkerIds] = useState<Set<string>>(new Set())
   const [styleVersion, setStyleVersion] = useState(0)
 
   const allMarkers = [...(data.markers ?? []), ...(data.extraMarkers ?? [])]
@@ -743,38 +799,82 @@ export default function MapView({ data, onInteract }: Props) {
     setExploredMarkerIds((prev) => new Set(prev).add(markerId))
   }, [])
 
+  // 真实"是否在行程中"：以行程内容注入的 id 为准；叠加本次会话乐观加入的 id
+  const itinerarySet = useMemo(
+    () => new Set([...(data.itinerarySpotIds ?? []), ...addedMarkerIds]),
+    [data.itinerarySpotIds, addedMarkerIds]
+  )
+
+  // 点"加入行程"：乐观标记为已加入（按钮立即切换），并交给模型决定放到哪一天
+  const handleAddToItinerary = useCallback((markerId: string) => {
+    setAddedMarkerIds((prev) => new Set(prev).add(markerId))
+    onInteract(`addspot:${markerId}`)
+  }, [onInteract])
+
+  // 点"从行程中去掉"：乐观移除，交给 useChat 就地把该点移出行程与路线并重算
+  const handleRemoveFromItinerary = useCallback((markerId: string) => {
+    setAddedMarkerIds((prev) => {
+      if (!prev.has(markerId)) return prev
+      const next = new Set(prev)
+      next.delete(markerId)
+      return next
+    })
+    onInteract(`removespot:${markerId}`)
+  }, [onInteract])
+
   // 初始化地图
+  // 关键：组件挂载时正处于 framer-motion 入场动画 + 画布 transform 中，容器尺寸可能为 0，
+  // 此时创建 MapLibre 会读到 0×0 而永远不请求正确视口的瓦片（表现为全白）。
+  // 因此先用 ResizeObserver 等到容器有真实尺寸再创建，之后再监听尺寸变化做 resize。
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: MAP_STYLE,
-      center: [data.center[1], data.center[0]], // scenario 用 [lat,lng]，MapLibre 用 [lng,lat]
-      zoom: data.zoom,
-      minZoom: 9,
-      maxZoom: 17.5,
-      attributionControl: false,
-    })
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right")
-    mapInstance.current = map
-    ;(window as unknown as { __map?: unknown }).__map = map
+    const container = mapRef.current
+    if (!container) return
 
-    map.on("load", () => {
-      mapReady.current = true
-      map.resize()
-      setStyleVersion((v) => v + 1) // 触发标记/路线渲染
-    })
+    let map: maplibregl.Map | null = null
+    let disposed = false
 
-    map.on("error", (e) => {
-      console.warn("[MapView] maplibre error:", e && e.error)
-    })
+    const createMap = () => {
+      if (map || disposed || !mapRef.current) return
+      map = new maplibregl.Map({
+        container: mapRef.current,
+        style: MAP_STYLE,
+        center: [data.center[1], data.center[0]], // scenario 用 [lat,lng]，MapLibre 用 [lng,lat]
+        zoom: data.zoom,
+        minZoom: 9,
+        maxZoom: 17.5,
+        attributionControl: false,
+      })
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right")
+      mapInstance.current = map
 
-    const observer = new ResizeObserver(() => map.resize())
-    observer.observe(mapRef.current)
+      map.on("load", () => {
+        mapReady.current = true
+        map!.resize()
+        setStyleVersion((v) => v + 1) // 触发标记/路线渲染
+      })
+      map.on("error", (e) => {
+        console.warn("[MapView] maplibre error:", e && e.error)
+      })
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect
+      const w = rect?.width ?? container.clientWidth
+      const h = rect?.height ?? container.clientHeight
+      if (w > 0 && h > 0) {
+        if (!map) createMap()
+        else map.resize()
+      }
+    })
+    observer.observe(container)
+
+    // 若挂载时已经有尺寸（无入场动画的场景）立即创建
+    if (container.clientWidth > 0 && container.clientHeight > 0) createMap()
 
     return () => {
+      disposed = true
       observer.disconnect()
-      map.remove()
+      if (map) map.remove()
       mapInstance.current = null
       mapReady.current = false
     }
@@ -899,7 +999,8 @@ export default function MapView({ data, onInteract }: Props) {
 
     // 画路线：按天分组，每天一条线；当前天用本天颜色高亮，其它天置灰
     // 先加路线（在标记 DOM 之下），再加标记
-    const spotMarkers = (data.markers ?? []).filter((m) => m.type === "spot")
+    // offRoute 的点位图钉保留但不参与连线（已从行程移出）
+    const spotMarkers = (data.markers ?? []).filter((m) => m.type === "spot" && !m.offRoute)
     const addRoute = (id: string, coords: [number, number][], color: string, width: number, opacity: number) => {
       map.addSource(id, {
         type: "geojson",
@@ -934,6 +1035,7 @@ export default function MapView({ data, onInteract }: Props) {
         if (spots.length < 2) continue
         const isActive = activeDay == null || d === activeDay
         const coords = spots.map((m) => [m.lng, m.lat] as [number, number])
+        // 当前天用本天颜色高亮，其它天统一置灰（切换 Day 时旧路线变灰）
         addRoute(
           `route-${d}`, coords,
           isActive ? dayColor(d) : DIM_COLOR,
@@ -951,6 +1053,7 @@ export default function MapView({ data, onInteract }: Props) {
       if (!SHOW_POI_PINS || m.type === "spot") return
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
+      // 餐厅/酒店等非景点 pin 保持原色（景点已在上方 early-return，不画 pin）
       const el = createMarkerEl(m.type, isHighlight, isSelected, undefined, false)
       el.title = m.name
       el.addEventListener("click", (ev) => {
@@ -1182,9 +1285,11 @@ export default function MapView({ data, onInteract }: Props) {
             key={selectedMarker.id}
             marker={selectedMarker}
             explored={exploredMarkerIds.has(selectedMarker.id)}
+            inItinerary={itinerarySet.has(selectedMarker.id)}
             onExplore={() => handleExplore(selectedMarker.id)}
             onActivityClick={(actId) => onInteract(actId)}
-            onSuggest={(text) => onInteract(`ask:${text}`)}
+            onAddToItinerary={() => handleAddToItinerary(selectedMarker.id)}
+            onRemoveFromItinerary={() => handleRemoveFromItinerary(selectedMarker.id)}
             onClose={() => setSelectedMarkerId(null)}
           />
         )}
