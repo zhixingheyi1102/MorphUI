@@ -56,8 +56,8 @@ export default function ChatPanel({ messages, isTyping, isThinking, suggestions,
             M
           </div>
           <div>
-            <h2 className="font-semibold" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>MorphUI 助手</h2>
-            <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>对话即界面，边聊边生成</p>
+            <h2 style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>MorphUI 助手</h2>
+            <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>随时帮你规划</p>
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function ChatPanel({ messages, isTyping, isThinking, suggestions,
           <button
             onClick={handleSubmit}
             disabled={isTyping || !input.trim()}
-            className="px-4 py-2.5 font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:brightness-105"
+            className="px-4 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:brightness-105"
             style={{
               fontSize: "var(--fs-data)",
               borderRadius: "var(--r-paper)",

@@ -225,7 +225,7 @@ export default function PlanNotebook({ data, onInteract }: Props) {
                 borderBottom: "none",
                 background: active ? "var(--paper-cream)" : "var(--paper-manila)",
                 color: active ? "var(--ink)" : "var(--ink-soft)",
-                fontWeight: active ? 600 : 400,
+                fontWeight: 400,
                 zIndex: active ? 10 : 1,
                 marginLeft: active || i === 0 ? 0 : -4,
                 transform: active ? "none" : `rotate(${i % 2 === 0 ? -1 : 1}deg)`,

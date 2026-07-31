@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
-import type { CSSProperties } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { renderToStaticMarkup } from "react-dom/server"
 import { MapPin, ForkKnife, Buildings, Bank, Target, Timer, Train, City, Lightbulb, Plus, Minus } from "@phosphor-icons/react"
@@ -237,40 +236,38 @@ type BuildingPoi = {
 
 const BUILDING_POIS: BuildingPoi[] = [
   // —— 聚合态（缩小看全城时）——真实 POI 质心
-  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5002, 31.2379], img: "/buildings/lujiazui-cluster.png", baseH: 200, minZoom: 0, maxZoom: LOD_SPLIT },
-  { id: "b-bund-rep", name: "外滩", lngLat: [121.4856, 31.2386], img: "/buildings/customs-house.png", baseH: 120, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-lujiazui", name: "陆家嘴", lngLat: [121.5002, 31.2379], img: "/buildings/lujiazui-cluster.png", baseH: 110, minZoom: 0, maxZoom: LOD_SPLIT },
+  { id: "b-bund-rep", name: "外滩", lngLat: [121.4856, 31.2386], img: "/buildings/customs-house.png", baseH: 90, minZoom: 0, maxZoom: LOD_SPLIT },
   // —— 单体态（放大看街区时）——坐标来自 OSM Nominatim 真实 POI
-  { id: "b-pearl", name: "东方明珠", lngLat: [121.49526, 31.24195], img: "/buildings/oriental-pearl.png", baseH: 92, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-shtower", name: "上海中心", lngLat: [121.50125, 31.23564], img: "/buildings/shanghai-tower.png", baseH: 100, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.50142, 31.23725], img: "/buildings/jinmao.png", baseH: 84, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-swfc", name: "环球金融中心", lngLat: [121.50304, 31.23658], img: "/buildings/swfc.png", baseH: 88, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 62, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 66, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 44, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-pearl", name: "东方明珠", lngLat: [121.49526, 31.24195], img: "/buildings/oriental-pearl.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shtower", name: "上海中心", lngLat: [121.50125, 31.23564], img: "/buildings/shanghai-tower.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-jinmao", name: "金茂大厦", lngLat: [121.50142, 31.23725], img: "/buildings/jinmao.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-swfc", name: "环球金融中心", lngLat: [121.50304, 31.23658], img: "/buildings/swfc.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-customs", name: "海关大楼", lngLat: [121.48564, 31.23864], img: "/buildings/customs-house.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-peace", name: "和平饭店", lngLat: [121.48461, 31.24113], img: "/buildings/peace-hotel.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-waibaidu", name: "外白渡桥", lngLat: [121.48574, 31.24531], img: "/buildings/waibaidu-bridge.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
   // —— 全城地标（彼此距离远，全 zoom 常显）——
   { id: "b-artmuseum", name: "中华艺术宫", lngLat: [121.48993, 31.18648], img: "/buildings/china-art-museum.png", baseH: 72, minZoom: 0, maxZoom: 99 },
-  { id: "b-wukang", name: "武康大楼", lngLat: [121.43373, 31.20626], img: "/buildings/wukang-mansion.png", baseH: 60, minZoom: 0, maxZoom: 99 },
-  { id: "b-jingan", name: "静安寺", lngLat: [121.44079, 31.22522], img: "/buildings/jingan-temple.png", baseH: 56, minZoom: 0, maxZoom: 99 },
-  { id: "b-longhua", name: "龙华塔", lngLat: [121.44735, 31.17562], img: "/buildings/longhua-pagoda.png", baseH: 66, minZoom: 0, maxZoom: 99 },
-  { id: "b-fangsheng", name: "朱家角放生桥", lngLat: [121.05145, 31.11358], img: "/buildings/fangsheng-bridge.png", baseH: 46, minZoom: 0, maxZoom: 99 },
-  { id: "b-disney", name: "迪士尼城堡", lngLat: [121.65532, 31.14575], img: "/buildings/disney-castle.png", baseH: 76, minZoom: 0, maxZoom: 99 },
-  { id: "b-astronomy", name: "上海天文馆", lngLat: [121.92259, 30.91513], img: "/buildings/astronomy-museum.png", baseH: 60, minZoom: 0, maxZoom: 99 },
-  { id: "b-yuyuan", name: "豫园九曲桥", lngLat: [121.48742, 31.22866], img: "/buildings/yuyuan-bridge.png", baseH: 50, minZoom: 0, maxZoom: 99 },
-  { id: "b-tianzifang", name: "田子坊", lngLat: [121.4641, 31.21034], img: "/buildings/tianzifang.png", baseH: 46, minZoom: 0, maxZoom: 99 },
+  { id: "b-wukang", name: "武康大楼", lngLat: [121.43373, 31.20626], img: "/buildings/wukang-mansion.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-jingan", name: "静安寺", lngLat: [121.44079, 31.22522], img: "/buildings/jingan-temple.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-longhua", name: "龙华塔", lngLat: [121.44735, 31.17562], img: "/buildings/longhua-pagoda.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-fangsheng", name: "朱家角放生桥", lngLat: [121.05145, 31.11358], img: "/buildings/fangsheng-bridge.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-disney", name: "迪士尼城堡", lngLat: [121.65532, 31.14575], img: "/buildings/disney-castle.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-astronomy", name: "上海天文馆", lngLat: [121.92259, 30.91513], img: "/buildings/astronomy-museum.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-yuyuan", name: "豫园九曲桥", lngLat: [121.48742, 31.22866], img: "/buildings/yuyuan-bridge.png", baseH: 72, minZoom: 0, maxZoom: 99 },
+  { id: "b-tianzifang", name: "田子坊", lngLat: [121.4641, 31.21034], img: "/buildings/tianzifang.png", baseH: 72, minZoom: 0, maxZoom: 99 },
   // —— 扎堆地标（离上面某个近，缩小时收起，z≥13 才出现防堆叠）——
-  { id: "b-chenghuang", name: "城隍庙", lngLat: [121.48819, 31.22788], img: "/buildings/chenghuang-temple.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-xintiandi", name: "新天地", lngLat: [121.47044, 31.22193], img: "/buildings/xintiandi.png", baseH: 46, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-shikumen", name: "石库门（张园）", lngLat: [121.45605, 31.23037], img: "/buildings/shikumen.png", baseH: 42, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-tram", name: "南京路当当车", lngLat: [121.4753, 31.23768], img: "/buildings/dangdang-tram.png", baseH: 38, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-postmuseum", name: "邮政博物馆", lngLat: [121.48075, 31.24641], img: "/buildings/post-museum.png", baseH: 64, minZoom: LOD_SPLIT, maxZoom: 99 },
-  { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 52, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-chenghuang", name: "城隍庙", lngLat: [121.48819, 31.22788], img: "/buildings/chenghuang-temple.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-xintiandi", name: "新天地", lngLat: [121.47044, 31.22193], img: "/buildings/xintiandi.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-shikumen", name: "石库门（张园）", lngLat: [121.45605, 31.23037], img: "/buildings/shikumen.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-tram", name: "南京路当当车", lngLat: [121.4753, 31.23768], img: "/buildings/dangdang-tram.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-postmuseum", name: "邮政博物馆", lngLat: [121.48075, 31.24641], img: "/buildings/post-museum.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
+  { id: "b-1933", name: "1933老场坊", lngLat: [121.48724, 31.2569], img: "/buildings/1933-millfun.png", baseH: 72, minZoom: LOD_SPLIT, maxZoom: 99 },
 ]
 
-// 建筑随 zoom 等比例缩放（每级 zoom 尺寸 ×2，zoom=14 为 baseH）；
-// 但锚定 POI 点大小作为下限：缩小到再远也保持和 POI 圆点（28~36px）同级的可见尺寸
-const BUILDING_MIN_H = 40
-function buildingHeight(baseH: number, zoom: number) {
-  return Math.max(baseH * Math.pow(2, zoom - 14), BUILDING_MIN_H)
+// 所有建筑统一视觉框，且不随 zoom 缩放（和普通地图 pin 一样恒定屏幕尺寸）
+function buildingHeight(_zoom: number) {
+  return 68
 }
 
 // 手绘路线：在锚点间插值 + 垂直方向确定性抖动，模拟钢笔运笔
@@ -338,41 +335,7 @@ function createMarkerEl(
 // ═══════════════════════════════════════════════
 //  明信片装饰件（纯 CSS/SVG）
 // ═══════════════════════════════════════════════
-
-// 邮票齿孔边框：四边打孔，孔色 = 所在纸面颜色（视觉上像撕下来的邮票）
-// r = 孔半径；padding 需 ≥ r*2 + 3 才不会切到内容
-function perfStyle(holeColor: string, r: number): CSSProperties {
-  const tile = r * 4 // 孔间距
-  const strip = r * 2 // 边缘条带厚度
-  const g = (cx: number, cy: number) =>
-    `radial-gradient(circle at ${cx}px ${cy}px, ${holeColor} ${r}px, transparent ${r + 0.5}px)`
-  return {
-    backgroundColor: "#FCFAF2",
-    backgroundImage: [g(tile / 2, 0), g(tile / 2, strip), g(0, tile / 2), g(strip, tile / 2)].join(", "),
-    backgroundSize: `${tile}px ${strip}px, ${tile}px ${strip}px, ${strip}px ${tile}px, ${strip}px ${tile}px`,
-    backgroundPosition: "0 0, 0 100%, 0 0, 100% 0",
-    backgroundRepeat: "repeat-x, repeat-x, repeat-y, repeat-y",
-  }
-}
-
-// 圆形邮戳 + 波浪取消线（墨色 = 复古海军蓝）
-function Postmark() {
-  const ink = "var(--ink-blue)"
-  return (
-    <svg width="98" height="56" viewBox="0 0 98 56" fill="none">
-      <g stroke={ink} opacity="0.5" fill="none">
-        <circle cx="70" cy="28" r="25" strokeWidth="1.4" />
-        <circle cx="70" cy="28" r="19" strokeWidth="0.9" />
-        <path d="M2 14 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-        <path d="M2 28 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-        <path d="M2 42 c5 -4 10 4 15 0 s10 4 15 0 s10 4 14 0" strokeWidth="1.1" />
-      </g>
-      <text x="70" y="25" textAnchor="middle" fontSize="6.5" letterSpacing="1.2" fill={ink} opacity="0.62" fontFamily="var(--font-en)">SHANGHAI</text>
-      <line x1="58" y1="29.5" x2="82" y2="29.5" stroke={ink} strokeWidth="0.6" opacity="0.5" />
-      <text x="70" y="38" textAnchor="middle" fontSize="6" letterSpacing="0.8" fill={ink} opacity="0.62" fontFamily="var(--font-en)">CITY WALK</text>
-    </svg>
-  )
-}
+// perfStyle / Postmark 已抽到 ./postcard 共享（POICard 同用）
 
 // ═══════════════════════════════════════════════
 //  POI 面板（内嵌在地图右侧）
@@ -401,7 +364,6 @@ function PoiPanel({
   const [openQaId, setOpenQaId] = useState<string | null>(null)
   const showDeep = explored && deep
   const { Icon: TypeIcon, label: typeLabel } = TYPE_META[marker.type] ?? TYPE_META.spot
-  const paper = POI_PAPER[marker.type] ?? POI_PAPER.spot
   // 玩法仍靠"探索"触发（驱动剧本）；评价/图片/周边信息默认展示
   const hasActivities = showDeep && deep.activities && deep.activities.length > 0
   const hasReviews = deep && deep.reviews && deep.reviews.length > 0
@@ -413,59 +375,72 @@ function PoiPanel({
 
   return (
     <motion.div
-      initial={{ width: 0, opacity: 0 }}
-      animate={{ width: 340, opacity: 1 }}
-      exit={{ width: 0, opacity: 0 }}
-      transition={{ type: "spring", damping: 28, stiffness: 340 }}
-      className="shrink-0 overflow-hidden"
-      style={{ borderLeft: "1px solid var(--ink-line)", background: POI_PAPER[marker.type] ?? POI_PAPER.spot, fontFamily: "var(--font-cn)", color: "var(--ink)" }}
+      initial={{ width: 0, opacity: 0, rotateY: -75 }}
+      animate={{ width: 340, opacity: 1, rotateY: 0 }}
+      exit={{ width: 0, opacity: 0, rotateY: -75 }}
+      transition={{ type: "spring", damping: 26, stiffness: 200 }}
+      className="shrink-0 overflow-hidden relative"
+      style={{
+        borderLeft: "1px solid var(--ink-line)",
+        background: POI_PAPER[marker.type] ?? POI_PAPER.spot,
+        fontFamily: "var(--font-cn)",
+        color: "var(--ink)",
+        transformOrigin: "left center",
+        transformPerspective: 1100,
+      }}
     >
+      {/* 展开时的折页阴影：翻开瞬间左侧偏暗，展开后淡出 */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: 0 }}
+        exit={{ opacity: 0.5 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+        style={{ zIndex: 20, background: "linear-gradient(90deg, rgba(43,43,43,0.38), rgba(43,43,43,0.10) 42%, transparent 72%)" }}
+      />
+      {/* 展开后残留折痕：贴左缘一道淡淡的纸折光影 */}
+      <span
+        className="absolute inset-y-0 left-0 pointer-events-none"
+        style={{ zIndex: 19, width: 22, background: "linear-gradient(90deg, rgba(43,43,43,0.12), rgba(255,255,255,0.16) 45%, transparent)" }}
+      />
       <div className="w-[340px] h-full overflow-y-auto">
-        {/* 明信片抬头：关闭 + POST CARD + 邮资票 + 邮戳 */}
-        <div className="relative flex items-start gap-2 px-4 pt-3 mb-1">
+        {/* flyer 抬头：左名称介绍 + 右邮票框大图（飘窗） */}
+        <div className="relative px-4 pt-3 mb-2">
           <button
             onClick={onClose}
-            className="shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
-            style={{ background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
+            className="absolute z-10 w-6 h-6 rounded-full text-xs flex items-center justify-center transition-colors"
+            style={{ left: 10, top: 8, background: "rgba(255,255,255,0.8)", color: "var(--ink-soft)", border: "1px solid var(--ink-line)", boxShadow: "var(--z1)" }}
           >
             ✕
           </button>
-          <div className="flex-1 min-w-0 pt-0.5">
-            <p style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.32em", color: "var(--ink-soft)" }}>POST CARD</p>
-            <div className="mt-1.5" style={{ width: "72%", borderTop: "1px solid var(--ink-line)" }} />
-            <p className="mt-1.5" style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink-soft)", opacity: 0.75 }}>
-              {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "PAR AVION"}
-            </p>
-          </div>
-          {/* 邮资票：类型作图案，评分作面值 */}
-          <div
-            className="shrink-0"
-            style={{ ...perfStyle(paper, 2), padding: 5, transform: "rotate(2.5deg)", boxShadow: "0 1px 3px rgba(43,43,43,0.2)" }}
-          >
-            <div
-              className="relative flex flex-col items-center justify-center"
-              style={{ width: 40, height: 46, background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, border: "1px solid rgba(43,43,43,0.1)" }}
-            >
-              <TypeIcon size={16} weight="duotone" color="var(--ink-soft)" />
-              <span style={{ fontSize: 9, color: "var(--ink-soft)", marginTop: 2 }}>{typeLabel}</span>
+          <div className="flex gap-2.5 items-stretch pt-6">
+            {/* 左列：DAY/类型 + 名称 + 星级 */}
+            <div className="flex-1 min-w-0 flex flex-col pt-1">
+              <p style={{ fontFamily: "var(--font-en)", fontSize: 9, letterSpacing: "0.24em", color: "var(--ink-soft)" }}>
+                {marker.day ? (DAY_LABELS[marker.day] ?? marker.day).toUpperCase() : "CITY WALK"}
+              </p>
+              <h4 className="leading-snug mt-1.5" style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ink)" }}>{marker.name}</h4>
               {marker.rating != null && (
-                <span style={{ position: "absolute", top: 1, right: 3, fontFamily: "var(--font-en)", fontSize: 8, color: "var(--ink-soft)" }}>{marker.rating}</span>
+                <span className="mt-1" style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
               )}
+              {marker.stars != null && (
+                <div className="mt-0.5 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
+                  {"★".repeat(marker.stars)}
+                  <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
+                </div>
+              )}
+              <span
+                className="self-start px-1.5 py-0.5 mt-auto mb-1 inline-flex items-center gap-1"
+                style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
+              >
+                <TypeIcon size={12} weight="duotone" /> {typeLabel}
+              </span>
             </div>
-          </div>
-          {/* 邮戳压在邮资票左下 */}
-          <div className="absolute pointer-events-none" style={{ right: 62, top: 30, transform: "rotate(-8deg)", opacity: 0.85 }}>
-            <Postmark />
-          </div>
-        </div>
-
-        {/* 齿孔照片框 */}
-        <div className="px-4 mb-3">
-          <div style={{ transform: "rotate(-1.3deg)" }}>
-            <div style={{ ...perfStyle(paper, 3), padding: 9, boxShadow: "0 2px 6px rgba(43,43,43,0.18)" }}>
+            {/* 右列：邮票齿孔框大图 */}
+            <div className="relative shrink-0" style={{ width: 150, height: 190 }}>
               <div
-                className="relative h-40 overflow-hidden flex items-center justify-center"
-                style={{ background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
+                className="absolute overflow-hidden flex items-center justify-center"
+                style={{ inset: "8.5%", background: IMAGE_GRADIENTS[marker.type] ?? IMAGE_GRADIENTS.spot, color: "var(--ink-soft)" }}
               >
                 {marker.imageUrl ? (
                   <img
@@ -478,41 +453,35 @@ function PoiPanel({
                   marker.type === "spot" ? <Bank size={32} weight="duotone" /> : marker.type === "restaurant" ? <ForkKnife size={32} weight="duotone" /> : <Buildings size={32} weight="duotone" />
                 )}
               </div>
+              <img
+                src="/decors/frame-stamp-perf.png"
+                alt=""
+                className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                style={{ objectFit: "fill" }}
+              />
             </div>
           </div>
         </div>
 
         {/* 内容区 */}
         <div className="px-4 pb-4">
-          {/* 名称 + 评分 */}
-          <div className="flex items-baseline justify-between mb-1">
-            <h4 className="font-semibold leading-snug" style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>{marker.name}</h4>
-            <div className="flex items-center gap-1.5 shrink-0 ml-2">
-              {marker.rating != null && (
-                <span style={{ fontFamily: "var(--font-en)", fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>★ {marker.rating}</span>
-              )}
-              {/* 加入 / 移出行程（纯图标切换；加入交给模型排期，移出就地把该点移出路线） */}
-              <button
-                onClick={inItinerary ? onRemoveFromItinerary : onAddToItinerary}
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-colors hover:brightness-105"
-                style={{
-                  color: inItinerary ? "var(--ink-soft)" : "var(--paper-cream)",
-                  background: inItinerary ? "rgba(255,255,255,0.6)" : "var(--stamp-red)",
-                  border: inItinerary ? "1px solid var(--ink-line)" : "none",
-                }}
-                title={inItinerary ? "从行程中去掉" : "加入行程"}
-                aria-label={inItinerary ? "从行程中去掉" : "加入行程"}
-              >
-                {inItinerary ? <Minus size={14} weight="bold" /> : <Plus size={14} weight="bold" />}
-              </button>
-            </div>
+          {/* 加入 / 移出行程（纯图标切换；加入交给模型排期，移出就地把该点移出路线） */}
+          <div className="flex justify-end mb-1.5">
+            <button
+              onClick={inItinerary ? onRemoveFromItinerary : onAddToItinerary}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full transition-colors hover:brightness-105"
+              style={{
+                fontSize: "var(--fs-caption)",
+                color: inItinerary ? "var(--ink-soft)" : "var(--paper-cream)",
+                background: inItinerary ? "rgba(255,255,255,0.6)" : "var(--stamp-red)",
+                border: inItinerary ? "1px solid var(--ink-line)" : "none",
+              }}
+              title={inItinerary ? "从行程中去掉" : "加入行程"}
+              aria-label={inItinerary ? "从行程中去掉" : "加入行程"}
+            >
+              {inItinerary ? <><Minus size={13} weight="bold" /> 移出行程</> : <><Plus size={13} weight="bold" /> 加入行程</>}
+            </button>
           </div>
-          {marker.stars != null && (
-            <div className="mb-1 tracking-wide" style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>
-              {"★".repeat(marker.stars)}
-              <span style={{ color: "var(--ink-line)" }}>{"★".repeat(Math.max(0, 5 - marker.stars))}</span>
-            </div>
-          )}
 
           {/* 简介：明信片书写线 */}
           {marker.desc && (
@@ -546,7 +515,7 @@ function PoiPanel({
           {/* 价格 + 距离 */}
           {deep && (deep.priceRange || deep.distance) && (
             <div className="flex items-center gap-2 mb-2" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
-              {deep.priceRange && <span className="font-medium" style={{ color: "var(--ink)" }}>{deep.priceRange}</span>}
+              {deep.priceRange && <span style={{ color: "var(--ink)" }}>{deep.priceRange}</span>}
               {deep.priceRange && deep.distance && <span style={{ color: "var(--ink-line)" }}>|</span>}
               {deep.distance && <span className="inline-flex items-center gap-1"><MapPin size={13} /> {deep.distance}</span>}
             </div>
@@ -558,7 +527,7 @@ function PoiPanel({
               {deep!.nearby!.map((n) => (
                 <div key={n.label} className="flex items-center justify-between" style={{ fontSize: "var(--fs-caption)" }}>
                   <span style={{ color: "var(--ink-soft)" }}>{n.label}</span>
-                  <span className="font-medium" style={{ color: "var(--ink)" }}>{n.value}</span>
+                  <span style={{ color: "var(--ink)" }}>{n.value}</span>
                 </div>
               ))}
             </div>
@@ -625,12 +594,12 @@ function PoiPanel({
                 className="overflow-hidden"
               >
                 <div className="pt-2 mb-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-                  <p className="font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
+                  <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>用户评价</p>
                   <div className="space-y-1.5">
                     {deep!.reviews!.map((r) => (
                       <div key={r.user} className="p-1.5 rounded" style={{ background: "rgba(255,255,255,0.45)" }}>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
+                          <span style={{ fontSize: "var(--fs-caption)", color: "var(--ink)" }}>@{r.user}</span>
                           <span style={{ fontSize: "var(--fs-caption)", color: "var(--metal-brass)" }}>{"★".repeat(r.score)}</span>
                         </div>
                         <p style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{r.text}</p>
@@ -653,7 +622,7 @@ function PoiPanel({
                 className="overflow-hidden"
               >
                 <div className="pt-2" style={{ borderTop: "1px dashed var(--ink-line)" }}>
-                  <p className="flex items-center gap-1 font-medium mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
+                  <p className="flex items-center gap-1 mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}><Target size={13} weight="fill" /> 玩法推荐 · 选一个加入行程</p>
                   <div className="space-y-1.5">
                     {deep!.activities!.map((act) => (
                       <button
@@ -663,7 +632,7 @@ function PoiPanel({
                         style={{ borderRadius: "var(--r-paper)", border: "1px solid var(--ink-line)", background: "rgba(255,255,255,0.4)" }}
                       >
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
+                          <span style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}>
                             {act.title}
                           </span>
                           <span className="px-1 py-0.5 rounded-full" style={{ fontSize: "9px", background: "var(--paper-oat)", color: "var(--ink-soft)" }}>
@@ -865,12 +834,13 @@ export default function MapView({ data, onInteract }: Props) {
     const map = mapInstance.current
     if (!map || !mapReady.current) return
 
-    // 手绘笔触路线：水彩晕染底 + 钢笔墨线两层
+    // 手绘笔触路线：水彩晕染底 + 钢笔墨线两层（暂时隐藏，用户要求先删掉；置 true 可恢复）
+    const SHOW_BRUSH_ROUTE = false
     const routeData: GeoJSON.Feature = {
       type: "Feature", properties: {},
       geometry: { type: "LineString", coordinates: handDrawnPath(BRUSH_ROUTE) },
     }
-    if (!map.getSource("brush-route")) {
+    if (SHOW_BRUSH_ROUTE && !map.getSource("brush-route")) {
       map.addSource("brush-route", { type: "geojson", data: routeData })
       map.addLayer({
         id: "brush-route-halo", type: "line", source: "brush-route",
@@ -923,12 +893,18 @@ export default function MapView({ data, onInteract }: Props) {
       const z = map.getZoom()
       for (const { poi, img } of buildingMarkers.current) {
         const visible = z >= poi.minZoom && z < poi.maxZoom
-        img.style.height = `${Math.round(buildingHeight(poi.baseH, z))}px`
+        // 统一视觉框（所有建筑同尺寸），按素材长边归一，消除宽高比差异
+        const box = buildingHeight(z)
+        const { naturalWidth: nw, naturalHeight: nh } = img
+        const k = nw > 0 && nh > 0 ? nh / Math.max(nw, nh) : 1
+        img.style.height = `${Math.round(box * k)}px`
         img.style.width = "auto"
         img.style.opacity = visible ? "1" : "0"
         img.style.transform = visible ? "scale(1)" : "scale(0.82)"
       }
     }
+    // 素材首次加载完成后才拿得到 naturalWidth，加载完再归一一次
+    for (const { img } of buildingMarkers.current) img.onload = applyLod
     applyLod()
     map.on("zoom", applyLod)
     return () => { map.off("zoom", applyLod) }
@@ -970,7 +946,11 @@ export default function MapView({ data, onInteract }: Props) {
       routeSourceIds.current.push(id)
     }
 
-    if (hasDays) {
+    // 暂时隐藏：每日路线虚线 + 餐厅/酒店 pin（用户要求先删掉，置 true 可恢复）
+    const SHOW_DAY_ROUTES = false
+    const SHOW_POI_PINS = false
+
+    if (SHOW_DAY_ROUTES && hasDays) {
       const byDay = new Map<string, Marker[]>()
       for (const m of spotMarkers) {
         const d = m.day ?? "day1"
@@ -995,14 +975,14 @@ export default function MapView({ data, onInteract }: Props) {
           isActive ? 0.9 : 0.35,
         )
       }
-    } else if (spotMarkers.length > 1) {
+    } else if (SHOW_DAY_ROUTES && spotMarkers.length > 1) {
       const coords = spotMarkers.map((m) => [m.lng, m.lat] as [number, number])
       addRoute("route-all", coords, data.routeColor ?? "#6366f1", 3, 0.6)
     }
 
     // 标记：景点（spot）不再画圆点 pin——建筑素材即景点标识；餐厅/酒店等保留 pin
     allMarkers.forEach((m) => {
-      if (m.type === "spot") return
+      if (!SHOW_POI_PINS || m.type === "spot") return
       const isHighlight = data.highlightSpot === m.id
       const isSelected = selectedMarkerId === m.id
       // 餐厅/酒店等非景点 pin 保持原色（景点已在上方 early-return，不画 pin）
@@ -1089,11 +1069,11 @@ export default function MapView({ data, onInteract }: Props) {
       onDragStart={stopDragPropagation}
       draggable={false}
     >
-      {/* 地图区域（固定高度，不随 POI 卡片长度变化） */}
-      <div className="w-96 shrink-0 flex flex-col h-[420px]">
+      {/* 地图区域：始终整张 384px。POI 详情页折在背面，右缘露出纸边（见下方折边元素） */}
+      <div className="w-96 shrink-0 flex flex-col">
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-line)" }}>
-          <h3 className="flex items-center gap-1 font-medium" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
-          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>
+          <h3 className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: "var(--fs-data)", color: "var(--ink)" }}><MapPin size={15} weight="fill" /> 路线地图</h3>
+          <div className="flex gap-3" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)", paddingRight: selectedMarker ? 0 : 16 }}>
             {dayLegend.length > 0 ? (
               dayLegend.map((d) => {
                 const active = data.activeDay == null || data.activeDay === d
@@ -1155,8 +1135,80 @@ export default function MapView({ data, onInteract }: Props) {
           </div>
         </div>
       </div>
-
-      {/* POI 面板 */}
+      {/* 折在背面的详情页：未选景点时只露出一条纸边+折角，暗示背面还有一页；
+          点击景点后 PoiPanel 从背面翻到正面（原有 rotateY 动画），整体向外拓宽 */}
+      <AnimatePresence>
+        {!selectedMarker && (
+          <motion.div
+            className="shrink-0 relative"
+            initial={{ width: 0 }}
+            animate={{ width: 16 }}
+            exit={{ width: 0, transition: { duration: 0.2 } }}
+          >
+            {/* 底层纸页：露得最宽的一页（背面详情页的纸边） */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 5, bottom: 3, left: 0, right: 0,
+                background: "linear-gradient(90deg, #E6DCBD, #F3ECD4 40%, #F7F1DE 62%, #DFD3B0 92%, #C9BB94)",
+                borderRight: "1px solid rgba(122,92,58,0.5)",
+                borderTop: "1px solid rgba(122,92,58,0.28)",
+                borderBottom: "1px solid rgba(122,92,58,0.32)",
+                borderRadius: "0 2px 2px 0",
+              }}
+            />
+            {/* 上层纸页：略窄、上下错位，叠出“不止一页”的纸厚度 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 1, bottom: 9, left: 0, right: 6,
+                background: "linear-gradient(90deg, #EFE7CC, #F6F0DC 55%, #E8DEC0)",
+                borderRight: "1px solid rgba(122,92,58,0.4)",
+                borderTop: "1px solid rgba(122,92,58,0.22)",
+                borderRadius: "0 1px 1px 0",
+                boxShadow: "1px 1px 2px rgba(43,43,43,0.18)",
+              }}
+            />
+            {/* 前页（地图）压在背页上的投影：贴着折缝最深，向外淡出 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, bottom: 0, left: 0, width: 9,
+                background: "linear-gradient(90deg, rgba(43,43,43,0.30), rgba(43,43,43,0.10) 55%, transparent)",
+              }}
+            />
+            {/* 翻角：卡片右上角被折下来。缺口处露出背页色 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background: "linear-gradient(135deg, #CDBF9C, #B9AA82)",
+                clipPath: "polygon(0 0, 100% 0, 100% 100%)",
+              }}
+            />
+            {/* 翻角：折下来的纸片本体（折线=斜边，靠折线亮、纸尖渐暗），投影落在卡面上 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background:
+                  "linear-gradient(135deg, #FCF8EC 0%, #F5EEDA 40%, #E9DFC0 68%, #D2C49C 92%, #C4B58C 100%)",
+                clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+                filter: "drop-shadow(-1.5px 1.5px 1.5px rgba(43,43,43,0.35))",
+              }}
+            />
+            {/* 翻角折线上的细阴影，强化转折 */}
+            <span
+              className="absolute pointer-events-none"
+              style={{
+                top: 0, left: -22, width: 22, height: 22,
+                background: "linear-gradient(135deg, rgba(43,43,43,0.20), transparent 26%)",
+                clipPath: "polygon(0 0, 100% 100%, 0 100%)",
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {selectedMarker && (
           <PoiPanel

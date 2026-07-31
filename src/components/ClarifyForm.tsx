@@ -86,7 +86,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
           <div style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.28em", color: "var(--ink-blue)" }}>
             TRAVELER INTAKE FORM
           </div>
-          <div style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-sub)", fontWeight: 800, marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-sub)", fontWeight: 400, marginTop: 2 }}>
             {data.title}
           </div>
           <div className="flex justify-between mt-2" style={{ fontFamily: "var(--font-en)", fontSize: 9, color: "var(--postmark)", letterSpacing: "0.1em" }}>
@@ -103,7 +103,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
                 <span style={{ fontFamily: "var(--font-en)", fontSize: 10, color: "var(--ink-blue)", fontWeight: 700 }}>
                   {String(qi + 1).padStart(2, "0")}.
                 </span>
-                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 700, color: "var(--ink)" }}>
+                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 400, color: "var(--ink)" }}>
                   {q.label}
                 </span>
               </div>
@@ -138,7 +138,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
                           fontFamily: "var(--font-cn)",
                           fontSize: "var(--fs-data)",
                           color: selected ? "var(--ink-blue)" : "var(--ink-soft)",
-                          fontWeight: selected ? 700 : 400,
+                          fontWeight: 400,
                         }}
                       >
                         {opt}
@@ -163,7 +163,7 @@ export default function ClarifyForm({ data, onInteract }: Props) {
                 <svg viewBox="0 0 14 14" width="16" height="16" style={{ overflow: "visible" }}>
                   <path className="intake-check" d="M2.5 7.5 L5.5 10.5 L12 2" />
                 </svg>
-                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 700, color: "var(--ink-blue)" }}>
+                <span style={{ fontFamily: "var(--font-cn)", fontSize: "var(--fs-data)", fontWeight: 400, color: "var(--ink-blue)" }}>
                   已提交
                 </span>
                 <span style={{ fontFamily: "var(--font-en)", fontSize: 10, letterSpacing: "0.22em", color: "var(--ink-blue)" }}>

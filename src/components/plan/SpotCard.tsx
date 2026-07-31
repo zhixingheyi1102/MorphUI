@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { ChatCircle, Target, Timer } from "@phosphor-icons/react"
+import { ChatCircle, MapPin, Target, Timer } from "@phosphor-icons/react"
 
 type Activity = {
   id: string
@@ -64,51 +64,59 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
           </span>
         )}
         <div className="flex gap-3">
-          {/* 左侧：文字信息 */}
-          <div className="flex-1 min-w-0">
-            {/* 时间行：仅在有 time / duration 时显示（非旅行场景可省略） */}
-            {(spot.time || spot.duration) && (
-              <div className="flex items-center gap-2 mb-1" style={{ color: "var(--ink-soft)" }}>
-                {spot.time && <span style={{ fontSize: "var(--fs-caption)", fontFamily: "var(--font-en)" }}>{spot.time}</span>}
-                {spot.time && spot.duration && <span style={{ fontSize: "var(--fs-caption)" }}>·</span>}
-                {spot.duration && <span style={{ fontSize: "var(--fs-caption)" }}>{spot.duration}</span>}
-              </div>
-            )}
-            <h4 className="font-semibold mb-1" style={{ fontSize: "var(--fs-body)", color: "var(--ink)" }}>{spot.name}</h4>
-            <p className="leading-relaxed whitespace-pre-line" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{spot.desc}</p>
-            {/* tag：仅在有时显示 */}
+          {/* 左侧：名称 + 介绍（flyer 式排版） */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <h4 className="leading-snug mb-1" style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{spot.name}</h4>
             {spot.tag && (
               <span
-                className="inline-block mt-2 px-2 py-0.5"
-                style={{
-                  fontSize: "var(--fs-caption)",
-                  borderRadius: "var(--r-paper)",
-                  background: "var(--paper-oat)",
-                  color: "var(--ink-soft)",
-                }}
+                className="self-start px-1.5 py-0.5 mb-1.5"
+                style={{ fontSize: "var(--fs-caption)", borderRadius: "var(--r-paper)", border: "1px dashed var(--ink-soft)", color: "var(--ink-soft)", background: "rgba(255,255,255,0.4)" }}
               >
                 {spot.tag}
               </span>
             )}
+            <p className="leading-relaxed line-clamp-3 mt-auto" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-soft)" }}>{spot.desc}</p>
           </div>
 
-          {/* 右侧：图片区域（仅在有 imageUrl 时显示，不再用地图针占位） */}
-          {spot.imageUrl && (
+          {/* 右侧：邮票齿孔框大图（飘窗） */}
+          <div className="relative shrink-0" style={{ width: 92, height: 116 }}>
+            {/* 照片：内缩到邮票内框里 */}
+            <div className="absolute overflow-hidden" style={{ inset: "8.5%", background: "var(--paper-oat)" }}>
+              {spot.imageUrl ? (
+                <img
+                  src={spot.imageUrl}
+                  alt={spot.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <MapPin size={20} style={{ color: "var(--ink-line)" }} />
+                </div>
+              )}
+            </div>
+            <img
+              src="/decors/frame-stamp-perf.png"
+              alt=""
+              className="absolute inset-0 w-full h-full pointer-events-none select-none"
+              style={{ objectFit: "fill" }}
+            />
+          </div>
+
+          {/* 最右：竖排时间列（flyer 右缘日期式，仅在有 time 时显示） */}
+          {spot.time && (
             <div
-              className="w-20 h-20 shrink-0 overflow-hidden"
-              style={{
-                borderRadius: "var(--r-paper)",
-                border: "2px solid var(--paper-oat)",
-                background: "var(--paper-oat)",
-                boxShadow: "var(--z1)",
-              }}
+              className="shrink-0 flex flex-col items-center pt-0.5 pl-2"
+              style={{ fontFamily: "var(--font-en)", color: "var(--ink-soft)", borderLeft: "1px solid var(--ink-line)" }}
             >
-              <img
-                src={spot.imageUrl}
-                alt={spot.name}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              {spot.time.split(":").map((seg, i) => (
+                <span key={i} className="leading-tight" style={{ fontSize: 12 }}>
+                  {i > 0 && <span className="block text-center" style={{ fontSize: 8, lineHeight: "8px" }}>·</span>}
+                  {seg}
+                </span>
+              ))}
+              {spot.duration && <span className="my-1" style={{ width: 1, height: 14, background: "var(--ink-line)" }} />}
+              {spot.duration && <span style={{ fontSize: 9, writingMode: "vertical-rl", letterSpacing: "0.08em" }}>{spot.duration}</span>}
             </div>
           )}
         </div>
@@ -123,7 +131,7 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
               className="mt-3 pt-3"
               style={{ borderTop: "1px solid var(--ink-line)" }}
             >
-              <p className="mb-1.5 font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>已加入玩法</p>
+              <p className="mb-1.5" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>已加入玩法</p>
               <div className="space-y-1.5">
                 {spot.selectedActivities.map((act) => (
                   <div
@@ -137,7 +145,7 @@ export default function SpotCard({ spot, isFirst, onQuote }: Props) {
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Target size={13} weight="fill" style={{ color: "var(--ink-blue)" }} />
-                      <span className="font-medium" style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>{act.title}</span>
+                      <span style={{ fontSize: "var(--fs-caption)", color: "var(--ink-blue)" }}>{act.title}</span>
                       {act.tag && (
                         <span
                           className="px-1 py-0.5"

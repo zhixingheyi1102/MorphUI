@@ -1,0 +1,20 @@
+import { chromium } from "playwright"
+const b = await chromium.launch()
+const page = await b.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 })
+await page.goto("http://localhost:5173/?preview=1")
+await page.waitForTimeout(4500)
+const check = page.locator("text=PACKING LIST · MORPH TRAVEL CO.").first()
+if (await check.count()) {
+  const card = check.locator("xpath=ancestor::div[contains(@class,'w-80')]").first()
+  await card.scrollIntoViewIfNeeded(); await page.waitForTimeout(600)
+  await card.screenshot({ path: "/tmp/checklist.png" })
+  console.log("checklist captured")
+} else console.log("checklist NOT found")
+const rec = page.locator("text=CASH RECEIPT").first()
+if (await rec.count()) {
+  const card = rec.locator("xpath=ancestor::div[contains(@class,'w-64')]").first()
+  await card.scrollIntoViewIfNeeded(); await page.waitForTimeout(600)
+  await card.screenshot({ path: "/tmp/budget.png" })
+  console.log("budget captured")
+} else console.log("budget NOT found")
+await b.close()
