@@ -29,7 +29,7 @@ const previewSeed: ComponentInstance[] = [
         day1: {
           label: "Day 1 · 法租界漫步",
           spots: [
-            { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80" },
+            { id: "wukang", name: "武康路", time: "09:30", duration: "1.5h", desc: "从武康大楼出发，沿途看老洋房和巴金故居", tag: "历史建筑", imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80" },
             { id: "anfu", name: "安福路", time: "11:00", duration: "1h", desc: "独立设计师店和话剧中心", tag: "文艺街区", imageUrl: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=640&q=80", transport: { method: "步行", duration: "10min", distance: "0.8km" } },
             { id: "lunch1", name: "衡山路午餐", time: "12:00", duration: "1h", desc: "推荐衡山小馆或 Alimentari", tag: "美食", transport: { method: "步行", duration: "8min", distance: "0.6km" } },
             { id: "tianzifang", name: "田子坊", time: "15:30", duration: "2h", desc: "石库门弄堂里的艺术区", tag: "文创园区", imageUrl: "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=640&q=80", transport: { method: "地铁", duration: "15min", distance: "3km" } },
@@ -56,7 +56,7 @@ const previewSeed: ComponentInstance[] = [
         {
           id: "wukang", name: "武康路", lat: 31.2152, lng: 121.4368, type: "spot", day: "day1",
           desc: "从武康大楼出发，沿途老洋房和巴金故居",
-          imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80",
+          imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80",
           tags: ["历史建筑", "法租界"],
           deepContent: {
             activities: [
@@ -142,7 +142,7 @@ const previewSeed: ComponentInstance[] = [
       type: "spot",
       name: "武康路",
       desc: "从武康大楼出发，沿途老洋房和巴金故居，法租界最经典的一条路",
-      imageUrl: "https://images.unsplash.com/photo-1567610464789-af95f753af41?w=640&q=80",
+      imageUrl: "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?w=640&q=80",
       rating: 4.8,
       tags: ["历史建筑", "法租界", "网红打卡"],
       distance: "距市中心 3km",

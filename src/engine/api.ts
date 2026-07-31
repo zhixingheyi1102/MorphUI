@@ -1,4 +1,5 @@
-export const API_URL = "/api/openai/openai/chat/completions?api-version=2024-12-01-preview"
+const API_BASE = import.meta.env.VITE_API_BASE ?? "/api"
+export const API_URL = `${API_BASE}/openai/openai/chat/completions?api-version=2024-12-01-preview`
 export const API_KEY = "QST794f3e52de111dfdfaf6fda137cad293"
 export const MODEL = "GPT-5.6 Terra"
 
