@@ -720,9 +720,14 @@ export function useChat(scenario?: Step[], initialComponents: ComponentInstance[
         if (sideActions.length > 0) applyActions(sideActions)
         setAiSuggestions([])
         setChatMessages((prev) => [...prev, { id: nextId(), role: "user", text: `把「${name}」加入行程` }])
+        // 酒店/住宿要住在有后续行程的夜晚，最后一天是离开日不过夜——排到第一晚（或最后一天以外的某晚）
+        const placementHint =
+          type === "hotel"
+            ? "这是住宿，要安排在当晚还有后续行程的那一天的傍晚/晚上作为过夜点——优先放第一晚，绝对不要放到最后一天（最后一天是离开日，不需要住宿）。"
+            : "你来判断它最适合安排在哪一天、哪个时段。"
         historyRef.current.push({
           role: "user",
-          content: `请把地图上的这个点位加入行程：id=${markerId}，名称=${name}，类型=${type}${desc ? `，简介=${desc}` : ""}。你来判断它最适合安排在哪一天、哪个时段，用 update_component 更新 itinerary（在对应 day 的 spots 里新增该条目，字段含 id/name/desc，酌情加 time/tag/transport），并同步重排该天后续条目的时间与交通衔接。`,
+          content: `请把地图上的这个点位加入行程：id=${markerId}，名称=${name}，类型=${type}${desc ? `，简介=${desc}` : ""}。${placementHint}用 update_component 更新 itinerary（在对应 day 的 spots 里新增该条目，字段含 id/name/desc，酌情加 time/tag/transport），并同步重排该天后续条目的时间与交通衔接。`,
         })
         callAI(historyRef.current)
         return
